@@ -401,6 +401,29 @@ function drawFrame(L) {
   for (const [type, fn] of Object.entries(window.__devframeListeners ?? {})) document.removeEventListener(type, fn, true);
   for (const [type, fn] of Object.entries(listeners)) document.addEventListener(type, fn, true);
   window.__devframeListeners = listeners;
+
+  // Chrome runs our keyboard shortcuts but also passes the key press to the
+  // page, so e.g. Alt+Shift+V would type "V" into a focused field. Swallow
+  // exactly those combinations before the app sees them. Matching on
+  // e.code keeps it working if Alt+Shift switches the keyboard layout.
+  const combos = [L.shortcut, L.copyShortcut, L.recordShortcut].filter(Boolean).map((text) => {
+    const parts = text.split('+');
+    const key = parts.pop();
+    return {
+      alt: parts.includes('Alt'), shift: parts.includes('Shift'), ctrl: parts.includes('Ctrl'),
+      code: /^[A-Z]$/.test(key) ? `Key${key}` : /^[0-9]$/.test(key) ? `Digit${key}` : key,
+    };
+  });
+  window.removeEventListener('keydown', window.__devframeKeys, true);
+  window.removeEventListener('keypress', window.__devframeKeys, true);
+  window.__devframeKeys = (e) => {
+    const hit = combos.some((k) => k.code === e.code && k.alt === e.altKey && k.shift === e.shiftKey && k.ctrl === e.ctrlKey);
+    if (!hit) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  };
+  window.addEventListener('keydown', window.__devframeKeys, true);
+  window.addEventListener('keypress', window.__devframeKeys, true);
   // Re-fit the window when its size drifts from the layout (e.g. Chrome's
   // "sharing this tab" bar appears, or the user drags the window edge).
   window.removeEventListener('resize', window.__devframeResize);
