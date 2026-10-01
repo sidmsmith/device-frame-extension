@@ -179,6 +179,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     frameColor: FRAME_COLORS[prefs.frameColor] !== undefined ? prefs.frameColor : 'black',
     frameColorFixed: Boolean(d.fixedColor),
     touch: Boolean(prefs.touch),
+    mic: Boolean(prefs.mic),
     decor: rugged ? ruggedDecor(d, phone, landscape) : null,
   };
 }

@@ -21,6 +21,8 @@ Alt+Shift+S copies a screenshot to the clipboard without saving a file.
 Alt+Shift+V starts/stops recording the device to an MP4 in Downloads
 (a 3-2-1 countdown runs first). The record button does the same but
 shows Chrome's "Share this tab" prompt.
+To include your voice, tick "Record microphone" in the settings (sliders)
+panel; Chrome asks for microphone permission the first time.
 To hide the bar: click the eye-slash button (far right). To show it again: double-click the
 device frame, press Alt+Shift+H, or click the small tab at the top.
 

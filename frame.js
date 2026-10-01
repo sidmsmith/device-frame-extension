@@ -31,6 +31,7 @@ function drawFrame(L) {
     trash: svg(16, '<path d="M2.5 4.5h11M6 4.5V2.8h4v1.7M4 4.5l.7 8.7h6.6l.7-8.7"/>'),
     expand: svg(11, '<path d="M4 6l4 4 4-4"/>'),
     record: svg(16, '<circle cx="8" cy="8" r="6.2"/><circle cx="8" cy="8" r="3.6" fill="#d93025" stroke="none"/>'),
+    mic: svg(14, '<rect x="5.8" y="1.8" width="4.4" height="8" rx="2.2"/><path d="M3.3 7.8a4.7 4.7 0 0 0 9.4 0M8 12.6v1.8"/>'),
     stop: svg(16, '<rect x="4" y="4" width="8" height="8" rx="1.5" fill="currentColor" stroke="none"/>'),
   };
   const c = L.content;
@@ -236,7 +237,7 @@ function drawFrame(L) {
       ${L.preset ? `<button id="delpreset" title="Delete saved device &quot;${L.preset.name}&quot;">${ICON.trash}</button>` : ''}
       <button id="rotate" title="Rotate to ${rotateTo}">&#x27F2;</button>
       <button id="status" title="${L.statusBar ? 'Hide' : 'Show'} status bar">${L.statusBar ? ICON.wifi : ICON.wifiOff}</button>
-      <button id="appearance" title="Appearance: background, frame colour, tap indicator">${ICON.sliders}</button>
+      <button id="appearance" title="Settings: background, frame colour, taps, microphone">${ICON.sliders}</button>
       <button id="reload" title="Reload page">&#x27F3;</button>
       <button id="rec">${ICON.record}</button>
       <button id="shot" title="Screenshot of the device: copy to clipboard and save PNG${L.copyShortcut ? ` (${L.copyShortcut} copies only)` : ''}">${ICON.camera}</button>
@@ -267,6 +268,8 @@ function drawFrame(L) {
         ${Object.keys(FRAME_LABEL).map((k) => `<button data-fc="${k}" class="${k === L.frameColor && !L.frameColorFixed ? 'sel' : ''}"${L.frameColorFixed ? ' disabled' : ''}><span class="sw" style="background:${FRAME_SWATCH[k]}"></span>${FRAME_LABEL[k]}</button>`).join('')}
       </div>
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> Show taps (circle + fingertip cursor)</label>
+      <div class="lbl">Recording</div>
+      <label class="chk" style="margin-top: 0"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
     </div>
     <div class="count" id="count" hidden></div>
     <div class="toast" id="toast"></div>
@@ -368,6 +371,7 @@ function drawFrame(L) {
   pop.querySelectorAll('[data-bg]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { background: b.dataset.bg } })));
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
+  root.getElementById('mic').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { mic: e.target.checked } }));
 
   // Toolbar show/hide: hide button, handle tab (fades in near the top edge),
   // and double-click on the frame.
@@ -448,7 +452,7 @@ function drawFrame(L) {
       return;
     }
     const secs = Math.floor((Date.now() - rec.started) / 1000);
-    recBtn.innerHTML = `${ICON.stop}<span>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</span>`;
+    recBtn.innerHTML = `${ICON.stop}${rec.mic ? ICON.mic : ''}<span>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</span>`;
   };
   clearInterval(window.__devframeRecTick);
   window.__devframeRecTick = setInterval(() => { if (window.__devframeRec?.recorder) showRecording(); }, 500);
@@ -467,6 +471,7 @@ function drawFrame(L) {
   const finishRecording = (rec, blob) => {
     clearInterval(rec.drawTimer);
     rec.stream.getTracks().forEach((track) => track.stop());
+    rec.mic?.getTracks().forEach((track) => track.stop());
     root.getElementById('count').hidden = true;
     window.__devframeRec = null;
     if (blob && blob.size) {
@@ -521,9 +526,24 @@ function drawFrame(L) {
       console.warn('Device Frame: recording failed to start', e);
       return;
     }
-    const mime = ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm']
+    // Microphone (optional). Asked for before the countdown, so Chrome's
+    // permission prompt doesn't land mid-recording. If it's blocked or there's
+    // no mic, record silently rather than fail.
+    let mic = null;
+    if (L.mic) {
+      try {
+        mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      } catch (e) {
+        console.warn('Device Frame: microphone unavailable', e);
+        toast(`Microphone unavailable (${e.name}); recording without sound`, 6000);
+      }
+    }
+    // AAC audio in MP4 so PowerPoint can play it.
+    const mime = (mic
+      ? ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=vp9,opus', 'video/webm']
+      : ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'])
       .find((type) => MediaRecorder.isTypeSupported(type));
-    const rec = { stream, mime };
+    const rec = { stream, mime, mic };
     window.__devframeRec = rec;
     send({ type: 'rec-state', recording: true });
     showRecording();
@@ -579,7 +599,8 @@ function drawFrame(L) {
     rec.drawTimer = setInterval(draw, 1000 / 30);
 
     const chunks = [];
-    rec.recorder = new MediaRecorder(canvas.captureStream(30), { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+    const output = new MediaStream([...canvas.captureStream(30).getVideoTracks(), ...(mic?.getAudioTracks() ?? [])]);
+    rec.recorder = new MediaRecorder(output, { mimeType: mime, videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 128_000 });
     rec.recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
     rec.recorder.onstop = () => finishRecording(rec, new Blob(chunks, { type: mime.split(';')[0] }));
     rec.recorder.onerror = (e) => {
