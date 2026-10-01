@@ -1,0 +1,23 @@
+Device Frame - Chrome extension
+===============================
+
+Install
+1. Extract this zip to a permanent folder OUTSIDE OneDrive, e.g.
+   C:\Users\<your name>\device_frame_extension
+   (OneDrive "online-only" files can't be read by Chrome.)
+2. Check that manifest.json is directly inside that folder
+   (not inside another device_frame_extension subfolder).
+3. In Chrome, open chrome://extensions and turn on "Developer mode" (top right).
+4. Click "Load unpacked" and select the folder from step 1.
+5. Pin "Device Frame" from the puzzle-piece menu in the toolbar.
+
+Use
+Open the page to demo (e.g. WM Mobile from the WMS menu) and click the
+Device Frame icon. A separate window opens with the page inside a device.
+The bar above the device lets you change device or size, rotate, show a
+status bar, change the background, reload, and take a screenshot (saved
+to Downloads and copied to the clipboard). Close the window when done.
+
+Update
+Replace the folder's files with the new version, then click the reload
+icon on the Device Frame card in chrome://extensions.
