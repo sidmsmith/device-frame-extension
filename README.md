@@ -22,12 +22,12 @@ The control bar above the device has:
 
 | Control | What it does |
 |---|---|
-| Device dropdown | Pixel 8, Galaxy S24, Moto G4, Zebra TC52, Rugged Handheld, Android Tablet, your saved devices, Custom |
+| Device dropdown | Pixel 8, Galaxy S24, Moto G4, Zebra TC52, Rugged Handheld, Laptop (1366×768, laptop frame), Desktop (1920×1080, no frame — for recording normal WMS screens), Android Tablet, your saved devices, Custom |
 | Custom… (in dropdown) / ✎ | Enter any width × height (240–2560); Enter applies, Esc cancels. **Save…** names it and adds it to the dropdown under *Saved* |
 | Trash icon | Shown when a saved device is selected; click twice to delete it |
-| ⟲ | Rotate between portrait and landscape |
+| Rotate icon | Rotate between portrait and landscape (not for Laptop/Desktop) |
 | Wi-Fi icon | Show/hide the Android status bar (clock, signal, Wi-Fi, battery); slashed when hidden |
-| Sliders icon | Settings panel: background (light grey / white / dark), frame colour (black / silver / white / blue; Zebra and Rugged keep their own), **Show taps** (a circle where you click plus a fingertip cursor, for screen-shared demos), and **Record microphone** (narration as AAC audio in the MP4; Chrome asks for mic permission for the site the first time) |
+| Sliders icon | Settings panel: background (light grey / white / dark), frame colour (black / silver / white / blue / Manhattan; Zebra, Rugged and Desktop keep their own), **Show taps** (a circle where you click plus a fingertip cursor, for screen-shared demos), **3-2-1 countdown** before recording (on by default), and **Record microphone** (narration as AAC audio in the MP4; Chrome asks for mic permission for the site the first time) |
 | ⟳ | Reload the page (F5 also works) |
 | Record icon | Record the device to **MP4**. **Alt+Shift+V** starts/stops recording with no prompt; the button works too but goes through Chrome's *Share this tab* prompt. Then the 3-2-1 countdown runs, then use the app. Click the red stop button (shows the elapsed time) or Chrome's *Stop sharing* to save it to Downloads. Device/rotate/appearance/hide are locked while recording. Turn on *Show taps* so viewers see where you tapped |
 | Camera icon | Save a PNG of just the device (transparent background) to Downloads and copy it to the clipboard. **Alt+Shift+S** copies to the clipboard only (no download) |
@@ -55,7 +55,7 @@ remembered. Keyboard shortcuts can be changed at
   windows: it stops the extension's own keyboard shortcuts from also reaching
   the app (otherwise e.g. Alt+Shift+V typed a V into MUP's search box).
 
-## Known limitations (v0.10)
+## Known limitations
 
 - The page still sees a desktop user agent and no touch input.
 - Media queries and `vw` units see the whole window width (device plus bezel

@@ -12,7 +12,7 @@ importScripts('devices.js', 'frame.js');
 // ---- state ---------------------------------------------------------------
 // session: framed[tabId] = { windowId, device, orientation, recording }
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
-//                   toolbarHidden, frameColor, touch, mic, presets: [{ id, name, width, height }] }
+//                   toolbarHidden, frameColor, touch, mic, countdown, presets: [{ id, name, width, height }] }
 
 async function getFramed() {
   return (await chrome.storage.session.get('framed')).framed ?? {};
@@ -206,6 +206,7 @@ async function handleControl(tabId, tab, msg) {
       if (msg.prefs.frameColor in FRAME_COLORS) prefs.frameColor = msg.prefs.frameColor;
       if (typeof msg.prefs.touch === 'boolean') prefs.touch = msg.prefs.touch;
       if (typeof msg.prefs.mic === 'boolean') prefs.mic = msg.prefs.mic;
+      if (typeof msg.prefs.countdown === 'boolean') prefs.countdown = msg.prefs.countdown;
       await saveLast(prefs);
       await reframe(tabId, state);
       break;
@@ -280,8 +281,8 @@ async function captureDevice(tab, L) {
   const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
 
   const scale = bitmap.width / L.W; // screen pixels per CSS pixel (zoom × DPR)
-  const pad = 6; // room for the side buttons
-  const crop = { x: L.phone.x - pad, y: L.phone.y - pad, w: L.phone.w + pad * 2, h: L.phone.h + pad * 2 };
+  const pad = Math.min(6, L.cropPad); // room for the side buttons
+  const crop = { x: L.bounds.x - pad, y: L.bounds.y - pad, w: L.bounds.w + pad * 2, h: L.bounds.h + pad * 2 };
 
   const canvas = new OffscreenCanvas(Math.round(crop.w * scale), Math.round(crop.h * scale));
   const ctx = canvas.getContext('2d');
@@ -292,6 +293,7 @@ async function captureDevice(tab, L) {
   ctx.setTransform(scale, 0, 0, scale, -crop.x * scale, -crop.y * scale);
   const mask = new Path2D(roundRectPath(L.phone));
   for (const b of L.buttons) mask.rect(b.x, b.y, b.w, b.h);
+  for (const e of L.extras) mask.addPath(new Path2D(roundRectPath(e)));
   ctx.fill(mask);
 
   const blob = await canvas.convertToBlob({ type: 'image/png' });

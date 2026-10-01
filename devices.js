@@ -27,6 +27,19 @@ const DEVICES = {
     bezel: { side: 22, top: 62, bottom: 236 }, radius: 34, screenRadius: 4,
     colors: ['#4a4b50', '#202124'], style: 'rugged', fixedColor: true,
   },
+  laptop: {
+    name: 'Laptop', width: 1366, height: 768,
+    bezel: { side: 16, top: 26, bottom: 30 }, radius: 12, screenRadius: 2,
+    colors: ['#3c3d42', '#111214'], style: 'laptop',
+    fixedOrientation: true, noStatusBar: true,
+    base: { overhang: 64, height: 18 },
+  },
+  desktop: {
+    name: 'Desktop (no frame)', width: 1920, height: 1080,
+    bezel: { side: 0, top: 0, bottom: 0 }, radius: 0, screenRadius: 0,
+    colors: ['#000000', '#000000'], style: 'bare', fixedColor: true,
+    fixedOrientation: true, noStatusBar: true, margin: 0, cropPad: 0,
+  },
   tablet: {
     name: 'Android Tablet', width: 800, height: 1280,
     bezel: { side: 28, top: 28, bottom: 28 }, radius: 36, screenRadius: 14,
@@ -47,6 +60,7 @@ const FRAME_COLORS = {
   silver: ['#eceef1', '#a5a9af'],
   white: ['#ffffff', '#d3d6da'],
   blue: ['#4d74ad', '#1c355e'],
+  manhattan: ['#1d5c5a', '#062a29'], // Manhattan green, RGB 8 51 50 (#083332)
 };
 
 // Saved ("preset") devices: user-named custom sizes, kept in prefs.presets.
@@ -114,7 +128,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
   const key = isDeviceKey(deviceKey, prefs) ? deviceKey : DEFAULT_DEVICE;
   const d = resolveDevice(key, prefs);
   const custom = normalizeCustom(prefs.custom);
-  const landscape = orientation === 'landscape';
+  const landscape = orientation === 'landscape' && !d.fixedOrientation;
   const { side, top, bottom } = d.bezel;
 
   const sw = landscape ? d.height : d.width;
@@ -124,10 +138,13 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     : { left: side, right: side, top, bottom };
 
   const bar = prefs.toolbarHidden ? 0 : BAR;
-  const phone = { x: MARGIN, y: bar + MARGIN, w: sw + bez.left + bez.right, h: sh + bez.top + bez.bottom, r: d.radius };
+  const margin = d.margin ?? MARGIN;
+  const over = d.base?.overhang ?? 0; // laptop base sticks out past the lid
+  const baseH = d.base?.height ?? 0;
+  const phone = { x: margin + over, y: bar + margin, w: sw + bez.left + bez.right, h: sh + bez.top + bez.bottom, r: d.radius };
   const screen = { x: phone.x + bez.left, y: phone.y + bez.top, w: sw, h: sh, r: d.screenRadius };
 
-  const statusBar = prefs.statusBar ? { x: screen.x, y: screen.y, w: screen.w, h: STATUS_BAR } : null;
+  const statusBar = prefs.statusBar && !d.noStatusBar ? { x: screen.x, y: screen.y, w: screen.w, h: STATUS_BAR } : null;
   const content = statusBar
     ? { x: screen.x, y: screen.y + STATUS_BAR, w: screen.w, h: screen.h - STATUS_BAR }
     : { x: screen.x, y: screen.y, w: screen.w, h: screen.h };
@@ -146,9 +163,17 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     return { x, y: phone.y + pos, w: t, h: len, color };
   };
   const rugged = d.style === 'rugged';
+  const phoneLike = d.style !== 'laptop' && d.style !== 'bare';
   const buttons = rugged
     ? [button(0.2, 0.09, 'left', 6, RUGGED_ACCENT), button(0.2, 0.09, 'right', 6, RUGGED_ACCENT)]
-    : [button(0.18, 0.065), button(0.28, 0.12)];
+    : phoneLike ? [button(0.18, 0.065), button(0.28, 0.12)] : [];
+  // Shapes outside the lid/phone body that belong to the device (laptop base).
+  const extras = d.base ? [{ x: phone.x - over, y: phone.y + phone.h, w: phone.w + over * 2, h: baseH, r: 8 }] : [];
+  let camera = landscape
+    ? { cx: phone.x + bez.left / 2, cy: phone.y + phone.h / 2, r: 6 }
+    : { cx: phone.x + phone.w / 2, cy: phone.y + bez.top / 2, r: 6 };
+  if (d.style === 'laptop') camera = { ...camera, r: 3 };
+  if (d.style === 'bare') camera = null;
 
   return {
     deviceKey: key,
@@ -162,8 +187,8 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     preset: findPreset(prefs, key) ? { id: findPreset(prefs, key).id, name: escapeHtml(findPreset(prefs, key).name) } : null,
     presetNameMax: PRESET_NAME_MAX,
     custom: { ...custom, min: CUSTOM_MIN, max: CUSTOM_MAX },
-    W: phone.w + MARGIN * 2,
-    H: bar + phone.h + MARGIN * 2,
+    W: phone.w + over * 2 + margin * 2,
+    H: bar + phone.h + baseH + margin * 2,
     bar,
     toolbarHidden: Boolean(prefs.toolbarHidden),
     phone,
@@ -171,15 +196,21 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     content,
     statusBar,
     background: BACKGROUNDS.includes(prefs.background) ? prefs.background : BACKGROUNDS[0],
-    camera: landscape
-      ? { cx: phone.x + bez.left / 2, cy: phone.y + phone.h / 2, r: 6 }
-      : { cx: phone.x + phone.w / 2, cy: phone.y + bez.top / 2, r: 6 },
+    camera,
     buttons,
+    extras,
+    // Area to keep in screenshots/recordings, and extra room around it for buttons.
+    bounds: { x: phone.x - over, y: phone.y, w: phone.w + over * 2, h: phone.h + baseH },
+    cropPad: d.cropPad ?? 8,
+    frameless: d.style === 'bare',
+    canRotate: !d.fixedOrientation,
+    hasStatusBar: !d.noStatusBar,
     colors: (!d.fixedColor && FRAME_COLORS[prefs.frameColor]) || d.colors,
     frameColor: FRAME_COLORS[prefs.frameColor] !== undefined ? prefs.frameColor : 'black',
     frameColorFixed: Boolean(d.fixedColor),
     touch: Boolean(prefs.touch),
     mic: Boolean(prefs.mic),
+    countdown: prefs.countdown !== false,
     decor: rugged ? ruggedDecor(d, phone, landscape) : null,
   };
 }

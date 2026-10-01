@@ -14,8 +14,8 @@ function drawFrame(L) {
     dark: { page: '#2b2d33', bar: '#1e1f23', barBorder: '#000000', text: '#e6e6e6', ctl: '#3a3c44', ctlBorder: '#50535c', ctlHover: '#474a53', shadow: 0.6 },
   };
   const BG_LABEL = { light: 'Light grey', white: 'White', dark: 'Dark' };
-  const FRAME_LABEL = { black: 'Black', silver: 'Silver', white: 'White', blue: 'Blue' };
-  const FRAME_SWATCH = { black: '#202124', silver: '#c9ccd1', white: '#ffffff', blue: '#2f5597' };
+  const FRAME_LABEL = { black: 'Black', silver: 'Silver', white: 'White', blue: 'Blue', manhattan: 'Manhattan' };
+  const FRAME_SWATCH = { black: '#202124', silver: '#c9ccd1', white: '#ffffff', blue: '#2f5597', manhattan: '#083332' };
   const t = THEMES[L.background] ?? THEMES.light;
 
   // Line icons; stroke follows the control bar's text colour.
@@ -27,6 +27,7 @@ function drawFrame(L) {
     wifiOff: svg(16, `${WIFI}<path d="M2.5 13.5l11-11"/>`),
     eyeOff: svg(16, '<path d="M1.5 8S3.9 3.5 8 3.5 14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2.2"/><path d="M2.5 13.5l11-11"/>'),
     camera: svg(16, '<path d="M1.8 5.2h2.6l1.3-1.9h4.6l1.3 1.9h2.6v7.5H1.8z"/><circle cx="8" cy="8.7" r="2.4"/>'),
+    rotate: svg(16, '<rect x="6.1" y="4.1" width="3.8" height="7.8" rx="0.9" transform="rotate(45 8 8)"/><path d="M1.6 8.6A6.4 6.4 0 0 1 7.4 1.6M7.4 1.6l-1.5 1.3M7.4 1.6l-1.4-1.2"/><path d="M14.4 7.4A6.4 6.4 0 0 1 8.6 14.4M8.6 14.4l1.5-1.3M8.6 14.4l1.4 1.2"/>'),
     sliders: svg(16, '<path d="M2 4.5h7M12.2 4.5H14M2 11.5h1.8M7.2 11.5H14"/><circle cx="10.6" cy="4.5" r="1.6"/><circle cx="5.5" cy="11.5" r="1.6"/>'),
     trash: svg(16, '<path d="M2.5 4.5h11M6 4.5V2.8h4v1.7M4 4.5l.7 8.7h6.6l.7-8.7"/>'),
     expand: svg(11, '<path d="M4 6l4 4 4-4"/>'),
@@ -79,7 +80,9 @@ function drawFrame(L) {
   const root = host.attachShadow({ mode: 'open' });
 
   const phonePath = rr(L.phone);
-  const outside = `M0,0H${L.W}V${L.H}H0z ${phonePath}`;
+  // The device outline: phone/lid body plus any extra parts (laptop base).
+  const devicePath = [phonePath, ...L.extras.map(rr)].join(' ');
+  const outside = `M0,0H${L.W}V${L.H}H0z ${devicePath}`;
   const option = (d) => `<option value="${d.key}"${d.key === L.deviceKey ? ' selected' : ''}>${d.name}</option>`;
   const saved = L.devices.filter((d) => d.group === 'saved');
   const options = [
@@ -217,15 +220,21 @@ function drawFrame(L) {
           <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="${t.shadow}"/>
         </filter>
         <clipPath id="outside"><path clip-rule="evenodd" d="${outside}"/></clipPath>
+        <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#e6e8eb"/><stop offset="1" stop-color="#9aa0a6"/>
+        </linearGradient>
         <clipPath id="phoneclip"><path d="${phonePath}"/></clipPath>
       </defs>
       ${statusBar}
       <path fill="${t.page}" fill-rule="evenodd" d="${outside}"/>
-      <path fill="#000" d="${phonePath}" filter="url(#shadow)" clip-path="url(#outside)"/>
+      ${L.frameless ? '' : `<path fill="#000" d="${devicePath}" filter="url(#shadow)" clip-path="url(#outside)"/>`}
       <path fill="url(#body)" fill-rule="evenodd" d="${phonePath} ${rr(L.screen)}"/>
       ${decor}
-      <path fill="none" stroke="#55575d" stroke-width="2" d="${phonePath}"/>
-      <circle cx="${L.camera.cx}" cy="${L.camera.cy}" r="${L.camera.r}" fill="url(#cam)"/>
+      ${L.extras.map((e) => `
+        <path fill="url(#base)" stroke="#8a8f96" stroke-width="1" d="${rr(e)}"/>
+        <rect x="${e.x + e.w / 2 - 60}" y="${e.y}" width="120" height="5" rx="2.5" fill="#8a8f96"/>`).join('')}
+      ${L.frameless ? '' : `<path fill="none" stroke="#55575d" stroke-width="2" d="${phonePath}"/>`}
+      ${L.camera ? `<circle cx="${L.camera.cx}" cy="${L.camera.cy}" r="${L.camera.r}" fill="url(#cam)"/>` : ''}
       ${L.buttons.map((b) => `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="2" fill="${b.color}"/>`).join('')}
     </svg>
     <div id="ripples"></div>
@@ -234,8 +243,8 @@ function drawFrame(L) {
       <select id="device" title="Device">${options}</select>
       ${L.deviceKey === 'custom' ? '<button id="edit" title="Change custom size">&#x270E;</button>' : ''}
       ${L.preset ? `<button id="delpreset" title="Delete saved device &quot;${L.preset.name}&quot;">${ICON.trash}</button>` : ''}
-      <button id="rotate" title="Rotate to ${rotateTo}">&#x27F2;</button>
-      <button id="status" title="${L.statusBar ? 'Hide' : 'Show'} status bar">${L.statusBar ? ICON.wifi : ICON.wifiOff}</button>
+      <button id="rotate"${L.canRotate ? ` title="Rotate to ${rotateTo}"` : ' title="This device doesn\'t rotate" disabled data-fixed-off="1"'}>${ICON.rotate}</button>
+      <button id="status"${L.hasStatusBar ? ` title="${L.statusBar ? 'Hide' : 'Show'} status bar"` : ' title="No status bar on this device" disabled data-fixed-off="1"'}>${L.statusBar ? ICON.wifi : ICON.wifiOff}</button>
       <button id="appearance" title="Settings: background, frame colour, taps, microphone">${ICON.sliders}</button>
       <button id="reload" title="Reload page">&#x27F3;</button>
       <button id="rec">${ICON.record}</button>
@@ -268,7 +277,8 @@ function drawFrame(L) {
       </div>
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> Show taps (circle + fingertip cursor)</label>
       <div class="lbl">Recording</div>
-      <label class="chk" style="margin-top: 0"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
+      <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
+      <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
     </div>
     <div class="count" id="count" hidden></div>
     <div class="toast" id="toast"></div>
@@ -371,6 +381,7 @@ function drawFrame(L) {
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
   root.getElementById('mic').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { mic: e.target.checked } }));
+  root.getElementById('countdown').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { countdown: e.target.checked } }));
 
   // Toolbar show/hide: hide button, handle tab (fades in near the top edge),
   // and double-click on the frame.
@@ -439,7 +450,7 @@ function drawFrame(L) {
     const rec = window.__devframeRec;
     for (const id of lockIds) {
       const el = root.getElementById(id);
-      if (el) el.disabled = Boolean(rec);
+      if (el) el.disabled = Boolean(rec) || el.dataset.fixedOff === '1';
     }
     if (rec) setPop(false);
     recBtn.classList.toggle('rec-on', Boolean(rec?.recorder));
@@ -562,27 +573,29 @@ function drawFrame(L) {
       return finishRecording(rec, null);
     }
 
-    // Countdown, then record. The overlay is gone before the first frame.
-    const count = root.getElementById('count');
-    let n = 3;
-    count.textContent = n;
-    count.hidden = false;
-    await new Promise((resolve) => {
-      rec.countdown = setInterval(() => {
-        n -= 1;
-        if (n > 0) { count.textContent = n; return; }
-        clearInterval(rec.countdown);
-        count.hidden = true;
-        resolve();
-      }, 1000);
-    });
-    if (rec.stopping) return finishRecording(rec, null);
-    await new Promise((resolve) => setTimeout(resolve, 100)); // let the overlay disappear from the stream
+    // Optional countdown, then record. The overlay is gone before the first frame.
+    if (L.countdown) {
+      const count = root.getElementById('count');
+      let n = 3;
+      count.textContent = n;
+      count.hidden = false;
+      await new Promise((resolve) => {
+        rec.countdown = setInterval(() => {
+          n -= 1;
+          if (n > 0) { count.textContent = n; return; }
+          clearInterval(rec.countdown);
+          count.hidden = true;
+          resolve();
+        }, 1000);
+      });
+      if (rec.stopping) return finishRecording(rec, null);
+      await new Promise((resolve) => setTimeout(resolve, 100)); // let the overlay disappear from the stream
+    }
 
     // Crop: the device plus a little room for its side buttons, in CSS px,
     // mapped to video pixels (video width / viewport width covers zoom + DPR).
-    const pad = 8;
-    const crop = { x: L.phone.x - pad, y: L.phone.y - pad, w: L.phone.w + pad * 2, h: L.phone.h + pad * 2 };
+    const pad = L.cropPad;
+    const crop = { x: L.bounds.x - pad, y: L.bounds.y - pad, w: L.bounds.w + pad * 2, h: L.bounds.h + pad * 2 };
     const scale0 = video.videoWidth / window.innerWidth;
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(crop.w * scale0 / 2) * 2; // even sizes for H.264
