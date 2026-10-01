@@ -17,7 +17,8 @@ Device Frame icon. A separate window opens with the page inside a device.
 The bar above the device lets you change device or size, rotate, show a
 status bar, change the background, reload, and take a screenshot (saved
 to Downloads and copied to the clipboard). Close the window when done.
-To hide the bar: click the ^ button. To show it again: double-click the
+Alt+Shift+S copies a screenshot to the clipboard without saving a file.
+To hide the bar: click the collapse button (far right). To show it again: double-click the
 device frame, press Alt+Shift+H, or click the small tab at the top.
 
 Update

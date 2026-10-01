@@ -25,15 +25,15 @@ The control bar above the device has:
 | Device dropdown | Pixel 8, Galaxy S24, Moto G4, Zebra TC52, Rugged Handheld, Android Tablet |
 | Custom… (in dropdown) / ✎ | Enter any width × height (240–2560); Enter applies, Esc cancels |
 | ⟲ | Rotate between portrait and landscape |
-| ▭ | Show/hide the Android status bar (clock, signal, Wi-Fi, battery) |
+| Wi-Fi icon | Show/hide the Android status bar (clock, signal, Wi-Fi, battery) |
 | ◐ | Cycle the window background: light grey (default), white, dark |
 | ⟳ | Reload the page (F5 also works) |
-| 📷 | Save a PNG of just the device (transparent background) to Downloads and copy it to the clipboard |
-| ⌃ | Hide the control bar. To show it again: click the small tab at the top centre (appears when the mouse is near the top), double-click the device frame or grey background, or press **Alt+Shift+H** |
+| 📷 | Save a PNG of just the device (transparent background) to Downloads and copy it to the clipboard. **Alt+Shift+S** copies to the clipboard only (no download) |
+| Collapse icon | Hide the control bar. To show it again: click the small tab at the top centre (appears when the mouse is near the top), double-click the device frame or grey background, or press **Alt+Shift+H** |
 
 Close the window to turn the frame off. Device, custom size, orientation,
 status bar, background, toolbar visibility and window position are all
-remembered. The keyboard shortcut can be changed at
+remembered. Keyboard shortcuts can be changed at
 `chrome://extensions/shortcuts`.
 
 ## How it works
@@ -50,7 +50,7 @@ remembered. The keyboard shortcut can be changed at
   shrinks it to fit the screen. Zoom is scoped to that tab only.
 - Device sizes and bezel geometry live in `devices.js`.
 
-## Known limitations (v0.7)
+## Known limitations (v0.8)
 
 - The page still sees a desktop user agent and no touch input.
 - Media queries and `vw` units see the whole window width (device plus bezel

@@ -16,6 +16,15 @@ function drawFrame(L) {
   const NEXT_BG = { light: 'white', white: 'dark', dark: 'light' };
   const BG_LABEL = { light: 'Light grey', white: 'White', dark: 'Dark' };
   const t = THEMES[L.background] ?? THEMES.light;
+
+  // Line icons; stroke follows the control bar's text colour.
+  const svg = (size, body) =>
+    `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+  const ICON = {
+    wifi: svg(16, '<path d="M1.8 6.2a9 9 0 0 1 12.4 0"/><path d="M4.2 8.8a5.5 5.5 0 0 1 7.6 0"/><circle cx="8" cy="11.9" r="1.2" fill="currentColor" stroke="none"/>'),
+    collapse: svg(16, '<path d="M3 3.5h10"/><path d="M4.5 11 8 7.5l3.5 3.5"/>'),
+    expand: svg(11, '<path d="M4 6l4 4 4-4"/>'),
+  };
   const c = L.content;
 
   // Page-level style: pin <body> into the screen area. The transform makes
@@ -98,7 +107,7 @@ function drawFrame(L) {
   root.innerHTML = `
     <style>
       :host { all: initial; }
-      svg { position: absolute; left: 0; top: 0; }
+      svg.frame { position: absolute; left: 0; top: 0; }
       .bar {
         position: absolute; left: 0; top: 0; right: 0; height: ${L.bar}px;
         display: flex; align-items: center; gap: 6px; padding: 0 8px;
@@ -114,6 +123,7 @@ function drawFrame(L) {
       }
       select { flex: 1; min-width: 0; padding: 0 4px; }
       button { min-width: 32px; padding: 0 8px; white-space: nowrap; }
+      button svg, .handle svg { display: block; margin: auto; }
       button:hover, select:hover { background: ${t.ctlHover}; }
       button.on { border-color: #1a73e8; box-shadow: inset 0 0 0 1px #1a73e8; }
       .row { display: contents; }
@@ -143,7 +153,7 @@ function drawFrame(L) {
       }
       .handle.near, .handle:hover { opacity: .9; }
     </style>
-    <svg width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" xmlns="http://www.w3.org/2000/svg">
+    <svg class="frame" width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="body" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="${L.colors[0]}"/><stop offset=".6" stop-color="${L.colors[1]}"/>
@@ -171,11 +181,11 @@ function drawFrame(L) {
       <select id="device" title="Device">${options}</select>
       ${L.deviceKey === 'custom' ? '<button id="edit" title="Change custom size">&#x270E;</button>' : ''}
       <button id="rotate" title="Rotate to ${rotateTo}">&#x27F2;</button>
-      <button id="status" class="${L.statusBar ? 'on' : ''}" title="${L.statusBar ? 'Hide' : 'Show'} status bar">&#x25AD;</button>
+      <button id="status" class="${L.statusBar ? 'on' : ''}" title="${L.statusBar ? 'Hide' : 'Show'} status bar">${ICON.wifi}</button>
       <button id="background" title="Background: ${BG_LABEL[L.background]} (click for ${BG_LABEL[NEXT_BG[L.background]]})">&#x25D0;</button>
       <button id="reload" title="Reload page">&#x27F3;</button>
-      <button id="shot" title="Save screenshot of the device (PNG)">&#x1F4F7;</button>
-      <button id="hide" title="Hide toolbar (or double-click the frame${L.shortcut ? `, or ${L.shortcut}` : ''})">&#x2303;</button>
+      <button id="shot" title="Screenshot of the device: copy to clipboard and save PNG${L.copyShortcut ? ` (${L.copyShortcut} copies only)` : ''}">&#x1F4F7;</button>
+      <button id="hide" title="Hide toolbar (or double-click the frame${L.shortcut ? `, or ${L.shortcut}` : ''})">${ICON.collapse}</button>
       </div>
       <form class="row" id="editor" hidden>
         <label for="w">Size</label>
@@ -187,7 +197,7 @@ function drawFrame(L) {
       </form>
     </div>
     <div class="toast" id="toast"></div>
-    ${L.toolbarHidden ? `<div class="handle" id="handle" title="Show toolbar${L.shortcut ? ` (${L.shortcut})` : ''}">&#x2304;</div>` : ''}`;
+    ${L.toolbarHidden ? `<div class="handle" id="handle" title="Show toolbar${L.shortcut ? ` (${L.shortcut})` : ''}">${ICON.expand}</div>` : ''}`;
 
   const clock = root.getElementById('clock');
   if (clock) {
@@ -288,4 +298,26 @@ function drawFrame(L) {
     availLeft: screen.availLeft ?? 0,
     availTop: screen.availTop ?? 0,
   };
+}
+
+// Injected for the copy-only screenshot shortcut: put the PNG on the
+// clipboard and show the toast. No click here, so this relies on the frame
+// window being focused (it is, since the shortcut was pressed in it).
+async function copyImageToClipboard(dataUrl) {
+  const bytes = atob(dataUrl.split(',')[1]);
+  const buf = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
+  let message = 'Copied to clipboard';
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': new Blob([buf], { type: 'image/png' }) })]);
+  } catch (e) {
+    message = `Clipboard copy blocked (${e.name})`;
+  }
+  const toastEl = document.getElementById('__devframe')?.shadowRoot?.getElementById('toast');
+  if (toastEl) {
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    clearTimeout(window.__devframeToast);
+    window.__devframeToast = setTimeout(() => toastEl.classList.remove('show'), 2500);
+  }
 }

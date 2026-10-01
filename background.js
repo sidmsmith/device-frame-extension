@@ -72,7 +72,8 @@ async function onLoaded({ tabId, frameId, url }) {
 }
 
 async function reframe(tabId, state, shiftY = 0) {
-  const L = { ...computeLayout(state.device, state.orientation, await getLast()), shortcut: await toolbarShortcut() };
+  const keys = await shortcuts();
+  const L = { ...computeLayout(state.device, state.orientation, await getLast()), shortcut: keys['toggle-toolbar'], copyShortcut: keys['copy-screenshot'] };
   try {
     const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId },
@@ -172,8 +173,12 @@ async function handleControl(tabId, tab, msg) {
     case 'toggle-toolbar':
       await toggleToolbar(tabId, state);
       break;
-    case 'screenshot':
-      return { dataUrl: await saveScreenshot(tab, computeLayout(state.device, state.orientation, await getLast())) };
+    case 'screenshot': {
+      const L = computeLayout(state.device, state.orientation, await getLast());
+      const dataUrl = await captureDevice(tab, L);
+      await downloadScreenshot(dataUrl, L);
+      return { dataUrl };
+    }
   }
 }
 
@@ -183,21 +188,34 @@ async function toggleToolbar(tabId, state) {
   await reframe(tabId, state, toolbarHidden ? BAR : -BAR);
 }
 
-// Keyboard shortcut (chrome.commands works even when the app swallows keys).
+// Keyboard shortcuts (chrome.commands works even when the app swallows keys).
 chrome.commands.onCommand.addListener(async (command, tab) => {
-  if (command !== 'toggle-toolbar' || !tab) return;
+  if (!tab) return;
   const state = (await getFramed())[tab.id];
-  if (state) await toggleToolbar(tab.id, state);
+  if (!state) return;
+  try {
+    if (command === 'toggle-toolbar') await toggleToolbar(tab.id, state);
+    if (command === 'copy-screenshot') await copyScreenshot(tab, state);
+  } catch (e) {
+    console.warn('Device Frame:', command, e);
+  }
 });
 
-async function toolbarShortcut() {
-  const commands = await chrome.commands.getAll();
-  return commands.find((c) => c.name === 'toggle-toolbar')?.shortcut || '';
+// Copy-only screenshot: capture in the background, write the clipboard in the page.
+async function copyScreenshot(tab, state) {
+  const dataUrl = await captureDevice(tab, computeLayout(state.device, state.orientation, await getLast()));
+  await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: copyImageToClipboard, args: [dataUrl] });
 }
 
-// Capture the window, cut out just the phone (transparent outside it) and
-// download it as a PNG. Returns the PNG as a data URL for the clipboard copy.
-async function saveScreenshot(tab, L) {
+// { commandName: 'Alt+Shift+H', ... } as currently assigned (may be changed by the user).
+async function shortcuts() {
+  const commands = await chrome.commands.getAll();
+  return Object.fromEntries(commands.map((c) => [c.name, c.shortcut || '']));
+}
+
+// Capture the window and cut out just the phone (transparent outside it).
+// Returns a PNG data URL.
+async function captureDevice(tab, L) {
   const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
   const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
 
@@ -217,15 +235,17 @@ async function saveScreenshot(tab, L) {
   ctx.fill(mask);
 
   const blob = await canvas.convertToBlob({ type: 'image/png' });
-  const url = await new Promise((resolve) => {
+  return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.readAsDataURL(blob);
   });
+}
+
+async function downloadScreenshot(url, L) {
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   const name = `${L.deviceName.replace(/\s+/g, '-')}-${L.screen.w}x${L.screen.h}`;
   await chrome.downloads.download({ url, filename: `device-frame-${name}-${stamp}.png` });
-  return url;
 }
 
 // ---- housekeeping --------------------------------------------------------
