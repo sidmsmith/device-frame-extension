@@ -119,10 +119,17 @@ async function fitWindow(tabId, L, m) {
 
 // ---- control bar ---------------------------------------------------------
 
-chrome.runtime.onMessage.addListener((msg, sender) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const tabId = sender.tab?.id;
   if (tabId === undefined) return;
-  handleControl(tabId, sender.tab, msg).catch((e) => console.warn('Device Frame:', msg.type, e));
+  handleControl(tabId, sender.tab, msg).then(
+    (result) => sendResponse(result ?? {}),
+    (e) => {
+      console.warn('Device Frame:', msg.type, e);
+      sendResponse({ error: String(e?.message ?? e) });
+    },
+  );
+  return true; // async response
 });
 
 async function handleControl(tabId, tab, msg) {
@@ -161,13 +168,12 @@ async function handleControl(tabId, tab, msg) {
       break;
     }
     case 'screenshot':
-      await saveScreenshot(tab, computeLayout(state.device, state.orientation, await getLast()));
-      break;
+      return { dataUrl: await saveScreenshot(tab, computeLayout(state.device, state.orientation, await getLast())) };
   }
 }
 
 // Capture the window, cut out just the phone (transparent outside it) and
-// download it as a PNG.
+// download it as a PNG. Returns the PNG as a data URL for the clipboard copy.
 async function saveScreenshot(tab, L) {
   const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
   const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
@@ -196,6 +202,7 @@ async function saveScreenshot(tab, L) {
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   const name = `${L.deviceName.replace(/\s+/g, '-')}-${L.screen.w}x${L.screen.h}`;
   await chrome.downloads.download({ url, filename: `device-frame-${name}-${stamp}.png` });
+  return url;
 }
 
 // ---- housekeeping --------------------------------------------------------

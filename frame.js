@@ -82,6 +82,19 @@ function drawFrame(L) {
       </g>`;
   }
 
+  let decor = '';
+  if (L.decor) {
+    const D = L.decor;
+    const shape = (p) => p.type === 'text'
+      ? `<text x="${p.x}" y="${p.y}" text-anchor="middle" dominant-baseline="central" font-family="system-ui, sans-serif" font-weight="600" font-size="${p.size}" fill="${p.fill}">${p.text}</text>`
+      : `<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="${p.rx ?? 0}" fill="${p.fill}"${p.stroke ? ` stroke="${p.stroke}"` : ''}/>`;
+    decor = `
+      <g clip-path="url(#phoneclip)" fill="${D.bumperColor}">
+        ${D.bumpers.map((b) => `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}"/>`).join('')}
+      </g>
+      <g transform="${D.transform}">${D.shapes.map(shape).join('')}</g>`;
+  }
+
   root.innerHTML = `
     <style>
       :host { all: initial; }
@@ -113,6 +126,12 @@ function drawFrame(L) {
       }
       input:invalid { border-color: #d93025; }
       button.primary { background: #1a73e8; border-color: #1a73e8; color: #fff; }
+      .toast {
+        position: absolute; right: 8px; top: ${L.bar + 6}px; padding: 4px 10px;
+        background: #202124; color: #fff; border-radius: 4px; font-size: 12px;
+        opacity: 0; transition: opacity .2s; pointer-events: none;
+      }
+      .toast.show { opacity: .92; }
     </style>
     <svg width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -126,14 +145,16 @@ function drawFrame(L) {
           <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="${t.shadow}"/>
         </filter>
         <clipPath id="outside"><path clip-rule="evenodd" d="${outside}"/></clipPath>
+        <clipPath id="phoneclip"><path d="${phonePath}"/></clipPath>
       </defs>
       ${statusBar}
       <path fill="${t.page}" fill-rule="evenodd" d="${outside}"/>
       <path fill="#000" d="${phonePath}" filter="url(#shadow)" clip-path="url(#outside)"/>
       <path fill="url(#body)" fill-rule="evenodd" d="${phonePath} ${rr(L.screen)}"/>
+      ${decor}
       <path fill="none" stroke="#55575d" stroke-width="2" d="${phonePath}"/>
       <circle cx="${L.camera.cx}" cy="${L.camera.cy}" r="${L.camera.r}" fill="url(#cam)"/>
-      ${L.buttons.map((b) => `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="2" fill="#4a4c52"/>`).join('')}
+      ${L.buttons.map((b) => `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="2" fill="${b.color}"/>`).join('')}
     </svg>
     <div class="bar">
       <div class="row" id="main">
@@ -153,7 +174,8 @@ function drawFrame(L) {
         <button type="submit" class="primary" title="Apply custom size">Apply</button>
         <button type="button" id="cancel" title="Cancel">&#x2715;</button>
       </form>
-    </div>`;
+    </div>
+    <div class="toast" id="toast"></div>`;
 
   const clock = root.getElementById('clock');
   if (clock) {
@@ -200,7 +222,30 @@ function drawFrame(L) {
   root.getElementById('status').addEventListener('click', () => send({ type: 'set-pref', prefs: { statusBar: !L.statusBar } }));
   root.getElementById('background').addEventListener('click', () => send({ type: 'set-pref', prefs: { background: NEXT_BG[L.background] } }));
   root.getElementById('reload').addEventListener('click', () => location.reload());
-  root.getElementById('shot').addEventListener('click', () => send({ type: 'screenshot' }));
+  const toastEl = root.getElementById('toast');
+  const toast = (text) => {
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(window.__devframeToast);
+    window.__devframeToast = setTimeout(() => toastEl.classList.remove('show'), 2500);
+  };
+  root.getElementById('shot').addEventListener('click', () => {
+    // The background captures, crops and downloads the PNG, then hands it back
+    // so we can put it on the clipboard. ClipboardItem accepts a promise, which
+    // keeps the click's user activation for the clipboard write.
+    const png = new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ type: 'screenshot' }, (res) => {
+        if (!res?.dataUrl) return reject(new Error(res?.error || 'Screenshot failed'));
+        const bytes = atob(res.dataUrl.split(',')[1]);
+        const buf = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
+        resolve(new Blob([buf], { type: 'image/png' }));
+      });
+    });
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+      .then(() => toast('Copied to clipboard & saved to Downloads'))
+      .catch(() => png.then(() => toast('Saved to Downloads (clipboard copy blocked)'), (e) => toast(e.message)));
+  });
 
   return {
     innerWidth: window.innerWidth,

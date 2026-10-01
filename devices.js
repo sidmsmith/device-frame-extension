@@ -22,6 +22,11 @@ const DEVICES = {
     bezel: { side: 20, top: 58, bottom: 72 }, radius: 30, screenRadius: 6,
     colors: ['#505156', '#1b1c1e'],
   },
+  rugged: {
+    name: 'Rugged Handheld', width: 360, height: 640,
+    bezel: { side: 22, top: 62, bottom: 236 }, radius: 34, screenRadius: 4,
+    colors: ['#4a4b50', '#202124'], style: 'rugged',
+  },
   tablet: {
     name: 'Android Tablet', width: 800, height: 1280,
     bezel: { side: 28, top: 28, bottom: 28 }, radius: 36, screenRadius: 14,
@@ -97,10 +102,23 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     ? { x: screen.x, y: screen.y + STATUS_BAR, w: screen.w, h: screen.h - STATUS_BAR }
     : { x: screen.x, y: screen.y, w: screen.w, h: screen.h };
 
+  // Edge buttons, given along the portrait right/left edge; in landscape the
+  // right edge becomes the top and the left edge becomes the bottom.
   const along = landscape ? phone.w : phone.h;
-  const button = (start, length) => landscape
-    ? { x: phone.x + along * start, y: phone.y - 4, w: along * length, h: 4 }
-    : { x: phone.x + phone.w, y: phone.y + along * start, w: 4, h: along * length };
+  const button = (start, length, edge = 'right', t = 4, color = '#4a4c52') => {
+    const pos = along * start;
+    const len = along * length;
+    if (landscape) {
+      const y = edge === 'right' ? phone.y - t : phone.y + phone.h;
+      return { x: phone.x + pos, y, w: len, h: t, color };
+    }
+    const x = edge === 'right' ? phone.x + phone.w : phone.x - t;
+    return { x, y: phone.y + pos, w: t, h: len, color };
+  };
+  const rugged = d.style === 'rugged';
+  const buttons = rugged
+    ? [button(0.2, 0.09, 'left', 6, RUGGED_ACCENT), button(0.2, 0.09, 'right', 6, RUGGED_ACCENT)]
+    : [button(0.18, 0.065), button(0.28, 0.12)];
 
   return {
     deviceKey: key,
@@ -122,8 +140,45 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     camera: landscape
       ? { cx: phone.x + bez.left / 2, cy: phone.y + phone.h / 2, r: 6 }
       : { cx: phone.x + phone.w / 2, cy: phone.y + bez.top / 2, r: 6 },
-    buttons: [button(0.18, 0.065), button(0.28, 0.12)],
+    buttons,
     colors: d.colors,
+    decor: rugged ? ruggedDecor(d, phone, landscape) : null,
+  };
+}
+
+const RUGGED_ACCENT = '#f2a900';
+
+// Extra drawing for the rugged handheld: corner bumpers (window coordinates)
+// plus scanner window and keypad, drawn in portrait phone coordinates and
+// rotated into place for landscape.
+function ruggedDecor(d, phone, landscape) {
+  const { side, top, bottom } = d.bezel;
+  const pw = d.width + side * 2; // portrait phone width
+  const b = 46;
+  const bumpers = [
+    { x: phone.x, y: phone.y }, { x: phone.x + phone.w - b, y: phone.y },
+    { x: phone.x, y: phone.y + phone.h - b }, { x: phone.x + phone.w - b, y: phone.y + phone.h - b },
+  ].map((p) => ({ ...p, w: b, h: b }));
+
+  const shapes = [{ type: 'rect', x: pw / 2 - 45, y: 8, w: 90, h: 10, rx: 4, fill: '#8b1a1a' }];
+  const rows = [['F1', 'SCAN', 'F2'], ['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['*', '0', '#']];
+  const gap = 8;
+  const y0 = top + d.height + 14;
+  const keyW = (pw - side * 2 - gap * 2) / 3;
+  const keyH = (bottom - 14 - 16 - gap * (rows.length - 1)) / rows.length;
+  rows.forEach((row, r) => row.forEach((label, c) => {
+    const x = side + c * (keyW + gap);
+    const y = y0 + r * (keyH + gap);
+    const scan = label === 'SCAN';
+    shapes.push({ type: 'rect', x, y, w: keyW, h: keyH, rx: 6, fill: scan ? RUGGED_ACCENT : '#3a3b3f', stroke: '#55575d' });
+    shapes.push({ type: 'text', x: x + keyW / 2, y: y + keyH / 2, text: label, size: scan ? 12 : 14, fill: scan ? '#202124' : '#e8eaed' });
+  }));
+
+  return {
+    bumpers,
+    bumperColor: RUGGED_ACCENT,
+    transform: landscape ? `translate(${phone.x},${phone.y + pw}) rotate(-90)` : `translate(${phone.x},${phone.y})`,
+    shapes,
   };
 }
 
