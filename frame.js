@@ -182,7 +182,7 @@ function drawFrame(L) {
       }
       .handle.near, .handle:hover { opacity: .9; }
       .pop {
-        position: absolute; right: 8px; top: ${L.bar + 4}px; width: 252px;
+        position: absolute; right: 8px; top: ${L.bar + 4}px; width: 300px;
         box-sizing: border-box; padding: 10px 12px 12px;
         background: ${t.bar}; color: ${t.text}; border: 1px solid ${t.barBorder}; border-radius: 8px;
         box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
@@ -295,7 +295,7 @@ function drawFrame(L) {
       <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
       <div class="lbl">Rename titles <span class="note">(Old = New, one per line)</span></div>
-      <textarea id="titleRules" rows="3" spellcheck="false" placeholder="MUP = WM Mobile" title="One rename per line: Old title = New title. Matches the whole title, ignoring capitals; end the old title with * to match titles that start with it. Applies to all tabs, including this window. Saved when you click away.">${L.titleRules}</textarea>
+      <textarea id="titleRules" rows="4" wrap="off" spellcheck="false" placeholder="MUP = WM Mobile" title="One rename per line: Old title = New title. Matches the whole title, ignoring capitals; end the old title with * to match titles that start with it. Applies to all tabs, including this window. Saved when you click away.">${L.titleRules}</textarea>
       <div class="note" id="rulesNote"></div>
       <div class="help"><a href="#" id="guide">? User Guide</a></div>
     </div>
