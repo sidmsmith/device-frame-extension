@@ -3,6 +3,13 @@
 Shows the current page inside an Android device frame, as a replacement for the
 device frame Chrome DevTools used to offer. Intended for demos.
 
+## Download
+
+**Latest version (zip):**
+https://github.com/sidmsmith/device-frame-extension/releases/latest/download/device_frame_extension.zip
+
+See the **[User Guide](USER_GUIDE.md)** for installing and using it.
+
 ## Install (unpacked)
 
 1. Open `chrome://extensions`.
@@ -64,3 +71,10 @@ remembered. Keyboard shortcuts can be changed at
 - A recording ends if the page fully reloads (e.g. a login redirect); in-app
   navigation in single-page apps like MUP is fine. The mouse pointer itself
   isn't captured, which is what *Show taps* is for.
+
+## Releasing a new version (maintainer)
+
+1. Bump `version` in `manifest.json`, commit.
+2. Run `./release.sh "What changed"` – it pushes, builds the zip from `HEAD`,
+   and publishes a GitHub release with `device_frame_extension.zip` attached,
+   so the download link above always gets the newest version.

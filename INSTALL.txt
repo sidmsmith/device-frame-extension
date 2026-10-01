@@ -1,6 +1,10 @@
 Device Frame - Chrome extension
 ===============================
 
+Latest version:  https://github.com/sidmsmith/device-frame-extension/releases/latest/download/device_frame_extension.zip
+Full user guide: USER_GUIDE.md in this folder, or
+                 https://github.com/sidmsmith/device-frame-extension/blob/main/USER_GUIDE.md
+
 Install
 1. Extract this zip to a permanent folder OUTSIDE OneDrive, e.g.
    C:\Users\<your name>\device_frame_extension
