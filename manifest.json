@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Device Frame",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Show the current page inside an Android phone frame for demos.",
   "icons": {
     "16": "icons/icon16.png",
@@ -26,7 +26,7 @@
       "description": "Copy a screenshot of the device to the clipboard (no download)"
     },
     "record": {
-      "suggested_key": { "default": "Alt+Shift+R" },
+      "suggested_key": { "default": "Alt+Shift+V" },
       "description": "Start/stop recording the device to MP4 (no share prompt)"
     }
   },
