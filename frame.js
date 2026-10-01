@@ -38,7 +38,7 @@ function drawFrame(L) {
 
   // Fingertip cursor over the app while tap indicators are on.
   const fingertip = encodeURIComponent(
-    "<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><circle cx='14' cy='14' r='10' fill='rgba(0,0,0,0.28)' stroke='white' stroke-width='2'/></svg>");
+    "<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><circle cx='14' cy='14' r='10' fill='rgba(0,0,0,0.14)'/></svg>");
 
   // Page-level style: pin <body> into the screen area. The transform makes
   // <body> the containing block for position:fixed app shells.
@@ -192,8 +192,7 @@ function drawFrame(L) {
       .chk { display: flex; align-items: center; gap: 6px; margin-top: 10px; cursor: pointer; }
       .ripple {
         position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
-        background: rgba(0, 0, 0, .22); border: 2px solid rgba(255, 255, 255, .9);
-        box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); box-sizing: border-box; pointer-events: none;
+        background: rgba(0, 0, 0, .11); box-sizing: border-box; pointer-events: none;
         animation: df-tap .5s ease-out forwards;
       }
       button.rec-on { background: #d93025; border-color: #d93025; color: #fff; gap: 6px; font-variant-numeric: tabular-nums; }
