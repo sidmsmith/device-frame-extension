@@ -29,9 +29,12 @@ The control bar above the device has:
 | ◐ | Cycle the window background: light grey (default), white, dark |
 | ⟳ | Reload the page (F5 also works) |
 | 📷 | Save a PNG of just the device (transparent background) to Downloads and copy it to the clipboard |
+| ⌃ | Hide the control bar. To show it again: click the small tab at the top centre (appears when the mouse is near the top), double-click the device frame or grey background, or press **Alt+Shift+H** |
 
 Close the window to turn the frame off. Device, custom size, orientation,
-status bar, background and window position are all remembered.
+status bar, background, toolbar visibility and window position are all
+remembered. The keyboard shortcut can be changed at
+`chrome://extensions/shortcuts`.
 
 ## How it works
 
@@ -47,7 +50,7 @@ status bar, background and window position are all remembered.
   shrinks it to fit the screen. Zoom is scoped to that tab only.
 - Device sizes and bezel geometry live in `devices.js`.
 
-## Known limitations (v0.6)
+## Known limitations (v0.7)
 
 - The page still sees a desktop user agent and no touch input.
 - Media queries and `vw` units see the whole window width (device plus bezel

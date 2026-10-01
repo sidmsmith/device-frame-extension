@@ -132,6 +132,16 @@ function drawFrame(L) {
         opacity: 0; transition: opacity .2s; pointer-events: none;
       }
       .toast.show { opacity: .92; }
+      .bar[hidden] { display: none; }
+      .handle {
+        position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+        width: 52px; height: 13px; padding: 0; box-sizing: border-box;
+        display: flex; align-items: center; justify-content: center;
+        background: ${t.ctl}; color: ${t.text}; font-size: 10px; line-height: 1;
+        border: 1px solid ${t.ctlBorder}; border-top: none; border-radius: 0 0 8px 8px;
+        opacity: 0; transition: opacity .2s; cursor: pointer; pointer-events: auto;
+      }
+      .handle.near, .handle:hover { opacity: .9; }
     </style>
     <svg width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -156,7 +166,7 @@ function drawFrame(L) {
       <circle cx="${L.camera.cx}" cy="${L.camera.cy}" r="${L.camera.r}" fill="url(#cam)"/>
       ${L.buttons.map((b) => `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="2" fill="${b.color}"/>`).join('')}
     </svg>
-    <div class="bar">
+    <div class="bar"${L.toolbarHidden ? ' hidden' : ''}>
       <div class="row" id="main">
       <select id="device" title="Device">${options}</select>
       ${L.deviceKey === 'custom' ? '<button id="edit" title="Change custom size">&#x270E;</button>' : ''}
@@ -165,6 +175,7 @@ function drawFrame(L) {
       <button id="background" title="Background: ${BG_LABEL[L.background]} (click for ${BG_LABEL[NEXT_BG[L.background]]})">&#x25D0;</button>
       <button id="reload" title="Reload page">&#x27F3;</button>
       <button id="shot" title="Save screenshot of the device (PNG)">&#x1F4F7;</button>
+      <button id="hide" title="Hide toolbar (or double-click the frame${L.shortcut ? `, or ${L.shortcut}` : ''})">&#x2303;</button>
       </div>
       <form class="row" id="editor" hidden>
         <label for="w">Size</label>
@@ -175,7 +186,8 @@ function drawFrame(L) {
         <button type="button" id="cancel" title="Cancel">&#x2715;</button>
       </form>
     </div>
-    <div class="toast" id="toast"></div>`;
+    <div class="toast" id="toast"></div>
+    ${L.toolbarHidden ? `<div class="handle" id="handle" title="Show toolbar${L.shortcut ? ` (${L.shortcut})` : ''}">&#x2304;</div>` : ''}`;
 
   const clock = root.getElementById('clock');
   if (clock) {
@@ -222,6 +234,25 @@ function drawFrame(L) {
   root.getElementById('status').addEventListener('click', () => send({ type: 'set-pref', prefs: { statusBar: !L.statusBar } }));
   root.getElementById('background').addEventListener('click', () => send({ type: 'set-pref', prefs: { background: NEXT_BG[L.background] } }));
   root.getElementById('reload').addEventListener('click', () => location.reload());
+  // Toolbar show/hide: hide button, handle tab (fades in near the top edge),
+  // and double-click on the frame. Listeners are replaced on every redraw.
+  const toggleToolbar = () => send({ type: 'toggle-toolbar' });
+  root.getElementById('hide').addEventListener('click', toggleToolbar);
+  const handle = root.getElementById('handle');
+  handle?.addEventListener('click', toggleToolbar);
+
+  document.removeEventListener('mousemove', window.__devframeMove);
+  document.documentElement.removeEventListener('mouseleave', window.__devframeLeave);
+  document.removeEventListener('dblclick', window.__devframeDbl);
+  window.__devframeMove = (e) => handle?.classList.toggle('near', e.clientY < 28);
+  window.__devframeLeave = () => handle?.classList.remove('near');
+  // Only the frame itself: the page's content lives inside <body>, while the
+  // bezel, margin and status bar areas hit <html>.
+  window.__devframeDbl = (e) => { if (e.target === document.documentElement) toggleToolbar(); };
+  document.addEventListener('mousemove', window.__devframeMove, { passive: true });
+  document.documentElement.addEventListener('mouseleave', window.__devframeLeave);
+  document.addEventListener('dblclick', window.__devframeDbl);
+
   const toastEl = root.getElementById('toast');
   const toast = (text) => {
     toastEl.textContent = text;

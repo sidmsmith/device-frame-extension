@@ -11,7 +11,7 @@ importScripts('devices.js', 'frame.js');
 
 // ---- state ---------------------------------------------------------------
 // session: framed[tabId] = { windowId, device, orientation }
-// local:   last = { device, orientation, left, top, background, statusBar, custom }
+// local:   last = { device, orientation, left, top, background, statusBar, custom, toolbarHidden }
 
 async function getFramed() {
   return (await chrome.storage.session.get('framed')).framed ?? {};
@@ -71,15 +71,15 @@ async function onLoaded({ tabId, frameId, url }) {
   if (state) await reframe(tabId, state);
 }
 
-async function reframe(tabId, state) {
-  const L = computeLayout(state.device, state.orientation, await getLast());
+async function reframe(tabId, state, shiftY = 0) {
+  const L = { ...computeLayout(state.device, state.orientation, await getLast()), shortcut: await toolbarShortcut() };
   try {
     const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId },
       func: drawFrame,
       args: [L],
     });
-    await fitWindow(tabId, L, result);
+    await fitWindow(tabId, L, result, shiftY);
   } catch (e) {
     // The page navigated away or the window closed mid-draw; the next load redraws.
     if (!isExpectedRaceError(e)) console.warn('Device Frame: could not frame tab', tabId, e);
@@ -93,7 +93,9 @@ function isExpectedRaceError(e) {
 
 // Size the window so the viewport is exactly L.W × L.H CSS px, zooming out
 // when that is bigger than the screen.
-async function fitWindow(tabId, L, m) {
+// shiftY (CSS px) moves the window down/up, e.g. to keep the device in place
+// when the toolbar is hidden or shown.
+async function fitWindow(tabId, L, m, shiftY = 0) {
   const tab = await chrome.tabs.get(tabId);
   const zoom = await chrome.tabs.getZoom(tabId);
 
@@ -110,7 +112,7 @@ async function fitWindow(tabId, L, m) {
   const win = await chrome.windows.get(tab.windowId);
   // Keep the window on screen when it grows (e.g. rotating a tablet).
   const left = Math.max(m.availLeft, Math.min(win.left, m.availLeft + m.availWidth - width));
-  const top = Math.max(m.availTop, Math.min(win.top, m.availTop + m.availHeight - height));
+  const top = Math.max(m.availTop, Math.min(win.top + Math.round(shiftY * target), m.availTop + m.availHeight - height));
 
   if (Math.abs(win.width - width) > 1 || Math.abs(win.height - height) > 1 || win.left !== left || win.top !== top) {
     await chrome.windows.update(tab.windowId, { width, height, left, top });
@@ -167,9 +169,30 @@ async function handleControl(tabId, tab, msg) {
       await reframe(tabId, state);
       break;
     }
+    case 'toggle-toolbar':
+      await toggleToolbar(tabId, state);
+      break;
     case 'screenshot':
       return { dataUrl: await saveScreenshot(tab, computeLayout(state.device, state.orientation, await getLast())) };
   }
+}
+
+async function toggleToolbar(tabId, state) {
+  const toolbarHidden = !(await getLast()).toolbarHidden;
+  await saveLast({ toolbarHidden });
+  await reframe(tabId, state, toolbarHidden ? BAR : -BAR);
+}
+
+// Keyboard shortcut (chrome.commands works even when the app swallows keys).
+chrome.commands.onCommand.addListener(async (command, tab) => {
+  if (command !== 'toggle-toolbar' || !tab) return;
+  const state = (await getFramed())[tab.id];
+  if (state) await toggleToolbar(tab.id, state);
+});
+
+async function toolbarShortcut() {
+  const commands = await chrome.commands.getAll();
+  return commands.find((c) => c.name === 'toggle-toolbar')?.shortcut || '';
 }
 
 // Capture the window, cut out just the phone (transparent outside it) and

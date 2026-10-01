@@ -94,7 +94,8 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     ? { left: top, right: bottom, top: side, bottom: side }
     : { left: side, right: side, top, bottom };
 
-  const phone = { x: MARGIN, y: BAR + MARGIN, w: sw + bez.left + bez.right, h: sh + bez.top + bez.bottom, r: d.radius };
+  const bar = prefs.toolbarHidden ? 0 : BAR;
+  const phone = { x: MARGIN, y: bar + MARGIN, w: sw + bez.left + bez.right, h: sh + bez.top + bez.bottom, r: d.radius };
   const screen = { x: phone.x + bez.left, y: phone.y + bez.top, w: sw, h: sh, r: d.screenRadius };
 
   const statusBar = prefs.statusBar ? { x: screen.x, y: screen.y, w: screen.w, h: STATUS_BAR } : null;
@@ -130,8 +131,9 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     ],
     custom: { ...custom, min: CUSTOM_MIN, max: CUSTOM_MAX },
     W: phone.w + MARGIN * 2,
-    H: BAR + phone.h + MARGIN * 2,
-    bar: BAR,
+    H: bar + phone.h + MARGIN * 2,
+    bar,
+    toolbarHidden: Boolean(prefs.toolbarHidden),
     phone,
     screen,
     content,
