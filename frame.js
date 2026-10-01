@@ -103,6 +103,16 @@ function drawFrame(L) {
       button { min-width: 32px; padding: 0 8px; white-space: nowrap; }
       button:hover, select:hover { background: ${t.ctlHover}; }
       button.on { border-color: #1a73e8; box-shadow: inset 0 0 0 1px #1a73e8; }
+      .row { display: contents; }
+      .row[hidden] { display: none; }
+      label { white-space: nowrap; }
+      input {
+        font: inherit; color: inherit; height: 28px; width: 72px; min-width: 0; flex: 1;
+        box-sizing: border-box; padding: 0 6px;
+        background: ${t.ctl}; border: 1px solid ${t.ctlBorder}; border-radius: 4px;
+      }
+      input:invalid { border-color: #d93025; }
+      button.primary { background: #1a73e8; border-color: #1a73e8; color: #fff; }
     </style>
     <svg width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -126,12 +136,23 @@ function drawFrame(L) {
       ${L.buttons.map((b) => `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="2" fill="#4a4c52"/>`).join('')}
     </svg>
     <div class="bar">
+      <div class="row" id="main">
       <select id="device" title="Device">${options}</select>
+      ${L.deviceKey === 'custom' ? '<button id="edit" title="Change custom size">&#x270E;</button>' : ''}
       <button id="rotate" title="Rotate to ${rotateTo}">&#x27F2;</button>
       <button id="status" class="${L.statusBar ? 'on' : ''}" title="${L.statusBar ? 'Hide' : 'Show'} status bar">&#x25AD;</button>
       <button id="background" title="Background: ${BG_LABEL[L.background]} (click for ${BG_LABEL[NEXT_BG[L.background]]})">&#x25D0;</button>
       <button id="reload" title="Reload page">&#x27F3;</button>
       <button id="shot" title="Save screenshot of the device (PNG)">&#x1F4F7;</button>
+      </div>
+      <form class="row" id="editor" hidden>
+        <label for="w">Size</label>
+        <input id="w" type="number" required min="${L.custom.min}" max="${L.custom.max}" step="1" value="${L.custom.width}" title="Width (${L.custom.min}-${L.custom.max})">
+        <span>&#xD7;</span>
+        <input id="h" type="number" required min="${L.custom.min}" max="${L.custom.max}" step="1" value="${L.custom.height}" title="Height (${L.custom.min}-${L.custom.max})">
+        <button type="submit" class="primary" title="Apply custom size">Apply</button>
+        <button type="button" id="cancel" title="Cancel">&#x2715;</button>
+      </form>
     </div>`;
 
   const clock = root.getElementById('clock');
@@ -144,7 +165,37 @@ function drawFrame(L) {
   }
 
   const send = (msg) => chrome.runtime.sendMessage(msg);
-  root.getElementById('device').addEventListener('change', (e) => send({ type: 'set-device', device: e.target.value }));
+
+  // Keep typing in our controls away from the app's own key handlers (e.g. scanner input).
+  const bar = root.querySelector('.bar');
+  for (const type of ['keydown', 'keyup', 'keypress']) bar.addEventListener(type, (e) => e.stopPropagation());
+
+  // Custom size editor: replaces the main row until applied or cancelled.
+  const main = root.getElementById('main');
+  const editor = root.getElementById('editor');
+  const select = root.getElementById('device');
+  const openEditor = () => {
+    main.hidden = true;
+    editor.hidden = false;
+    root.getElementById('w').select();
+  };
+  const closeEditor = () => {
+    editor.hidden = true;
+    main.hidden = false;
+    select.value = L.deviceKey;
+  };
+  editor.addEventListener('submit', (e) => {
+    e.preventDefault();
+    send({ type: 'set-custom', size: { width: root.getElementById('w').value, height: root.getElementById('h').value } });
+  });
+  editor.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeEditor(); });
+  root.getElementById('cancel').addEventListener('click', closeEditor);
+  root.getElementById('edit')?.addEventListener('click', openEditor);
+
+  select.addEventListener('change', (e) => {
+    if (e.target.value === 'custom') openEditor();
+    else send({ type: 'set-device', device: e.target.value });
+  });
   root.getElementById('rotate').addEventListener('click', () => send({ type: 'rotate' }));
   root.getElementById('status').addEventListener('click', () => send({ type: 'set-pref', prefs: { statusBar: !L.statusBar } }));
   root.getElementById('background').addEventListener('click', () => send({ type: 'set-pref', prefs: { background: NEXT_BG[L.background] } }));

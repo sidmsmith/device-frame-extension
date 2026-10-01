@@ -11,7 +11,7 @@ importScripts('devices.js', 'frame.js');
 
 // ---- state ---------------------------------------------------------------
 // session: framed[tabId] = { windowId, device, orientation }
-// local:   last = { device, orientation, left, top, background, statusBar }
+// local:   last = { device, orientation, left, top, background, statusBar, custom }
 
 async function getFramed() {
   return (await chrome.storage.session.get('framed')).framed ?? {};
@@ -39,7 +39,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.url || !/^https?:/i.test(tab.url)) return; // chrome:// etc. can't be framed
 
   const last = await getLast();
-  const device = DEVICES[last.device] ? last.device : DEFAULT_DEVICE;
+  const device = isDeviceKey(last.device) ? last.device : DEFAULT_DEVICE;
   const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
   const L = computeLayout(device, orientation, last);
   const current = await chrome.windows.get(tab.windowId);
@@ -124,8 +124,16 @@ async function handleControl(tabId, tab, msg) {
 
   switch (msg.type) {
     case 'set-device': {
+      if (!isDeviceKey(msg.device)) return;
       const next = await updateFramed(tabId, { device: msg.device });
       await saveLast({ device: msg.device });
+      await reframe(tabId, next);
+      break;
+    }
+    case 'set-custom': {
+      const custom = normalizeCustom(msg.size);
+      const next = await updateFramed(tabId, { device: CUSTOM_KEY });
+      await saveLast({ device: CUSTOM_KEY, custom });
       await reframe(tabId, next);
       break;
     }
@@ -179,7 +187,7 @@ async function saveScreenshot(tab, L) {
     reader.readAsDataURL(blob);
   });
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-  const name = L.deviceName.replace(/\s+/g, '-');
+  const name = `${L.deviceName.replace(/\s+/g, '-')}-${L.screen.w}x${L.screen.h}`;
   await chrome.downloads.download({ url, filename: `device-frame-${name}-${stamp}.png` });
 }
 

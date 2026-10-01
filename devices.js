@@ -35,13 +35,51 @@ const BAR = 40;    // control bar height
 const STATUS_BAR = 24; // Android status bar height inside the screen
 const BACKGROUNDS = ['light', 'white', 'dark'];
 
+// "Custom" device: the user types the size; the bezel is a generic phone frame
+// whose thickness scales with the size so large sizes don't look stretched.
+const CUSTOM_KEY = 'custom';
+const CUSTOM_MIN = 240;
+const CUSTOM_MAX = 2560;
+const DEFAULT_CUSTOM = { width: 375, height: 667 };
+
+function normalizeCustom(size) {
+  const clean = (v, fallback) => {
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) && n > 0 ? Math.min(CUSTOM_MAX, Math.max(CUSTOM_MIN, n)) : fallback;
+  };
+  return {
+    width: clean(size?.width, DEFAULT_CUSTOM.width),
+    height: clean(size?.height, DEFAULT_CUSTOM.height),
+  };
+}
+
+function isDeviceKey(key) {
+  return key === CUSTOM_KEY || Boolean(DEVICES[key]);
+}
+
+function resolveDevice(key, prefs) {
+  if (key !== CUSTOM_KEY) return DEVICES[key] ?? DEVICES[DEFAULT_DEVICE];
+  const { width, height } = normalizeCustom(prefs.custom);
+  const s = Math.min(width, height);
+  const clamp = (v, lo, hi) => Math.round(Math.min(hi, Math.max(lo, v)));
+  const side = clamp(s * 0.03, 10, 28);
+  const end = clamp(s * 0.08, 24, 44);
+  return {
+    name: 'Custom', width, height,
+    bezel: { side, top: end, bottom: end },
+    radius: clamp(s * 0.11, 30, 48), screenRadius: clamp(s * 0.05, 6, 20),
+    colors: ['#3c3d42', '#111214'],
+  };
+}
+
 // Everything drawFrame() needs, in window CSS pixels. Landscape is the device
 // rotated anticlockwise: the top bezel (camera) ends up on the left and the
 // right-edge buttons end up on the top edge. `content` is the part of the
 // screen the page gets (the screen minus the status bar, when shown).
 function computeLayout(deviceKey, orientation, prefs = {}) {
-  const key = DEVICES[deviceKey] ? deviceKey : DEFAULT_DEVICE;
-  const d = DEVICES[key];
+  const key = isDeviceKey(deviceKey) ? deviceKey : DEFAULT_DEVICE;
+  const d = resolveDevice(key, prefs);
+  const custom = normalizeCustom(prefs.custom);
   const landscape = orientation === 'landscape';
   const { side, top, bottom } = d.bezel;
 
@@ -68,7 +106,11 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     deviceKey: key,
     deviceName: d.name,
     orientation: landscape ? 'landscape' : 'portrait',
-    devices: Object.entries(DEVICES).map(([k, v]) => ({ key: k, name: `${v.name} (${v.width}&#xD7;${v.height})` })),
+    devices: [
+      ...Object.entries(DEVICES).map(([k, v]) => ({ key: k, name: `${v.name} (${v.width}&#xD7;${v.height})` })),
+      { key: CUSTOM_KEY, name: `Custom (${custom.width}&#xD7;${custom.height})&#x2026;` },
+    ],
+    custom: { ...custom, min: CUSTOM_MIN, max: CUSTOM_MAX },
     W: phone.w + MARGIN * 2,
     H: BAR + phone.h + MARGIN * 2,
     bar: BAR,
