@@ -22,6 +22,7 @@ function drawFrame(L) {
     `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
   const ICON = {
     wifi: svg(16, '<path d="M1.8 6.2a9 9 0 0 1 12.4 0"/><path d="M4.2 8.8a5.5 5.5 0 0 1 7.6 0"/><circle cx="8" cy="11.9" r="1.2" fill="currentColor" stroke="none"/>'),
+    wifiOff: svg(16, '<path d="M1.8 6.2a9 9 0 0 1 12.4 0"/><path d="M4.2 8.8a5.5 5.5 0 0 1 7.6 0"/><circle cx="8" cy="11.9" r="1.2" fill="currentColor" stroke="none"/><path d="M2.5 13.5l11-11"/>'),
     eyeOff: svg(16, '<path d="M1.5 8S3.9 3.5 8 3.5 14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2.2"/><path d="M2.5 13.5l11-11"/>'),
     camera: svg(16, '<path d="M1.8 5.2h2.6l1.3-1.9h4.6l1.3 1.9h2.6v7.5H1.8z"/><circle cx="8" cy="8.7" r="2.4"/>'),
     expand: svg(11, '<path d="M4 6l4 4 4-4"/>'),
@@ -129,7 +130,6 @@ function drawFrame(L) {
       }
       button svg, .handle svg { display: block; margin: auto; }
       button:hover, select:hover { background: ${t.ctlHover}; }
-      button.on { border-color: #1a73e8; box-shadow: inset 0 0 0 1px #1a73e8; }
       .row { display: contents; }
       .row[hidden] { display: none; }
       label { white-space: nowrap; }
@@ -185,7 +185,7 @@ function drawFrame(L) {
       <select id="device" title="Device">${options}</select>
       ${L.deviceKey === 'custom' ? '<button id="edit" title="Change custom size">&#x270E;</button>' : ''}
       <button id="rotate" title="Rotate to ${rotateTo}">&#x27F2;</button>
-      <button id="status" class="${L.statusBar ? 'on' : ''}" title="${L.statusBar ? 'Hide' : 'Show'} status bar">${ICON.wifi}</button>
+      <button id="status" title="${L.statusBar ? 'Hide' : 'Show'} status bar">${L.statusBar ? ICON.wifi : ICON.wifiOff}</button>
       <button id="background" title="Background: ${BG_LABEL[L.background]} (click for ${BG_LABEL[NEXT_BG[L.background]]})">&#x25D0;</button>
       <button id="reload" title="Reload page">&#x27F3;</button>
       <button id="shot" title="Screenshot of the device: copy to clipboard and save PNG${L.copyShortcut ? ` (${L.copyShortcut} copies only)` : ''}">${ICON.camera}</button>

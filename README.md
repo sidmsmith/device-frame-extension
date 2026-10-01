@@ -25,7 +25,7 @@ The control bar above the device has:
 | Device dropdown | Pixel 8, Galaxy S24, Moto G4, Zebra TC52, Rugged Handheld, Android Tablet |
 | Custom… (in dropdown) / ✎ | Enter any width × height (240–2560); Enter applies, Esc cancels |
 | ⟲ | Rotate between portrait and landscape |
-| Wi-Fi icon | Show/hide the Android status bar (clock, signal, Wi-Fi, battery) |
+| Wi-Fi icon | Show/hide the Android status bar (clock, signal, Wi-Fi, battery); slashed when hidden |
 | ◐ | Cycle the window background: light grey (default), white, dark |
 | ⟳ | Reload the page (F5 also works) |
 | Camera icon | Save a PNG of just the device (transparent background) to Downloads and copy it to the clipboard. **Alt+Shift+S** copies to the clipboard only (no download) |
