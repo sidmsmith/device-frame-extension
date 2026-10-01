@@ -219,6 +219,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     touch: Boolean(prefs.touch),
     mic: Boolean(prefs.mic),
     countdown: prefs.countdown !== false,
+    mupTitle: escapeHtml(typeof prefs.mupTitle === 'string' ? prefs.mupTitle : 'WM Mobile'),
     decor: rugged ? ruggedDecor(d, phone, landscape) : null,
   };
 }

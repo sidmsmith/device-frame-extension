@@ -196,6 +196,7 @@ function drawFrame(L) {
       .seg button { height: 26px; padding: 0 8px; font-size: 12px; gap: 5px; }
       .seg button.sel { border-color: #1a73e8; box-shadow: inset 0 0 0 1px #1a73e8; }
       .sw { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .35); }
+      .pop input[type=text] { width: 100%; flex: none; height: 26px; font-size: 12px; }
       .help { margin-top: 12px; padding-top: 8px; border-top: 1px solid ${t.barBorder}; }
       .help a { color: #1a73e8; text-decoration: none; font-weight: 600; }
       .help a:hover { text-decoration: underline; }
@@ -286,6 +287,8 @@ function drawFrame(L) {
       <div class="lbl">Recording</div>
       <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
+      <div class="lbl">Tab title for "MUP" pages</div>
+      <input id="mupTitle" type="text" maxlength="60" value="${L.mupTitle}" placeholder="(keep the page's own title)" title="Shown instead of &quot;MUP&quot; in the browser tab and window title. Leave blank to keep &quot;MUP&quot;. Press Enter to save.">
       <div class="help"><a href="#" id="guide">? User Guide</a></div>
     </div>
     <div class="count" id="count" hidden></div>
@@ -389,6 +392,13 @@ function drawFrame(L) {
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
   root.getElementById('mic').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { mic: e.target.checked } }));
+  // Tab title: saved on Enter or when the field loses focus (title.js applies it).
+  const titleInput = root.getElementById('mupTitle');
+  const saveTitle = () => {
+    if (titleInput.value.trim() !== L.mupTitle) send({ type: 'set-pref', prefs: { mupTitle: titleInput.value } });
+  };
+  titleInput.addEventListener('change', saveTitle);
+  titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveTitle(); } });
   root.getElementById('guide').addEventListener('click', (e) => {
     e.preventDefault();
     setPop(false);
