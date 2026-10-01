@@ -287,8 +287,8 @@ function drawFrame(L) {
       <div class="lbl">Recording</div>
       <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
-      <div class="lbl">Tab title for "MUP" pages</div>
-      <input id="mupTitle" type="text" maxlength="60" value="${L.mupTitle}" placeholder="(keep the page's own title)" title="Shown instead of &quot;MUP&quot; in the browser tab and window title. Leave blank to keep &quot;MUP&quot;. Press Enter to save.">
+      <div class="lbl">Window title</div>
+      <input id="mupTitle" type="text" maxlength="60" value="${L.mupTitle}" placeholder="(keep the page's own title)" title="Shown as this window's title for every page (and instead of &quot;MUP&quot; in normal tabs). Leave blank to keep the page's own title. Press Enter to save.">
       <div class="help"><a href="#" id="guide">? User Guide</a></div>
     </div>
     <div class="count" id="count" hidden></div>

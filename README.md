@@ -63,9 +63,9 @@ remembered. Keyboard shortcuts can be changed at
 - `keyguard.js` loads at the start of every page but only acts in frame
   windows: it stops the extension's own keyboard shortcuts from also reaching
   the app (otherwise e.g. Alt+Shift+V typed a V into MUP's search box).
-- `title.js` renames tabs/windows whose page title is exactly "MUP" to the
-  "Tab title" setting (default "WM Mobile"; blank keeps "MUP"), and re-applies
-  it when the app resets its title.
+- `title.js` applies the "Window title" setting (default "WM Mobile"; blank =
+  off): in frame windows to every page, in normal tabs only to pages titled
+  exactly "MUP". It re-applies when the page resets its title.
 
 ## Known limitations
 
