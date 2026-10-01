@@ -30,14 +30,14 @@ const DEVICES = {
   laptop: {
     name: 'Laptop', width: 1366, height: 768,
     bezel: { side: 16, top: 26, bottom: 30 }, radius: 12, screenRadius: 2,
-    colors: ['#3c3d42', '#111214'], style: 'laptop',
+    colors: ['#3c3d42', '#111214'], style: 'laptop', group: 'full',
     fixedOrientation: true, noStatusBar: true,
     base: { overhang: 64, height: 18 },
   },
   desktop: {
     name: 'Desktop (no frame)', width: 1920, height: 1080,
     bezel: { side: 0, top: 0, bottom: 0 }, radius: 0, screenRadius: 0,
-    colors: ['#000000', '#000000'], style: 'bare', fixedColor: true,
+    colors: ['#000000', '#000000'], style: 'bare', fixedColor: true, group: 'full',
     fixedOrientation: true, noStatusBar: true, margin: 0, cropPad: 0,
   },
   tablet: {
@@ -70,6 +70,10 @@ const MAX_PRESETS = 20;
 
 function findPreset(prefs, key) {
   return (prefs.presets ?? []).find((p) => PRESET_PREFIX + p.id === key);
+}
+
+function sortByName(items) {
+  return [...items].sort((a, b) => a.raw.localeCompare(b.raw, undefined, { sensitivity: 'base', numeric: true }));
 }
 
 function escapeHtml(text) {
@@ -179,9 +183,13 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     deviceKey: key,
     deviceName: d.name,
     orientation: landscape ? 'landscape' : 'portrait',
+    // Dropdown entries, grouped (mobile / full / saved / custom) and sorted
+    // alphabetically by name within each group.
     devices: [
-      ...Object.entries(DEVICES).map(([k, v]) => ({ key: k, name: `${v.name} (${v.width}&#xD7;${v.height})` })),
-      ...(prefs.presets ?? []).map((p) => ({ key: PRESET_PREFIX + p.id, group: 'saved', name: `${escapeHtml(p.name)} (${p.width}&#xD7;${p.height})` })),
+      ...sortByName([
+        ...Object.entries(DEVICES).map(([k, v]) => ({ key: k, group: v.group ?? 'mobile', raw: v.name, size: v })),
+        ...(prefs.presets ?? []).map((p) => ({ key: PRESET_PREFIX + p.id, group: 'saved', raw: p.name, size: p })),
+      ]).map(({ key, group, raw, size }) => ({ key, group, name: `${escapeHtml(raw)} (${size.width}&#xD7;${size.height})` })),
       { key: CUSTOM_KEY, group: 'custom', name: `Custom (${custom.width}&#xD7;${custom.height})&#x2026;` },
     ],
     preset: findPreset(prefs, key) ? { id: findPreset(prefs, key).id, name: escapeHtml(findPreset(prefs, key).name) } : null,

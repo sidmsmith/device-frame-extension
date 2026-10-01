@@ -84,10 +84,14 @@ function drawFrame(L) {
   const devicePath = [phonePath, ...L.extras.map(rr)].join(' ');
   const outside = `M0,0H${L.W}V${L.H}H0z ${devicePath}`;
   const option = (d) => `<option value="${d.key}"${d.key === L.deviceKey ? ' selected' : ''}>${d.name}</option>`;
-  const saved = L.devices.filter((d) => d.group === 'saved');
+  const group = (key, label) => {
+    const items = L.devices.filter((d) => d.group === key);
+    return items.length ? `<optgroup label="${label}">${items.map(option).join('')}</optgroup>` : '';
+  };
   const options = [
-    ...L.devices.filter((d) => !d.group).map(option),
-    saved.length ? `<optgroup label="Saved">${saved.map(option).join('')}</optgroup>` : '',
+    group('mobile', 'Mobile'),
+    group('full', 'Full Screen'),
+    group('saved', 'Saved'),
     ...L.devices.filter((d) => d.group === 'custom').map(option),
   ].join('');
   const rotateTo = L.orientation === 'portrait' ? 'landscape' : 'portrait';
