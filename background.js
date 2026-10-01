@@ -85,6 +85,8 @@ async function reframe(tabId, state, shiftY = 0) {
       args: [L],
     });
     await fitWindow(tabId, L, result, shiftY);
+    // Arm the key guard (keyguard.js) so our shortcuts don't type into the app.
+    chrome.tabs.sendMessage(tabId, { type: 'keyguard', shortcuts: Object.values(keys) }).catch(() => {});
   } catch (e) {
     // The page navigated away or the window closed mid-draw; the next load redraws.
     if (!isExpectedRaceError(e)) console.warn('Device Frame: could not frame tab', tabId, e);
