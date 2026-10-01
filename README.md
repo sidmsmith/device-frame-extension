@@ -23,10 +23,14 @@ The control bar above the device has:
 | Control | What it does |
 |---|---|
 | Device dropdown | Pixel 8, Galaxy S24, Zebra TC52, Android Tablet |
-| ⟲ Landscape / Portrait | Rotate the device |
+| ⟲ | Rotate between portrait and landscape |
+| ▭ | Show/hide the Android status bar (clock, signal, Wi-Fi, battery) |
+| ◐ | Cycle the window background: light grey (default), white, dark |
 | ⟳ | Reload the page (F5 also works) |
 | 📷 | Save a PNG of just the device, transparent background, to Downloads |
-| ✕ Exit | Reopen the page in a normal tab and close the frame |
+
+Close the window to turn the frame off. Device, orientation, status bar,
+background and window position are all remembered.
 
 ## How it works
 
@@ -42,7 +46,7 @@ The control bar above the device has:
   shrinks it to fit the screen. Zoom is scoped to that tab only.
 - Device sizes and bezel geometry live in `devices.js`.
 
-## Known limitations (v0.3)
+## Known limitations (v0.4)
 
 - The page still sees a desktop user agent and no touch input.
 - Media queries and `vw` units see the whole window width (device plus bezel

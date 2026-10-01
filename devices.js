@@ -27,11 +27,14 @@ const DEVICES = {
 const DEFAULT_DEVICE = 'pixel8';
 const MARGIN = 16; // grey space around the phone
 const BAR = 40;    // control bar height
+const STATUS_BAR = 24; // Android status bar height inside the screen
+const BACKGROUNDS = ['light', 'white', 'dark'];
 
 // Everything drawFrame() needs, in window CSS pixels. Landscape is the device
 // rotated anticlockwise: the top bezel (camera) ends up on the left and the
-// right-edge buttons end up on the top edge.
-function computeLayout(deviceKey, orientation) {
+// right-edge buttons end up on the top edge. `content` is the part of the
+// screen the page gets (the screen minus the status bar, when shown).
+function computeLayout(deviceKey, orientation, prefs = {}) {
   const key = DEVICES[deviceKey] ? deviceKey : DEFAULT_DEVICE;
   const d = DEVICES[key];
   const landscape = orientation === 'landscape';
@@ -45,6 +48,11 @@ function computeLayout(deviceKey, orientation) {
 
   const phone = { x: MARGIN, y: BAR + MARGIN, w: sw + bez.left + bez.right, h: sh + bez.top + bez.bottom, r: d.radius };
   const screen = { x: phone.x + bez.left, y: phone.y + bez.top, w: sw, h: sh, r: d.screenRadius };
+
+  const statusBar = prefs.statusBar ? { x: screen.x, y: screen.y, w: screen.w, h: STATUS_BAR } : null;
+  const content = statusBar
+    ? { x: screen.x, y: screen.y + STATUS_BAR, w: screen.w, h: screen.h - STATUS_BAR }
+    : { x: screen.x, y: screen.y, w: screen.w, h: screen.h };
 
   const along = landscape ? phone.w : phone.h;
   const button = (start, length) => landscape
@@ -61,6 +69,9 @@ function computeLayout(deviceKey, orientation) {
     bar: BAR,
     phone,
     screen,
+    content,
+    statusBar,
+    background: BACKGROUNDS.includes(prefs.background) ? prefs.background : BACKGROUNDS[0],
     camera: landscape
       ? { cx: phone.x + bez.left / 2, cy: phone.y + phone.h / 2, r: 6 }
       : { cx: phone.x + phone.w / 2, cy: phone.y + bez.top / 2, r: 6 },

@@ -10,8 +10,8 @@
 importScripts('devices.js', 'frame.js');
 
 // ---- state ---------------------------------------------------------------
-// session: framed[tabId] = { windowId, origin, device, orientation }
-// local:   last = { device, orientation, left, top }
+// session: framed[tabId] = { windowId, device, orientation }
+// local:   last = { device, orientation, left, top, background, statusBar }
 
 async function getFramed() {
   return (await chrome.storage.session.get('framed')).framed ?? {};
@@ -41,7 +41,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   const last = await getLast();
   const device = DEVICES[last.device] ? last.device : DEFAULT_DEVICE;
   const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
-  const L = computeLayout(device, orientation);
+  const L = computeLayout(device, orientation, last);
   const current = await chrome.windows.get(tab.windowId);
 
   const win = await chrome.windows.create({
@@ -54,7 +54,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   });
   const tabId = win.tabs[0].id;
 
-  await updateFramed(tabId, { windowId: win.id, origin: tab.windowId, device, orientation });
+  await updateFramed(tabId, { windowId: win.id, device, orientation });
   // Keep zoom changes to this tab only, so normal tabs on the same site are untouched.
   await chrome.tabs.setZoomSettings(tabId, { mode: 'automatic', scope: 'per-tab' });
 });
@@ -71,7 +71,7 @@ async function onLoaded({ tabId, frameId }) {
 }
 
 async function reframe(tabId, state) {
-  const L = computeLayout(state.device, state.orientation);
+  const L = computeLayout(state.device, state.orientation, await getLast());
   try {
     const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId },
@@ -136,11 +136,17 @@ async function handleControl(tabId, tab, msg) {
       await reframe(tabId, next);
       break;
     }
-    case 'screenshot':
-      await saveScreenshot(tab, computeLayout(state.device, state.orientation));
+    case 'set-pref': {
+      // Background and status bar are global preferences, not per window.
+      const prefs = {};
+      if (BACKGROUNDS.includes(msg.prefs.background)) prefs.background = msg.prefs.background;
+      if (typeof msg.prefs.statusBar === 'boolean') prefs.statusBar = msg.prefs.statusBar;
+      await saveLast(prefs);
+      await reframe(tabId, state);
       break;
-    case 'exit':
-      await exitFrame(tab, state);
+    }
+    case 'screenshot':
+      await saveScreenshot(tab, computeLayout(state.device, state.orientation, await getLast()));
       break;
   }
 }
@@ -175,17 +181,6 @@ async function saveScreenshot(tab, L) {
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   const name = L.deviceName.replace(/\s+/g, '-');
   await chrome.downloads.download({ url, filename: `device-frame-${name}-${stamp}.png` });
-}
-
-// Reopen the page in a normal tab (popup tabs can't be moved) and close the frame.
-async function exitFrame(tab, state) {
-  try {
-    await chrome.tabs.create({ windowId: state.origin, url: tab.url });
-    await chrome.windows.update(state.origin, { focused: true });
-  } catch {
-    await chrome.windows.create({ url: tab.url, type: 'normal' }); // original window was closed
-  }
-  await chrome.windows.remove(tab.windowId);
 }
 
 // ---- housekeeping --------------------------------------------------------
