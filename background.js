@@ -77,7 +77,7 @@ async function onLoaded({ tabId, frameId, url }) {
 
 async function reframe(tabId, state, shiftY = 0) {
   const keys = await shortcuts();
-  const L = { ...computeLayout(state.device, state.orientation, await getLast()), shortcut: keys['toggle-toolbar'], copyShortcut: keys['copy-screenshot'] };
+  const L = { ...computeLayout(state.device, state.orientation, await getLast()), shortcut: keys['toggle-toolbar'], copyShortcut: keys['copy-screenshot'], recordShortcut: keys.record };
   try {
     const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId },
@@ -240,10 +240,23 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   try {
     if (command === 'toggle-toolbar' && !state.recording) await toggleToolbar(tab.id, state);
     if (command === 'copy-screenshot') await copyScreenshot(tab, state);
+    if (command === 'record') await toggleRecording(tab, state);
   } catch (e) {
     console.warn('Device Frame:', command, e);
   }
 });
+
+// Record shortcut: chrome.tabCapture needs no share prompt, but only works
+// when the extension itself is invoked (a shortcut counts, an in-page click
+// doesn't). The stream id is handed to the page, which records as usual.
+async function toggleRecording(tab, state) {
+  if (state.recording) {
+    await chrome.tabs.sendMessage(tab.id, { type: 'df-record-stop' });
+    return;
+  }
+  const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id, consumerTabId: tab.id });
+  await chrome.tabs.sendMessage(tab.id, { type: 'df-record-start', streamId });
+}
 
 // Copy-only screenshot: capture in the background, write the clipboard in the page.
 async function copyScreenshot(tab, state) {

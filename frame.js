@@ -238,7 +238,7 @@ function drawFrame(L) {
       <button id="status" title="${L.statusBar ? 'Hide' : 'Show'} status bar">${L.statusBar ? ICON.wifi : ICON.wifiOff}</button>
       <button id="appearance" title="Appearance: background, frame colour, tap indicator">${ICON.sliders}</button>
       <button id="reload" title="Reload page">&#x27F3;</button>
-      <button id="rec" title="Record the device to MP4">${ICON.record}</button>
+      <button id="rec">${ICON.record}</button>
       <button id="shot" title="Screenshot of the device: copy to clipboard and save PNG${L.copyShortcut ? ` (${L.copyShortcut} copies only)` : ''}">${ICON.camera}</button>
       <button id="hide" title="Hide toolbar (or double-click the frame${L.shortcut ? `, or ${L.shortcut}` : ''})">${ICON.eyeOff}</button>
       </div>
@@ -435,7 +435,9 @@ function drawFrame(L) {
     }
     if (rec) setPop(false);
     recBtn.classList.toggle('rec-on', Boolean(rec?.recorder));
-    recBtn.title = rec ? 'Stop recording and save MP4' : 'Record the device to MP4';
+    recBtn.title = rec
+      ? `Stop recording and save MP4${L.recordShortcut ? ` (or ${L.recordShortcut})` : ''}`
+      : `Record the device to MP4${L.recordShortcut ? ` (${L.recordShortcut} starts without Chrome's share prompt)` : ''}`;
     if (!rec?.recorder) {
       recBtn.innerHTML = rec ? ICON.stop : ICON.record;
       return;
@@ -475,18 +477,26 @@ function drawFrame(L) {
     send({ type: 'rec-state', recording: false }); // background redraws the controls
   };
 
-  const startRecording = async () => {
+  // streamId comes from chrome.tabCapture (the keyboard shortcut), which needs
+  // no prompt; without it we ask Chrome via its "Share this tab" prompt.
+  const startRecording = async (streamId) => {
     let stream;
     try {
-      stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: 30 },
-        audio: false,
-        preferCurrentTab: true,
-        selfBrowserSurface: 'include',
-        surfaceSwitching: 'exclude',
-      });
+      stream = streamId
+        ? await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId, maxFrameRate: 30 } },
+        })
+        : await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 30 },
+          audio: false,
+          preferCurrentTab: true,
+          selfBrowserSurface: 'include',
+          surfaceSwitching: 'exclude',
+        });
     } catch (e) {
-      toast(e.name === 'NotAllowedError' ? 'Recording cancelled' : `Can't record: ${e.message}`);
+      toast(e.name === 'NotAllowedError' && !streamId ? 'Recording cancelled' : `Can't record: ${e.message || e.name}`);
+      console.warn('Device Frame: recording failed to start', e);
       return;
     }
     const mime = ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm']
@@ -559,6 +569,17 @@ function drawFrame(L) {
     if (window.__devframeRec) stopRecording();
     else startRecording();
   });
+
+  // Messages from the background (record shortcut). One listener for the
+  // page's lifetime, forwarding to the latest drawFrame's handlers.
+  window.__devframeOnMessage = (msg) => {
+    if (msg?.type === 'df-record-start' && !window.__devframeRec) startRecording(msg.streamId);
+    if (msg?.type === 'df-record-stop') stopRecording();
+  };
+  if (!window.__devframeMessageBound) {
+    chrome.runtime.onMessage.addListener((msg) => { window.__devframeOnMessage?.(msg); });
+    window.__devframeMessageBound = true;
+  }
 
   root.getElementById('shot').addEventListener('click', () => {
     // The background captures, crops and downloads the PNG, then hands it back
