@@ -294,10 +294,8 @@ function drawFrame(L) {
       <div class="lbl">Recording</div>
       <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
-      <div class="lbl">Window title</div>
-      <input id="mupTitle" type="text" maxlength="60" value="${L.mupTitle}" placeholder="(use the renames below)" title="Shown as this window's title for every page. Leave blank to use the renames below. Press Enter to save.">
       <div class="lbl">Rename titles <span class="note">(Old = New, one per line)</span></div>
-      <textarea id="titleRules" rows="3" spellcheck="false" placeholder="MUP = WM Mobile" title="One rename per line: Old title = New title. Matches the whole title, ignoring capitals; end the old title with * to match titles that start with it. Applies to all tabs. Saved when you click away.">${L.titleRules}</textarea>
+      <textarea id="titleRules" rows="3" spellcheck="false" placeholder="MUP = WM Mobile" title="One rename per line: Old title = New title. Matches the whole title, ignoring capitals; end the old title with * to match titles that start with it. Applies to all tabs, including this window. Saved when you click away.">${L.titleRules}</textarea>
       <div class="note" id="rulesNote"></div>
       <div class="help"><a href="#" id="guide">? User Guide</a></div>
     </div>
@@ -402,13 +400,6 @@ function drawFrame(L) {
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
   root.getElementById('mic').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { mic: e.target.checked } }));
-  // Tab title: saved on Enter or when the field loses focus (title.js applies it).
-  const titleInput = root.getElementById('mupTitle');
-  const saveTitle = () => {
-    if (titleInput.value.trim() !== L.mupTitle) send({ type: 'set-pref', prefs: { mupTitle: titleInput.value } });
-  };
-  titleInput.addEventListener('change', saveTitle);
-  titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveTitle(); } });
   // Title renames: flag lines that can't be read (no "Old = New"); those are
   // skipped by title.js. Saved when the box loses focus.
   const rulesBox = root.getElementById('titleRules');
