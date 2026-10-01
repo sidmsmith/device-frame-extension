@@ -2,159 +2,197 @@
 //
 // Clicking the toolbar icon reopens the current page as the top-level page of
 // a popup window (no iframe, so cookies, storage and CSRF protection behave
-// exactly as in a normal tab). After each page load we inject
-// code that pins <body> into the "screen" area and draws a bezel overlay, then
-// size the window to the phone and use per-tab zoom to fit it on screen.
+// exactly as in a normal tab). After each page load we inject drawFrame()
+// (frame.js), which pins <body> into the "screen" area and draws the bezel
+// and control bar, then size the window to fit and use per-tab zoom to shrink
+// it when the device is bigger than the screen.
 
-const DEVICE = { name: 'Pixel 8', width: 412, height: 915 };
-const LAYOUT = { ...DEVICE, side: 12, top: 34, bottom: 34, margin: 16, radius: 46, screenRadius: 28 };
-const TOTAL = {
-  width: LAYOUT.width + LAYOUT.side * 2 + LAYOUT.margin * 2,
-  height: LAYOUT.height + LAYOUT.top + LAYOUT.bottom + LAYOUT.margin * 2,
-};
+importScripts('devices.js', 'frame.js');
+
+// ---- state ---------------------------------------------------------------
+// session: framed[tabId] = { windowId, origin, device, orientation }
+// local:   last = { device, orientation, left, top }
+
+async function getFramed() {
+  return (await chrome.storage.session.get('framed')).framed ?? {};
+}
+
+async function updateFramed(tabId, patch) {
+  const framed = await getFramed();
+  if (patch === null) delete framed[tabId];
+  else framed[tabId] = { ...framed[tabId], ...patch };
+  await chrome.storage.session.set({ framed });
+  return framed[tabId];
+}
+
+async function getLast() {
+  return (await chrome.storage.local.get('last')).last ?? {};
+}
+
+async function saveLast(patch) {
+  await chrome.storage.local.set({ last: { ...(await getLast()), ...patch } });
+}
+
+// ---- open ----------------------------------------------------------------
 
 chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.url || !/^https?:/i.test(tab.url)) return; // chrome:// etc. can't be framed
 
+  const last = await getLast();
+  const device = DEVICES[last.device] ? last.device : DEFAULT_DEVICE;
+  const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
+  const L = computeLayout(device, orientation);
   const current = await chrome.windows.get(tab.windowId);
+
   const win = await chrome.windows.create({
     url: tab.url,
     type: 'popup',
-    width: TOTAL.width + 16, // rough guess; corrected after the first load
-    height: Math.min(TOTAL.height + 40, current.height),
-    left: current.left + 60,
-    top: current.top,
+    width: L.W + 16, // rough guess; corrected after the first load
+    height: Math.min(L.H + 40, current.height),
+    left: last.left ?? current.left + 60,
+    top: last.top ?? current.top,
   });
   const tabId = win.tabs[0].id;
 
-  await setFramed(tabId, true);
+  await updateFramed(tabId, { windowId: win.id, origin: tab.windowId, device, orientation });
   // Keep zoom changes to this tab only, so normal tabs on the same site are untouched.
   await chrome.tabs.setZoomSettings(tabId, { mode: 'automatic', scope: 'per-tab' });
 });
 
+// ---- draw on every page load ---------------------------------------------
+
 chrome.webNavigation.onDOMContentLoaded.addListener(onLoaded);
 chrome.webNavigation.onCompleted.addListener(onLoaded);
 
-chrome.tabs.onRemoved.addListener((tabId) => setFramed(tabId, false));
-
 async function onLoaded({ tabId, frameId }) {
-  if (frameId !== 0 || !(await isFramed(tabId))) return;
+  if (frameId !== 0) return;
+  const state = (await getFramed())[tabId];
+  if (state) await reframe(tabId, state);
+}
+
+async function reframe(tabId, state) {
+  const L = computeLayout(state.device, state.orientation);
   try {
     const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId },
       func: drawFrame,
-      args: [LAYOUT],
+      args: [L],
     });
-    await fitWindow(tabId, result);
+    await fitWindow(tabId, L, result);
   } catch (e) {
     console.warn('Device Frame: could not frame tab', tabId, e);
   }
 }
 
-// Size the window so the viewport is exactly TOTAL (in CSS px), zooming out
-// if the phone is taller than the screen.
-async function fitWindow(tabId, m) {
+// Size the window so the viewport is exactly L.W × L.H CSS px, zooming out
+// when that is bigger than the screen.
+async function fitWindow(tabId, L, m) {
   const tab = await chrome.tabs.get(tabId);
   const zoom = await chrome.tabs.getZoom(tabId);
 
   // outer* are screen pixels; inner* are CSS pixels at the current zoom.
   const chromeW = m.outerWidth - m.innerWidth * zoom;
   const chromeH = m.outerHeight - m.innerHeight * zoom;
-  const fit = Math.min(1, (m.availHeight - chromeH) / TOTAL.height);
+  const fit = Math.min(1, (m.availHeight - chromeH) / L.H, (m.availWidth - chromeW) / L.W);
   const target = Math.max(0.25, Math.floor(fit * 100) / 100);
 
   if (Math.abs(target - zoom) > 0.005) await chrome.tabs.setZoom(tabId, target);
 
-  const width = Math.round(TOTAL.width * target + chromeW);
-  const height = Math.round(TOTAL.height * target + chromeH);
+  const width = Math.round(L.W * target + chromeW);
+  const height = Math.round(L.H * target + chromeH);
   const win = await chrome.windows.get(tab.windowId);
-  if (Math.abs(win.width - width) > 1 || Math.abs(win.height - height) > 1) {
-    await chrome.windows.update(tab.windowId, { width, height });
+  // Keep the window on screen when it grows (e.g. rotating a tablet).
+  const left = Math.max(m.availLeft, Math.min(win.left, m.availLeft + m.availWidth - width));
+  const top = Math.max(m.availTop, Math.min(win.top, m.availTop + m.availHeight - height));
+
+  if (Math.abs(win.width - width) > 1 || Math.abs(win.height - height) > 1 || win.left !== left || win.top !== top) {
+    await chrome.windows.update(tab.windowId, { width, height, left, top });
   }
 }
 
-async function isFramed(tabId) {
-  const { framed = [] } = await chrome.storage.session.get('framed');
-  return framed.includes(tabId);
-}
+// ---- control bar ---------------------------------------------------------
 
-async function setFramed(tabId, on) {
-  const { framed = [] } = await chrome.storage.session.get('framed');
-  const next = framed.filter((id) => id !== tabId);
-  if (on) next.push(tabId);
-  await chrome.storage.session.set({ framed: next });
-}
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  const tabId = sender.tab?.id;
+  if (tabId === undefined) return;
+  handleControl(tabId, sender.tab, msg).catch((e) => console.warn('Device Frame:', msg.type, e));
+});
 
-// Runs inside the page. Must be self-contained (it is serialised by executeScript).
-function drawFrame(L) {
-  const phoneW = L.width + L.side * 2;
-  const phoneH = L.height + L.top + L.bottom;
-  const W = phoneW + L.margin * 2;
-  const H = phoneH + L.margin * 2;
-  const sx = L.margin + L.side;
-  const sy = L.margin + L.top;
+async function handleControl(tabId, tab, msg) {
+  const state = (await getFramed())[tabId];
+  if (!state) return;
 
-  if (!document.getElementById('__devframe-style')) {
-    const style = document.createElement('style');
-    style.id = '__devframe-style';
-    // transform on <body> makes it the containing block for position:fixed
-    // descendants, so full-screen app shells stay inside the screen area.
-    style.textContent = `
-      html { background: #2b2d33 !important; overflow: hidden !important; }
-      body {
-        position: fixed !important;
-        left: ${sx}px !important; top: ${sy}px !important;
-        width: ${L.width}px !important; height: ${L.height}px !important;
-        min-width: 0 !important; min-height: 0 !important; max-width: none !important;
-        margin: 0 !important;
-        overflow: auto !important;
-        transform: translateZ(0) !important;
-        background-color: #fff;
-      }
-      #__devframe {
-        position: fixed !important; left: 0 !important; top: 0 !important;
-        width: ${W}px !important; height: ${H}px !important;
-        pointer-events: none !important; z-index: 2147483647 !important;
-      }`;
-    document.documentElement.appendChild(style);
+  switch (msg.type) {
+    case 'set-device': {
+      const next = await updateFramed(tabId, { device: msg.device });
+      await saveLast({ device: msg.device });
+      await reframe(tabId, next);
+      break;
+    }
+    case 'rotate': {
+      const orientation = state.orientation === 'landscape' ? 'portrait' : 'landscape';
+      const next = await updateFramed(tabId, { orientation });
+      await saveLast({ orientation });
+      await reframe(tabId, next);
+      break;
+    }
+    case 'screenshot':
+      await saveScreenshot(tab, computeLayout(state.device, state.orientation));
+      break;
+    case 'exit':
+      await exitFrame(tab, state);
+      break;
   }
-
-  if (!document.getElementById('__devframe')) {
-    const rr = (x, y, w, h, r) =>
-      `M${x + r},${y}h${w - 2 * r}a${r},${r} 0 0 1 ${r},${r}v${h - 2 * r}a${r},${r} 0 0 1 -${r},${r}` +
-      `h-${w - 2 * r}a${r},${r} 0 0 1 -${r},-${r}v-${h - 2 * r}a${r},${r} 0 0 1 ${r},-${r}z`;
-    const phone = rr(L.margin, L.margin, phoneW, phoneH, L.radius);
-    const screen = rr(sx, sy, L.width, L.height, L.screenRadius);
-    const right = L.margin + phoneW;
-
-    const wrap = document.createElement('div');
-    wrap.id = '__devframe';
-    // Appended to <html>, not <body>, so the page's own rendering never removes it.
-    wrap.innerHTML = `
-      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="__df-body" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#3c3d42"/><stop offset=".6" stop-color="#111214"/>
-          </linearGradient>
-          <radialGradient id="__df-cam" cx=".35" cy=".35" r=".6">
-            <stop offset="0" stop-color="#3a4a6a"/><stop offset="1" stop-color="#05070c"/>
-          </radialGradient>
-        </defs>
-        <path fill="#2b2d33" fill-rule="evenodd" d="M0,0H${W}V${H}H0z ${phone}"/>
-        <path fill="url(#__df-body)" fill-rule="evenodd" d="${phone} ${screen}"/>
-        <path fill="none" stroke="#55575d" stroke-width="2" d="${phone}"/>
-        <circle cx="${W / 2}" cy="${L.margin + L.top / 2}" r="6" fill="url(#__df-cam)"/>
-        <rect x="${right}" y="${L.margin + 170}" width="4" height="60" rx="2" fill="#4a4c52"/>
-        <rect x="${right}" y="${L.margin + 260}" width="4" height="110" rx="2" fill="#4a4c52"/>
-      </svg>`;
-    document.documentElement.appendChild(wrap);
-  }
-
-  return {
-    innerWidth: window.innerWidth,
-    innerHeight: window.innerHeight,
-    outerWidth: window.outerWidth,
-    outerHeight: window.outerHeight,
-    availHeight: screen.availHeight,
-  };
 }
+
+// Capture the window, cut out just the phone (transparent outside it) and
+// download it as a PNG.
+async function saveScreenshot(tab, L) {
+  const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+  const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
+
+  const scale = bitmap.width / L.W; // screen pixels per CSS pixel (zoom × DPR)
+  const pad = 6; // room for the side buttons
+  const crop = { x: L.phone.x - pad, y: L.phone.y - pad, w: L.phone.w + pad * 2, h: L.phone.h + pad * 2 };
+
+  const canvas = new OffscreenCanvas(Math.round(crop.w * scale), Math.round(crop.h * scale));
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, crop.x * scale, crop.y * scale, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+
+  // Keep only the phone body and its buttons.
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.setTransform(scale, 0, 0, scale, -crop.x * scale, -crop.y * scale);
+  const mask = new Path2D(roundRectPath(L.phone));
+  for (const b of L.buttons) mask.rect(b.x, b.y, b.w, b.h);
+  ctx.fill(mask);
+
+  const blob = await canvas.convertToBlob({ type: 'image/png' });
+  const url = await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  const name = L.deviceName.replace(/\s+/g, '-');
+  await chrome.downloads.download({ url, filename: `device-frame-${name}-${stamp}.png` });
+}
+
+// Reopen the page in a normal tab (popup tabs can't be moved) and close the frame.
+async function exitFrame(tab, state) {
+  try {
+    await chrome.tabs.create({ windowId: state.origin, url: tab.url });
+    await chrome.windows.update(state.origin, { focused: true });
+  } catch {
+    await chrome.windows.create({ url: tab.url, type: 'normal' }); // original window was closed
+  }
+  await chrome.windows.remove(tab.windowId);
+}
+
+// ---- housekeeping --------------------------------------------------------
+
+chrome.windows.onBoundsChanged.addListener(async (win) => {
+  const framed = Object.values(await getFramed());
+  if (framed.some((s) => s.windowId === win.id)) await saveLast({ left: win.left, top: win.top });
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => updateFramed(tabId, null));

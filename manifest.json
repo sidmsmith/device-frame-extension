@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Device Frame",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Show the current page inside an Android phone frame for demos.",
   "action": {
     "default_title": "Open this page in a device frame"
@@ -9,6 +9,6 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": ["scripting", "storage", "webNavigation"],
+  "permissions": ["scripting", "storage", "webNavigation", "downloads"],
   "host_permissions": ["<all_urls>"]
 }
