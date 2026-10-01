@@ -20,12 +20,12 @@ const DEVICES = {
   zebraTC52: {
     name: 'Zebra TC52', width: 360, height: 640,
     bezel: { side: 20, top: 58, bottom: 72 }, radius: 30, screenRadius: 6,
-    colors: ['#505156', '#1b1c1e'],
+    colors: ['#505156', '#1b1c1e'], fixedColor: true,
   },
   rugged: {
     name: 'Rugged Handheld', width: 360, height: 640,
     bezel: { side: 22, top: 62, bottom: 236 }, radius: 34, screenRadius: 4,
-    colors: ['#4a4b50', '#202124'], style: 'rugged',
+    colors: ['#4a4b50', '#202124'], style: 'rugged', fixedColor: true,
   },
   tablet: {
     name: 'Android Tablet', width: 800, height: 1280,
@@ -39,6 +39,28 @@ const MARGIN = 16; // grey space around the phone
 const BAR = 40;    // control bar height
 const STATUS_BAR = 24; // Android status bar height inside the screen
 const BACKGROUNDS = ['light', 'white', 'dark'];
+
+// Body colours for the phone/tablet frames (gradient light -> dark). 'black'
+// keeps each device's own colours; devices with fixedColor ignore this.
+const FRAME_COLORS = {
+  black: null,
+  silver: ['#eceef1', '#a5a9af'],
+  white: ['#ffffff', '#d3d6da'],
+  blue: ['#4d74ad', '#1c355e'],
+};
+
+// Saved ("preset") devices: user-named custom sizes, kept in prefs.presets.
+const PRESET_PREFIX = 'preset:';
+const PRESET_NAME_MAX = 30;
+const MAX_PRESETS = 20;
+
+function findPreset(prefs, key) {
+  return (prefs.presets ?? []).find((p) => PRESET_PREFIX + p.id === key);
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+}
 
 // "Custom" device: the user types the size; the bezel is a generic phone frame
 // whose thickness scales with the size so large sizes don't look stretched.
@@ -58,19 +80,26 @@ function normalizeCustom(size) {
   };
 }
 
-function isDeviceKey(key) {
-  return key === CUSTOM_KEY || Boolean(DEVICES[key]);
+function isDeviceKey(key, prefs = {}) {
+  return key === CUSTOM_KEY || Boolean(DEVICES[key]) || Boolean(findPreset(prefs, key));
 }
 
 function resolveDevice(key, prefs) {
-  if (key !== CUSTOM_KEY) return DEVICES[key] ?? DEVICES[DEFAULT_DEVICE];
-  const { width, height } = normalizeCustom(prefs.custom);
+  if (key === CUSTOM_KEY) return genericDevice('Custom', prefs.custom);
+  const preset = findPreset(prefs, key);
+  if (preset) return genericDevice(preset.name, preset);
+  return DEVICES[key] ?? DEVICES[DEFAULT_DEVICE];
+}
+
+// Generic phone frame for custom sizes and saved presets.
+function genericDevice(name, size) {
+  const { width, height } = normalizeCustom(size);
   const s = Math.min(width, height);
   const clamp = (v, lo, hi) => Math.round(Math.min(hi, Math.max(lo, v)));
   const side = clamp(s * 0.03, 10, 28);
   const end = clamp(s * 0.08, 24, 44);
   return {
-    name: 'Custom', width, height,
+    name, width, height,
     bezel: { side, top: end, bottom: end },
     radius: clamp(s * 0.11, 30, 48), screenRadius: clamp(s * 0.05, 6, 20),
     colors: ['#3c3d42', '#111214'],
@@ -82,7 +111,7 @@ function resolveDevice(key, prefs) {
 // right-edge buttons end up on the top edge. `content` is the part of the
 // screen the page gets (the screen minus the status bar, when shown).
 function computeLayout(deviceKey, orientation, prefs = {}) {
-  const key = isDeviceKey(deviceKey) ? deviceKey : DEFAULT_DEVICE;
+  const key = isDeviceKey(deviceKey, prefs) ? deviceKey : DEFAULT_DEVICE;
   const d = resolveDevice(key, prefs);
   const custom = normalizeCustom(prefs.custom);
   const landscape = orientation === 'landscape';
@@ -127,8 +156,11 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     orientation: landscape ? 'landscape' : 'portrait',
     devices: [
       ...Object.entries(DEVICES).map(([k, v]) => ({ key: k, name: `${v.name} (${v.width}&#xD7;${v.height})` })),
-      { key: CUSTOM_KEY, name: `Custom (${custom.width}&#xD7;${custom.height})&#x2026;` },
+      ...(prefs.presets ?? []).map((p) => ({ key: PRESET_PREFIX + p.id, group: 'saved', name: `${escapeHtml(p.name)} (${p.width}&#xD7;${p.height})` })),
+      { key: CUSTOM_KEY, group: 'custom', name: `Custom (${custom.width}&#xD7;${custom.height})&#x2026;` },
     ],
+    preset: findPreset(prefs, key) ? { id: findPreset(prefs, key).id, name: escapeHtml(findPreset(prefs, key).name) } : null,
+    presetNameMax: PRESET_NAME_MAX,
     custom: { ...custom, min: CUSTOM_MIN, max: CUSTOM_MAX },
     W: phone.w + MARGIN * 2,
     H: bar + phone.h + MARGIN * 2,
@@ -143,7 +175,10 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
       ? { cx: phone.x + bez.left / 2, cy: phone.y + phone.h / 2, r: 6 }
       : { cx: phone.x + phone.w / 2, cy: phone.y + bez.top / 2, r: 6 },
     buttons,
-    colors: d.colors,
+    colors: (!d.fixedColor && FRAME_COLORS[prefs.frameColor]) || d.colors,
+    frameColor: FRAME_COLORS[prefs.frameColor] !== undefined ? prefs.frameColor : 'black',
+    frameColorFixed: Boolean(d.fixedColor),
+    touch: Boolean(prefs.touch),
     decor: rugged ? ruggedDecor(d, phone, landscape) : null,
   };
 }

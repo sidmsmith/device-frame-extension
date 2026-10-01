@@ -22,11 +22,12 @@ The control bar above the device has:
 
 | Control | What it does |
 |---|---|
-| Device dropdown | Pixel 8, Galaxy S24, Moto G4, Zebra TC52, Rugged Handheld, Android Tablet |
-| Custom… (in dropdown) / ✎ | Enter any width × height (240–2560); Enter applies, Esc cancels |
+| Device dropdown | Pixel 8, Galaxy S24, Moto G4, Zebra TC52, Rugged Handheld, Android Tablet, your saved devices, Custom |
+| Custom… (in dropdown) / ✎ | Enter any width × height (240–2560); Enter applies, Esc cancels. **Save…** names it and adds it to the dropdown under *Saved* |
+| Trash icon | Shown when a saved device is selected; click twice to delete it |
 | ⟲ | Rotate between portrait and landscape |
 | Wi-Fi icon | Show/hide the Android status bar (clock, signal, Wi-Fi, battery); slashed when hidden |
-| ◐ | Cycle the window background: light grey (default), white, dark |
+| Sliders icon | Appearance panel: background (light grey / white / dark), frame colour (black / silver / white / blue; Zebra and Rugged keep their own), and **Show taps** (a circle where you click plus a fingertip cursor, for screen-shared demos) |
 | ⟳ | Reload the page (F5 also works) |
 | Camera icon | Save a PNG of just the device (transparent background) to Downloads and copy it to the clipboard. **Alt+Shift+S** copies to the clipboard only (no download) |
 | Eye-slash icon | Hide the control bar. To show it again: click the small tab at the top centre (appears when the mouse is near the top), double-click the device frame or grey background, or press **Alt+Shift+H** |
@@ -50,7 +51,7 @@ remembered. Keyboard shortcuts can be changed at
   shrinks it to fit the screen. Zoom is scoped to that tab only.
 - Device sizes and bezel geometry live in `devices.js`.
 
-## Known limitations (v0.8)
+## Known limitations (v0.9)
 
 - The page still sees a desktop user agent and no touch input.
 - Media queries and `vw` units see the whole window width (device plus bezel

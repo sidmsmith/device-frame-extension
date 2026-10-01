@@ -11,7 +11,8 @@ importScripts('devices.js', 'frame.js');
 
 // ---- state ---------------------------------------------------------------
 // session: framed[tabId] = { windowId, device, orientation }
-// local:   last = { device, orientation, left, top, background, statusBar, custom, toolbarHidden }
+// local:   last = { device, orientation, left, top, background, statusBar, custom,
+//                   toolbarHidden, frameColor, touch, presets: [{ id, name, width, height }] }
 
 async function getFramed() {
   return (await chrome.storage.session.get('framed')).framed ?? {};
@@ -39,7 +40,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.url || !/^https?:/i.test(tab.url)) return; // chrome:// etc. can't be framed
 
   const last = await getLast();
-  const device = isDeviceKey(last.device) ? last.device : DEFAULT_DEVICE;
+  const device = isDeviceKey(last.device, last) ? last.device : DEFAULT_DEVICE;
   const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
   const L = computeLayout(device, orientation, last);
   const current = await chrome.windows.get(tab.windowId);
@@ -141,7 +142,7 @@ async function handleControl(tabId, tab, msg) {
 
   switch (msg.type) {
     case 'set-device': {
-      if (!isDeviceKey(msg.device)) return;
+      if (!isDeviceKey(msg.device, await getLast())) return;
       const next = await updateFramed(tabId, { device: msg.device });
       await saveLast({ device: msg.device });
       await reframe(tabId, next);
@@ -152,6 +153,32 @@ async function handleControl(tabId, tab, msg) {
       const next = await updateFramed(tabId, { device: CUSTOM_KEY });
       await saveLast({ device: CUSTOM_KEY, custom });
       await reframe(tabId, next);
+      break;
+    }
+    case 'save-preset': {
+      const size = normalizeCustom(msg.size);
+      const name = String(msg.name ?? '').trim().slice(0, PRESET_NAME_MAX) || `Saved ${size.width}x${size.height}`;
+      const id = Date.now().toString(36);
+      const presets = [...((await getLast()).presets ?? []), { id, name, ...size }].slice(-MAX_PRESETS);
+      const device = PRESET_PREFIX + id;
+      await saveLast({ presets, device, custom: size });
+      await reframe(tabId, await updateFramed(tabId, { device }));
+      break;
+    }
+    case 'delete-preset': {
+      const last = await getLast();
+      const key = PRESET_PREFIX + msg.id;
+      const deleted = findPreset(last, key);
+      const presets = (last.presets ?? []).filter((p) => p.id !== msg.id);
+      if (state.device === key && deleted) {
+        // Fall back to Custom at the same size, so the frame doesn't jump.
+        const custom = normalizeCustom(deleted);
+        await saveLast({ presets, device: CUSTOM_KEY, custom });
+        await reframe(tabId, await updateFramed(tabId, { device: CUSTOM_KEY }));
+      } else {
+        await saveLast({ presets });
+        await reframe(tabId, state);
+      }
       break;
     }
     case 'rotate': {
@@ -166,6 +193,8 @@ async function handleControl(tabId, tab, msg) {
       const prefs = {};
       if (BACKGROUNDS.includes(msg.prefs.background)) prefs.background = msg.prefs.background;
       if (typeof msg.prefs.statusBar === 'boolean') prefs.statusBar = msg.prefs.statusBar;
+      if (msg.prefs.frameColor in FRAME_COLORS) prefs.frameColor = msg.prefs.frameColor;
+      if (typeof msg.prefs.touch === 'boolean') prefs.touch = msg.prefs.touch;
       await saveLast(prefs);
       await reframe(tabId, state);
       break;
@@ -244,7 +273,7 @@ async function captureDevice(tab, L) {
 
 async function downloadScreenshot(url, L) {
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-  const name = `${L.deviceName.replace(/\s+/g, '-')}-${L.screen.w}x${L.screen.h}`;
+  const name = `${L.deviceName.replace(/[^\w.-]+/g, '-')}-${L.screen.w}x${L.screen.h}`;
   await chrome.downloads.download({ url, filename: `device-frame-${name}-${stamp}.png` });
 }
 

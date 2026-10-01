@@ -13,21 +13,29 @@ function drawFrame(L) {
     white: { page: '#ffffff', bar: '#f6f7f9', barBorder: '#dadce0', text: '#202124', ctl: '#ffffff', ctlBorder: '#c4c7cc', ctlHover: '#eceef1', shadow: 0.3 },
     dark: { page: '#2b2d33', bar: '#1e1f23', barBorder: '#000000', text: '#e6e6e6', ctl: '#3a3c44', ctlBorder: '#50535c', ctlHover: '#474a53', shadow: 0.6 },
   };
-  const NEXT_BG = { light: 'white', white: 'dark', dark: 'light' };
   const BG_LABEL = { light: 'Light grey', white: 'White', dark: 'Dark' };
+  const FRAME_LABEL = { black: 'Black', silver: 'Silver', white: 'White', blue: 'Blue' };
+  const FRAME_SWATCH = { black: '#202124', silver: '#c9ccd1', white: '#ffffff', blue: '#2f5597' };
   const t = THEMES[L.background] ?? THEMES.light;
 
   // Line icons; stroke follows the control bar's text colour.
   const svg = (size, body) =>
     `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+  const WIFI = '<path d="M1.8 6.2a9 9 0 0 1 12.4 0"/><path d="M4.2 8.8a5.5 5.5 0 0 1 7.6 0"/><circle cx="8" cy="11.9" r="1.2" fill="currentColor" stroke="none"/>';
   const ICON = {
-    wifi: svg(16, '<path d="M1.8 6.2a9 9 0 0 1 12.4 0"/><path d="M4.2 8.8a5.5 5.5 0 0 1 7.6 0"/><circle cx="8" cy="11.9" r="1.2" fill="currentColor" stroke="none"/>'),
-    wifiOff: svg(16, '<path d="M1.8 6.2a9 9 0 0 1 12.4 0"/><path d="M4.2 8.8a5.5 5.5 0 0 1 7.6 0"/><circle cx="8" cy="11.9" r="1.2" fill="currentColor" stroke="none"/><path d="M2.5 13.5l11-11"/>'),
+    wifi: svg(16, WIFI),
+    wifiOff: svg(16, `${WIFI}<path d="M2.5 13.5l11-11"/>`),
     eyeOff: svg(16, '<path d="M1.5 8S3.9 3.5 8 3.5 14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2.2"/><path d="M2.5 13.5l11-11"/>'),
     camera: svg(16, '<path d="M1.8 5.2h2.6l1.3-1.9h4.6l1.3 1.9h2.6v7.5H1.8z"/><circle cx="8" cy="8.7" r="2.4"/>'),
+    sliders: svg(16, '<path d="M2 4.5h7M12.2 4.5H14M2 11.5h1.8M7.2 11.5H14"/><circle cx="10.6" cy="4.5" r="1.6"/><circle cx="5.5" cy="11.5" r="1.6"/>'),
+    trash: svg(16, '<path d="M2.5 4.5h11M6 4.5V2.8h4v1.7M4 4.5l.7 8.7h6.6l.7-8.7"/>'),
     expand: svg(11, '<path d="M4 6l4 4 4-4"/>'),
   };
   const c = L.content;
+
+  // Fingertip cursor over the app while tap indicators are on.
+  const fingertip = encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><circle cx='14' cy='14' r='10' fill='rgba(0,0,0,0.28)' stroke='white' stroke-width='2'/></svg>");
 
   // Page-level style: pin <body> into the screen area. The transform makes
   // <body> the containing block for position:fixed app shells.
@@ -55,7 +63,8 @@ function drawFrame(L) {
       width: ${L.W}px !important; height: ${L.H}px !important;
       pointer-events: none !important; z-index: 2147483647 !important;
       display: block !important;
-    }`;
+    }
+    ${L.touch ? `body, body * { cursor: url("data:image/svg+xml,${fingertip}") 14 14, pointer !important; }` : ''}`;
 
   document.getElementById('__devframe')?.remove();
   clearInterval(window.__devframeClock);
@@ -68,9 +77,13 @@ function drawFrame(L) {
 
   const phonePath = rr(L.phone);
   const outside = `M0,0H${L.W}V${L.H}H0z ${phonePath}`;
-  const options = L.devices
-    .map((d) => `<option value="${d.key}"${d.key === L.deviceKey ? ' selected' : ''}>${d.name}</option>`)
-    .join('');
+  const option = (d) => `<option value="${d.key}"${d.key === L.deviceKey ? ' selected' : ''}>${d.name}</option>`;
+  const saved = L.devices.filter((d) => d.group === 'saved');
+  const options = [
+    ...L.devices.filter((d) => !d.group).map(option),
+    saved.length ? `<optgroup label="Saved">${saved.map(option).join('')}</optgroup>` : '',
+    ...L.devices.filter((d) => d.group === 'custom').map(option),
+  ].join('');
   const rotateTo = L.orientation === 'portrait' ? 'landscape' : 'portrait';
 
   // Android-style status bar: clock on the left; signal, wifi, battery on the right.
@@ -118,6 +131,7 @@ function drawFrame(L) {
         font: 13px system-ui, sans-serif; color: ${t.text};
         pointer-events: auto;
       }
+      .bar[hidden] { display: none; }
       select, button {
         font: inherit; color: inherit; height: 28px;
         background: ${t.ctl}; border: 1px solid ${t.ctlBorder}; border-radius: 4px;
@@ -130,10 +144,12 @@ function drawFrame(L) {
       }
       button svg, .handle svg { display: block; margin: auto; }
       button:hover, select:hover { background: ${t.ctlHover}; }
+      button:disabled { opacity: .45; cursor: default; }
+      button.danger { background: #d93025; border-color: #d93025; color: #fff; }
       .row { display: contents; }
       .row[hidden] { display: none; }
       label { white-space: nowrap; }
-      input {
+      input[type=number], input[type=text] {
         font: inherit; color: inherit; height: 28px; width: 72px; min-width: 0; flex: 1;
         box-sizing: border-box; padding: 0 6px;
         background: ${t.ctl}; border: 1px solid ${t.ctlBorder}; border-radius: 4px;
@@ -142,11 +158,10 @@ function drawFrame(L) {
       button.primary { background: #1a73e8; border-color: #1a73e8; color: #fff; }
       .toast {
         position: absolute; right: 8px; top: ${L.bar + 6}px; padding: 4px 10px;
-        background: #202124; color: #fff; border-radius: 4px; font-size: 12px;
+        background: #202124; color: #fff; border-radius: 4px; font: 12px system-ui, sans-serif;
         opacity: 0; transition: opacity .2s; pointer-events: none;
       }
       .toast.show { opacity: .92; }
-      .bar[hidden] { display: none; }
       .handle {
         position: absolute; left: 50%; top: 0; transform: translateX(-50%);
         width: 52px; height: 13px; padding: 0; box-sizing: border-box;
@@ -156,6 +171,29 @@ function drawFrame(L) {
         opacity: 0; transition: opacity .2s; cursor: pointer; pointer-events: auto;
       }
       .handle.near, .handle:hover { opacity: .9; }
+      .pop {
+        position: absolute; right: 8px; top: ${L.bar + 4}px; width: 252px;
+        box-sizing: border-box; padding: 10px 12px 12px;
+        background: ${t.bar}; color: ${t.text}; border: 1px solid ${t.barBorder}; border-radius: 8px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
+        font: 12px system-ui, sans-serif; pointer-events: auto;
+      }
+      .pop[hidden] { display: none; }
+      .pop .lbl { margin: 8px 0 4px; font-weight: 600; }
+      .pop .lbl:first-child { margin-top: 0; }
+      .pop .note { font-weight: 400; opacity: .7; }
+      .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+      .seg button { height: 26px; padding: 0 8px; font-size: 12px; gap: 5px; }
+      .seg button.sel { border-color: #1a73e8; box-shadow: inset 0 0 0 1px #1a73e8; }
+      .sw { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .35); }
+      .chk { display: flex; align-items: center; gap: 6px; margin-top: 10px; cursor: pointer; }
+      .ripple {
+        position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
+        background: rgba(0, 0, 0, .22); border: 2px solid rgba(255, 255, 255, .9);
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); box-sizing: border-box; pointer-events: none;
+        animation: df-tap .5s ease-out forwards;
+      }
+      @keyframes df-tap { from { transform: scale(.45); opacity: 1; } to { transform: scale(1.35); opacity: 0; } }
     </style>
     <svg class="frame" width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -180,13 +218,15 @@ function drawFrame(L) {
       <circle cx="${L.camera.cx}" cy="${L.camera.cy}" r="${L.camera.r}" fill="url(#cam)"/>
       ${L.buttons.map((b) => `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="2" fill="${b.color}"/>`).join('')}
     </svg>
+    <div id="ripples"></div>
     <div class="bar"${L.toolbarHidden ? ' hidden' : ''}>
       <div class="row" id="main">
       <select id="device" title="Device">${options}</select>
       ${L.deviceKey === 'custom' ? '<button id="edit" title="Change custom size">&#x270E;</button>' : ''}
+      ${L.preset ? `<button id="delpreset" title="Delete saved device &quot;${L.preset.name}&quot;">${ICON.trash}</button>` : ''}
       <button id="rotate" title="Rotate to ${rotateTo}">&#x27F2;</button>
       <button id="status" title="${L.statusBar ? 'Hide' : 'Show'} status bar">${L.statusBar ? ICON.wifi : ICON.wifiOff}</button>
-      <button id="background" title="Background: ${BG_LABEL[L.background]} (click for ${BG_LABEL[NEXT_BG[L.background]]})">&#x25D0;</button>
+      <button id="appearance" title="Appearance: background, frame colour, tap indicator">${ICON.sliders}</button>
       <button id="reload" title="Reload page">&#x27F3;</button>
       <button id="shot" title="Screenshot of the device: copy to clipboard and save PNG${L.copyShortcut ? ` (${L.copyShortcut} copies only)` : ''}">${ICON.camera}</button>
       <button id="hide" title="Hide toolbar (or double-click the frame${L.shortcut ? `, or ${L.shortcut}` : ''})">${ICON.eyeOff}</button>
@@ -197,8 +237,25 @@ function drawFrame(L) {
         <span>&#xD7;</span>
         <input id="h" type="number" required min="${L.custom.min}" max="${L.custom.max}" step="1" value="${L.custom.height}" title="Height (${L.custom.min}-${L.custom.max})">
         <button type="submit" class="primary" title="Apply custom size">Apply</button>
+        <button type="button" id="savepreset" title="Save this size as a named device in the dropdown">Save&#x2026;</button>
         <button type="button" id="cancel" title="Cancel">&#x2715;</button>
       </form>
+      <form class="row" id="namer" hidden>
+        <input id="pname" type="text" required maxlength="${L.presetNameMax}" placeholder="Name, e.g. Zebra TC21" title="Name for this saved device">
+        <button type="submit" class="primary" title="Save to the device dropdown">Save</button>
+        <button type="button" id="ncancel" title="Back">&#x2715;</button>
+      </form>
+    </div>
+    <div class="pop" id="pop" hidden>
+      <div class="lbl">Background</div>
+      <div class="seg">
+        ${Object.keys(BG_LABEL).map((k) => `<button data-bg="${k}" class="${k === L.background ? 'sel' : ''}">${BG_LABEL[k]}</button>`).join('')}
+      </div>
+      <div class="lbl">Frame colour${L.frameColorFixed ? ' <span class="note">(fixed for this device)</span>' : ''}</div>
+      <div class="seg">
+        ${Object.keys(FRAME_LABEL).map((k) => `<button data-fc="${k}" class="${k === L.frameColor && !L.frameColorFixed ? 'sel' : ''}"${L.frameColorFixed ? ' disabled' : ''}><span class="sw" style="background:${FRAME_SWATCH[k]}"></span>${FRAME_LABEL[k]}</button>`).join('')}
+      </div>
+      <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> Show taps (circle + fingertip cursor)</label>
     </div>
     <div class="toast" id="toast"></div>
     ${L.toolbarHidden ? `<div class="handle" id="handle" title="Show toolbar${L.shortcut ? ` (${L.shortcut})` : ''}">${ICON.expand}</div>` : ''}`;
@@ -213,60 +270,6 @@ function drawFrame(L) {
   }
 
   const send = (msg) => chrome.runtime.sendMessage(msg);
-
-  // Keep typing in our controls away from the app's own key handlers (e.g. scanner input).
-  const bar = root.querySelector('.bar');
-  for (const type of ['keydown', 'keyup', 'keypress']) bar.addEventListener(type, (e) => e.stopPropagation());
-
-  // Custom size editor: replaces the main row until applied or cancelled.
-  const main = root.getElementById('main');
-  const editor = root.getElementById('editor');
-  const select = root.getElementById('device');
-  const openEditor = () => {
-    main.hidden = true;
-    editor.hidden = false;
-    root.getElementById('w').select();
-  };
-  const closeEditor = () => {
-    editor.hidden = true;
-    main.hidden = false;
-    select.value = L.deviceKey;
-  };
-  editor.addEventListener('submit', (e) => {
-    e.preventDefault();
-    send({ type: 'set-custom', size: { width: root.getElementById('w').value, height: root.getElementById('h').value } });
-  });
-  editor.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeEditor(); });
-  root.getElementById('cancel').addEventListener('click', closeEditor);
-  root.getElementById('edit')?.addEventListener('click', openEditor);
-
-  select.addEventListener('change', (e) => {
-    if (e.target.value === 'custom') openEditor();
-    else send({ type: 'set-device', device: e.target.value });
-  });
-  root.getElementById('rotate').addEventListener('click', () => send({ type: 'rotate' }));
-  root.getElementById('status').addEventListener('click', () => send({ type: 'set-pref', prefs: { statusBar: !L.statusBar } }));
-  root.getElementById('background').addEventListener('click', () => send({ type: 'set-pref', prefs: { background: NEXT_BG[L.background] } }));
-  root.getElementById('reload').addEventListener('click', () => location.reload());
-  // Toolbar show/hide: hide button, handle tab (fades in near the top edge),
-  // and double-click on the frame. Listeners are replaced on every redraw.
-  const toggleToolbar = () => send({ type: 'toggle-toolbar' });
-  root.getElementById('hide').addEventListener('click', toggleToolbar);
-  const handle = root.getElementById('handle');
-  handle?.addEventListener('click', toggleToolbar);
-
-  document.removeEventListener('mousemove', window.__devframeMove);
-  document.documentElement.removeEventListener('mouseleave', window.__devframeLeave);
-  document.removeEventListener('dblclick', window.__devframeDbl);
-  window.__devframeMove = (e) => handle?.classList.toggle('near', e.clientY < 28);
-  window.__devframeLeave = () => handle?.classList.remove('near');
-  // Only the frame itself: the page's content lives inside <body>, while the
-  // bezel, margin and status bar areas hit <html>.
-  window.__devframeDbl = (e) => { if (e.target === document.documentElement) toggleToolbar(); };
-  document.addEventListener('mousemove', window.__devframeMove, { passive: true });
-  document.documentElement.addEventListener('mouseleave', window.__devframeLeave);
-  document.addEventListener('dblclick', window.__devframeDbl);
-
   const toastEl = root.getElementById('toast');
   const toast = (text) => {
     toastEl.textContent = text;
@@ -274,6 +277,118 @@ function drawFrame(L) {
     clearTimeout(window.__devframeToast);
     window.__devframeToast = setTimeout(() => toastEl.classList.remove('show'), 2500);
   };
+
+  // Keep typing in our controls away from the app's own key handlers (e.g. scanner input).
+  const bar = root.querySelector('.bar');
+  const pop = root.getElementById('pop');
+  for (const el of [bar, pop]) {
+    for (const type of ['keydown', 'keyup', 'keypress']) el.addEventListener(type, (e) => e.stopPropagation());
+  }
+
+  // Bar rows: main controls, custom size editor, and preset name entry.
+  const main = root.getElementById('main');
+  const editor = root.getElementById('editor');
+  const namer = root.getElementById('namer');
+  const select = root.getElementById('device');
+  const showRow = (row) => {
+    for (const r of [main, editor, namer]) r.hidden = r !== row;
+  };
+  const openEditor = () => {
+    showRow(editor);
+    root.getElementById('w').select();
+  };
+  const closeEditor = () => {
+    showRow(main);
+    select.value = L.deviceKey;
+  };
+  const customSize = () => ({ width: root.getElementById('w').value, height: root.getElementById('h').value });
+  editor.addEventListener('submit', (e) => {
+    e.preventDefault();
+    send({ type: 'set-custom', size: customSize() });
+  });
+  editor.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeEditor(); });
+  root.getElementById('cancel').addEventListener('click', closeEditor);
+  root.getElementById('edit')?.addEventListener('click', openEditor);
+  root.getElementById('savepreset').addEventListener('click', () => {
+    if (!editor.reportValidity()) return;
+    showRow(namer);
+    root.getElementById('pname').focus();
+  });
+  namer.addEventListener('submit', (e) => {
+    e.preventDefault();
+    send({ type: 'save-preset', name: root.getElementById('pname').value, size: customSize() });
+  });
+  namer.addEventListener('keydown', (e) => { if (e.key === 'Escape') openEditor(); });
+  root.getElementById('ncancel').addEventListener('click', openEditor);
+
+  // Deleting a saved device takes two clicks.
+  const del = root.getElementById('delpreset');
+  del?.addEventListener('click', () => {
+    if (del.classList.contains('danger')) {
+      send({ type: 'delete-preset', id: L.preset.id });
+      return;
+    }
+    del.classList.add('danger');
+    toast('Click again to delete this saved device');
+    setTimeout(() => del.classList.remove('danger'), 3000);
+  });
+
+  select.addEventListener('change', (e) => {
+    if (e.target.value === 'custom') openEditor();
+    else send({ type: 'set-device', device: e.target.value });
+  });
+  root.getElementById('rotate').addEventListener('click', () => send({ type: 'rotate' }));
+  root.getElementById('status').addEventListener('click', () => send({ type: 'set-pref', prefs: { statusBar: !L.statusBar } }));
+  root.getElementById('reload').addEventListener('click', () => location.reload());
+
+  // Appearance panel. It stays open across the redraw a setting change causes.
+  const setPop = (open) => {
+    pop.hidden = !open;
+    window.__devframePopOpen = open;
+  };
+  setPop(Boolean(window.__devframePopOpen) && !L.toolbarHidden);
+  root.getElementById('appearance').addEventListener('click', () => setPop(pop.hidden));
+  pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') setPop(false); });
+  pop.querySelectorAll('[data-bg]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { background: b.dataset.bg } })));
+  pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
+  root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
+
+  // Toolbar show/hide: hide button, handle tab (fades in near the top edge),
+  // and double-click on the frame.
+  const toggleToolbar = () => send({ type: 'toggle-toolbar' });
+  root.getElementById('hide').addEventListener('click', toggleToolbar);
+  const handle = root.getElementById('handle');
+  handle?.addEventListener('click', toggleToolbar);
+
+  // Page-level listeners are replaced on every redraw.
+  const ripples = root.getElementById('ripples');
+  const listeners = {
+    mousemove: (e) => handle?.classList.toggle('near', e.clientY < 28),
+    // Only the frame itself: the app lives inside <body>, while the bezel,
+    // margin and status bar areas hit <html>.
+    dblclick: (e) => { if (e.target === document.documentElement) toggleToolbar(); },
+    // Clicks outside our overlay close the appearance panel (clicks inside the
+    // shadow DOM are retargeted to the host).
+    click: (e) => { if (e.target !== host && !pop.hidden) setPop(false); },
+    // Tap indicator: a fading circle wherever the app is pressed. Capture
+    // phase so the app can't swallow it.
+    pointerdown: (e) => {
+      if (!L.touch || !document.body.contains(e.target)) return;
+      const dot = document.createElement('div');
+      dot.className = 'ripple';
+      dot.style.left = `${e.clientX}px`;
+      dot.style.top = `${e.clientY}px`;
+      dot.addEventListener('animationend', () => dot.remove());
+      ripples.appendChild(dot);
+    },
+  };
+  for (const [type, fn] of Object.entries(window.__devframeListeners ?? {})) document.removeEventListener(type, fn, true);
+  for (const [type, fn] of Object.entries(listeners)) document.addEventListener(type, fn, true);
+  window.__devframeListeners = listeners;
+  document.documentElement.removeEventListener('mouseleave', window.__devframeLeave);
+  window.__devframeLeave = () => handle?.classList.remove('near');
+  document.documentElement.addEventListener('mouseleave', window.__devframeLeave);
+
   root.getElementById('shot').addEventListener('click', () => {
     // The background captures, crops and downloads the PNG, then hands it back
     // so we can put it on the clipboard. ClipboardItem accepts a promise, which
