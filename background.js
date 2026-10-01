@@ -64,8 +64,9 @@ chrome.action.onClicked.addListener(async (tab) => {
 chrome.webNavigation.onDOMContentLoaded.addListener(onLoaded);
 chrome.webNavigation.onCompleted.addListener(onLoaded);
 
-async function onLoaded({ tabId, frameId }) {
-  if (frameId !== 0) return;
+async function onLoaded({ tabId, frameId, url }) {
+  // Only normal web pages can be drawn on; skip about:blank, chrome-error:// etc.
+  if (frameId !== 0 || !/^https?:/i.test(url)) return;
   const state = (await getFramed())[tabId];
   if (state) await reframe(tabId, state);
 }
@@ -80,8 +81,14 @@ async function reframe(tabId, state) {
     });
     await fitWindow(tabId, L, result);
   } catch (e) {
-    console.warn('Device Frame: could not frame tab', tabId, e);
+    // The page navigated away or the window closed mid-draw; the next load redraws.
+    if (!isExpectedRaceError(e)) console.warn('Device Frame: could not frame tab', tabId, e);
   }
+}
+
+function isExpectedRaceError(e) {
+  return /Cannot access contents|No tab with id|No window with id|Frame with ID 0 (was removed|is showing error page)|The tab was closed/i
+    .test(String(e?.message ?? e));
 }
 
 // Size the window so the viewport is exactly L.W × L.H CSS px, zooming out
@@ -198,4 +205,6 @@ chrome.windows.onBoundsChanged.addListener(async (win) => {
   if (framed.some((s) => s.windowId === win.id)) await saveLast({ left: win.left, top: win.top });
 });
 
-chrome.tabs.onRemoved.addListener((tabId) => updateFramed(tabId, null));
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  if ((await getFramed())[tabId]) await updateFramed(tabId, null);
+});
