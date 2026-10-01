@@ -28,8 +28,8 @@ The control bar above the device has:
 | Wi-Fi icon | Show/hide the Android status bar (clock, signal, Wi-Fi, battery) |
 | ◐ | Cycle the window background: light grey (default), white, dark |
 | ⟳ | Reload the page (F5 also works) |
-| 📷 | Save a PNG of just the device (transparent background) to Downloads and copy it to the clipboard. **Alt+Shift+S** copies to the clipboard only (no download) |
-| Collapse icon | Hide the control bar. To show it again: click the small tab at the top centre (appears when the mouse is near the top), double-click the device frame or grey background, or press **Alt+Shift+H** |
+| Camera icon | Save a PNG of just the device (transparent background) to Downloads and copy it to the clipboard. **Alt+Shift+S** copies to the clipboard only (no download) |
+| Eye-slash icon | Hide the control bar. To show it again: click the small tab at the top centre (appears when the mouse is near the top), double-click the device frame or grey background, or press **Alt+Shift+H** |
 
 Close the window to turn the frame off. Device, custom size, orientation,
 status bar, background, toolbar visibility and window position are all
