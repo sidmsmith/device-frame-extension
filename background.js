@@ -141,6 +141,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true; // async response
 });
 
+// Open the bundled user guide in a normal browser window (the frame window
+// is a popup, which can't hold extra tabs).
+async function openGuide() {
+  const url = chrome.runtime.getURL('USER_GUIDE.html');
+  const win = await chrome.windows.getLastFocused({ windowTypes: ['normal'] }).catch(() => null);
+  if (win) {
+    await chrome.tabs.create({ windowId: win.id, url });
+    await chrome.windows.update(win.id, { focused: true });
+  } else {
+    await chrome.windows.create({ url, type: 'normal' });
+  }
+}
+
 // Controls that redraw the frame are ignored while recording, so the video
 // doesn't change size mid-way.
 const REDRAWS = ['set-device', 'set-custom', 'save-preset', 'delete-preset', 'rotate', 'set-pref', 'toggle-toolbar'];
@@ -149,6 +162,7 @@ async function handleControl(tabId, tab, msg) {
   const state = (await getFramed())[tabId];
   if (!state) return;
   if (state.recording && REDRAWS.includes(msg.type)) return;
+  if (msg.type === 'open-guide') return openGuide();
 
   switch (msg.type) {
     case 'set-device': {

@@ -10,6 +10,13 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
+# Regenerate the HTML guide from USER_GUIDE.md and commit it if it changed.
+node scripts/build-guide.mjs
+if [ -n "$(git status --porcelain USER_GUIDE.html)" ]; then
+  git add USER_GUIDE.html
+  git commit -q -m "Regenerate USER_GUIDE.html for v$V"
+fi
+
 mkdir -p dist
 git archive --format=zip -o "dist/device_frame_extension-v$V.zip" HEAD
 # Same file name on every release, so .../releases/latest/download/device_frame_extension.zip

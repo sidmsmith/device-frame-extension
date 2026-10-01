@@ -8,7 +8,9 @@ device frame Chrome DevTools used to offer. Intended for demos.
 **Latest version (zip):**
 https://github.com/sidmsmith/device-frame-extension/releases/latest/download/device_frame_extension.zip
 
-See the **[User Guide](USER_GUIDE.md)** for installing and using it.
+See the **[User Guide](USER_GUIDE.md)** for installing and using it. The zip also
+contains `USER_GUIDE.html` (open by double-click, or from the extension's settings
+panel → **? User Guide**).
 
 ## Install (unpacked)
 
@@ -74,7 +76,8 @@ remembered. Keyboard shortcuts can be changed at
 
 ## Releasing a new version (maintainer)
 
-1. Bump `version` in `manifest.json`, commit.
-2. Run `./release.sh "What changed"` – it pushes, builds the zip from `HEAD`,
+1. Bump `version` in `manifest.json` (and update `USER_GUIDE.md` if needed), commit.
+2. Run `./release.sh "What changed"` – it regenerates `USER_GUIDE.html`
+   (`node scripts/build-guide.mjs`, committed if it changed), pushes, builds the zip from `HEAD`,
    and publishes a GitHub release with `device_frame_extension.zip` attached,
    so the download link above always gets the newest version.

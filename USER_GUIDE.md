@@ -48,7 +48,8 @@ when you're done.
 | <img src="docs/icons/camera.svg" width="20"> | Screenshot | Picture of the device: copied to the clipboard **and** saved to Downloads (see section 6). |
 | <img src="docs/icons/eyeOff.svg" width="20"> | Hide toolbar | Hide this bar for a clean screen (see section 8). |
 
-Hover over any button to see a short description.
+Hover over any button to see a short description. This guide is also one
+click away: **Settings** <img src="docs/icons/sliders.svg" width="16"> → **? User Guide**.
 
 ## 4. Devices and screen sizes
 
@@ -90,6 +91,7 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
 - **3-2-1 countdown before recording** – on by default; untick to start
   recording immediately.
 - **Record microphone** – include your voice in recordings (see section 7).
+- **? User Guide** – opens this guide in a new tab.
 
 All settings are remembered.
 

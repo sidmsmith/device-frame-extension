@@ -196,6 +196,9 @@ function drawFrame(L) {
       .seg button { height: 26px; padding: 0 8px; font-size: 12px; gap: 5px; }
       .seg button.sel { border-color: #1a73e8; box-shadow: inset 0 0 0 1px #1a73e8; }
       .sw { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .35); }
+      .help { margin-top: 12px; padding-top: 8px; border-top: 1px solid ${t.barBorder}; }
+      .help a { color: #1a73e8; text-decoration: none; font-weight: 600; }
+      .help a:hover { text-decoration: underline; }
       .chk { display: flex; align-items: center; gap: 6px; margin-top: 10px; cursor: pointer; }
       .ripple {
         position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
@@ -283,6 +286,7 @@ function drawFrame(L) {
       <div class="lbl">Recording</div>
       <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
+      <div class="help"><a href="#" id="guide">? User Guide</a></div>
     </div>
     <div class="count" id="count" hidden></div>
     <div class="toast" id="toast"></div>
@@ -385,6 +389,11 @@ function drawFrame(L) {
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
   root.getElementById('mic').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { mic: e.target.checked } }));
+  root.getElementById('guide').addEventListener('click', (e) => {
+    e.preventDefault();
+    setPop(false);
+    send({ type: 'open-guide' });
+  });
   root.getElementById('countdown').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { countdown: e.target.checked } }));
 
   // Toolbar show/hide: hide button, handle tab (fades in near the top edge),

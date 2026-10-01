@@ -2,3 +2,4 @@
 release.sh export-ignore
 .gitattributes export-ignore
 .gitignore export-ignore
+scripts/ export-ignore
