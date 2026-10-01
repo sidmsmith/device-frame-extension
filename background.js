@@ -10,7 +10,7 @@
 importScripts('devices.js', 'frame.js');
 
 // ---- state ---------------------------------------------------------------
-// session: framed[tabId] = { windowId, device, orientation }
+// session: framed[tabId] = { windowId, device, orientation, recording }
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
 //                   toolbarHidden, frameColor, touch, presets: [{ id, name, width, height }] }
 
@@ -69,7 +69,10 @@ async function onLoaded({ tabId, frameId, url }) {
   // Only normal web pages can be drawn on; skip about:blank, chrome-error:// etc.
   if (frameId !== 0 || !/^https?:/i.test(url)) return;
   const state = (await getFramed())[tabId];
-  if (state) await reframe(tabId, state);
+  if (!state) return;
+  // A full page load ends any recording that was running in the old page.
+  if (state.recording) await updateFramed(tabId, { recording: false });
+  await reframe(tabId, state);
 }
 
 async function reframe(tabId, state, shiftY = 0) {
@@ -136,9 +139,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true; // async response
 });
 
+// Controls that redraw the frame are ignored while recording, so the video
+// doesn't change size mid-way.
+const REDRAWS = ['set-device', 'set-custom', 'save-preset', 'delete-preset', 'rotate', 'set-pref', 'toggle-toolbar'];
+
 async function handleControl(tabId, tab, msg) {
   const state = (await getFramed())[tabId];
   if (!state) return;
+  if (state.recording && REDRAWS.includes(msg.type)) return;
 
   switch (msg.type) {
     case 'set-device': {
@@ -202,6 +210,13 @@ async function handleControl(tabId, tab, msg) {
     case 'toggle-toolbar':
       await toggleToolbar(tabId, state);
       break;
+    case 'rec-state':
+      await updateFramed(tabId, { recording: Boolean(msg.recording) });
+      if (!msg.recording) await reframe(tabId, state);
+      break;
+    case 'refit':
+      await fitWindow(tabId, computeLayout(state.device, state.orientation, await getLast()), msg.metrics);
+      break;
     case 'screenshot': {
       const L = computeLayout(state.device, state.orientation, await getLast());
       const dataUrl = await captureDevice(tab, L);
@@ -223,7 +238,7 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   const state = (await getFramed())[tab.id];
   if (!state) return;
   try {
-    if (command === 'toggle-toolbar') await toggleToolbar(tab.id, state);
+    if (command === 'toggle-toolbar' && !state.recording) await toggleToolbar(tab.id, state);
     if (command === 'copy-screenshot') await copyScreenshot(tab, state);
   } catch (e) {
     console.warn('Device Frame:', command, e);

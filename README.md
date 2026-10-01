@@ -29,6 +29,7 @@ The control bar above the device has:
 | Wi-Fi icon | Show/hide the Android status bar (clock, signal, Wi-Fi, battery); slashed when hidden |
 | Sliders icon | Appearance panel: background (light grey / white / dark), frame colour (black / silver / white / blue; Zebra and Rugged keep their own), and **Show taps** (a circle where you click plus a fingertip cursor, for screen-shared demos) |
 | ⟳ | Reload the page (F5 also works) |
+| Record icon | Record the device to **MP4**: click, confirm Chrome's *Share this tab* prompt, wait for the 3-2-1 countdown, then use the app. Click the red stop button (shows the elapsed time) or Chrome's *Stop sharing* to save it to Downloads. Device/rotate/appearance/hide are locked while recording. Turn on *Show taps* so viewers see where you tapped |
 | Camera icon | Save a PNG of just the device (transparent background) to Downloads and copy it to the clipboard. **Alt+Shift+S** copies to the clipboard only (no download) |
 | Eye-slash icon | Hide the control bar. To show it again: click the small tab at the top centre (appears when the mouse is near the top), double-click the device frame or grey background, or press **Alt+Shift+H** |
 
@@ -51,9 +52,12 @@ remembered. Keyboard shortcuts can be changed at
   shrinks it to fit the screen. Zoom is scoped to that tab only.
 - Device sizes and bezel geometry live in `devices.js`.
 
-## Known limitations (v0.9)
+## Known limitations (v0.10)
 
 - The page still sees a desktop user agent and no touch input.
 - Media queries and `vw` units see the whole window width (device plus bezel
   and margin), not exactly the device width.
 - `chrome://` pages and the Chrome Web Store can't be framed.
+- A recording ends if the page fully reloads (e.g. a login redirect); in-app
+  navigation in single-page apps like MUP is fine. The mouse pointer itself
+  isn't captured, which is what *Show taps* is for.

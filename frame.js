@@ -30,6 +30,8 @@ function drawFrame(L) {
     sliders: svg(16, '<path d="M2 4.5h7M12.2 4.5H14M2 11.5h1.8M7.2 11.5H14"/><circle cx="10.6" cy="4.5" r="1.6"/><circle cx="5.5" cy="11.5" r="1.6"/>'),
     trash: svg(16, '<path d="M2.5 4.5h11M6 4.5V2.8h4v1.7M4 4.5l.7 8.7h6.6l.7-8.7"/>'),
     expand: svg(11, '<path d="M4 6l4 4 4-4"/>'),
+    record: svg(16, '<circle cx="8" cy="8" r="6.2"/><circle cx="8" cy="8" r="3.6" fill="#d93025" stroke="none"/>'),
+    stop: svg(16, '<rect x="4" y="4" width="8" height="8" rx="1.5" fill="currentColor" stroke="none"/>'),
   };
   const c = L.content;
 
@@ -193,6 +195,14 @@ function drawFrame(L) {
         box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); box-sizing: border-box; pointer-events: none;
         animation: df-tap .5s ease-out forwards;
       }
+      button.rec-on { background: #d93025; border-color: #d93025; color: #fff; gap: 6px; font-variant-numeric: tabular-nums; }
+      .count {
+        position: absolute; left: ${L.screen.x}px; top: ${L.screen.y}px; width: ${L.screen.w}px; height: ${L.screen.h}px;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(0, 0, 0, .35); color: #fff; font: 700 120px system-ui, sans-serif;
+        text-shadow: 0 2px 12px rgba(0, 0, 0, .5); pointer-events: none;
+      }
+      .count[hidden] { display: none; }
       @keyframes df-tap { from { transform: scale(.45); opacity: 1; } to { transform: scale(1.35); opacity: 0; } }
     </style>
     <svg class="frame" width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" xmlns="http://www.w3.org/2000/svg">
@@ -228,6 +238,7 @@ function drawFrame(L) {
       <button id="status" title="${L.statusBar ? 'Hide' : 'Show'} status bar">${L.statusBar ? ICON.wifi : ICON.wifiOff}</button>
       <button id="appearance" title="Appearance: background, frame colour, tap indicator">${ICON.sliders}</button>
       <button id="reload" title="Reload page">&#x27F3;</button>
+      <button id="rec" title="Record the device to MP4">${ICON.record}</button>
       <button id="shot" title="Screenshot of the device: copy to clipboard and save PNG${L.copyShortcut ? ` (${L.copyShortcut} copies only)` : ''}">${ICON.camera}</button>
       <button id="hide" title="Hide toolbar (or double-click the frame${L.shortcut ? `, or ${L.shortcut}` : ''})">${ICON.eyeOff}</button>
       </div>
@@ -257,6 +268,7 @@ function drawFrame(L) {
       </div>
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> Show taps (circle + fingertip cursor)</label>
     </div>
+    <div class="count" id="count" hidden></div>
     <div class="toast" id="toast"></div>
     ${L.toolbarHidden ? `<div class="handle" id="handle" title="Show toolbar${L.shortcut ? ` (${L.shortcut})` : ''}">${ICON.expand}</div>` : ''}`;
 
@@ -366,7 +378,7 @@ function drawFrame(L) {
     mousemove: (e) => handle?.classList.toggle('near', e.clientY < 28),
     // Only the frame itself: the app lives inside <body>, while the bezel,
     // margin and status bar areas hit <html>.
-    dblclick: (e) => { if (e.target === document.documentElement) toggleToolbar(); },
+    dblclick: (e) => { if (e.target === document.documentElement && !window.__devframeRec) toggleToolbar(); },
     // Clicks outside our overlay close the appearance panel (clicks inside the
     // shadow DOM are retargeted to the host).
     click: (e) => { if (e.target !== host && !pop.hidden) setPop(false); },
@@ -385,9 +397,168 @@ function drawFrame(L) {
   for (const [type, fn] of Object.entries(window.__devframeListeners ?? {})) document.removeEventListener(type, fn, true);
   for (const [type, fn] of Object.entries(listeners)) document.addEventListener(type, fn, true);
   window.__devframeListeners = listeners;
+  // Re-fit the window when its size drifts from the layout (e.g. Chrome's
+  // "sharing this tab" bar appears, or the user drags the window edge).
+  window.removeEventListener('resize', window.__devframeResize);
+  window.__devframeResize = () => {
+    clearTimeout(window.__devframeResizeTimer);
+    window.__devframeResizeTimer = setTimeout(() => {
+      if (Math.abs(window.innerWidth - L.W) <= 2 && Math.abs(window.innerHeight - L.H) <= 2) return;
+      send({
+        type: 'refit',
+        metrics: {
+          innerWidth: window.innerWidth, innerHeight: window.innerHeight,
+          outerWidth: window.outerWidth, outerHeight: window.outerHeight,
+          availWidth: screen.availWidth, availHeight: screen.availHeight,
+          availLeft: screen.availLeft ?? 0, availTop: screen.availTop ?? 0,
+        },
+      });
+    }, 250);
+  };
+  window.addEventListener('resize', window.__devframeResize);
   document.documentElement.removeEventListener('mouseleave', window.__devframeLeave);
   window.__devframeLeave = () => handle?.classList.remove('near');
   document.documentElement.addEventListener('mouseleave', window.__devframeLeave);
+
+  // ---- Recording ---------------------------------------------------------
+  // Chrome's tab-share prompt (preferCurrentTab) gives a stream of this tab;
+  // after a 3-2-1 countdown each frame is cropped to the device on a canvas,
+  // and the canvas is recorded to MP4. State lives on window so it survives
+  // a redraw; the background blocks redraw-causing controls meanwhile.
+  const recBtn = root.getElementById('rec');
+  const lockIds = ['device', 'edit', 'delpreset', 'rotate', 'status', 'appearance', 'reload', 'hide'];
+  const showRecording = () => {
+    const rec = window.__devframeRec;
+    for (const id of lockIds) {
+      const el = root.getElementById(id);
+      if (el) el.disabled = Boolean(rec);
+    }
+    if (rec) setPop(false);
+    recBtn.classList.toggle('rec-on', Boolean(rec?.recorder));
+    recBtn.title = rec ? 'Stop recording and save MP4' : 'Record the device to MP4';
+    if (!rec?.recorder) {
+      recBtn.innerHTML = rec ? ICON.stop : ICON.record;
+      return;
+    }
+    const secs = Math.floor((Date.now() - rec.started) / 1000);
+    recBtn.innerHTML = `${ICON.stop}<span>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</span>`;
+  };
+  clearInterval(window.__devframeRecTick);
+  window.__devframeRecTick = setInterval(() => { if (window.__devframeRec?.recorder) showRecording(); }, 500);
+  showRecording();
+
+  const stopRecording = () => {
+    const rec = window.__devframeRec;
+    if (!rec || rec.stopping) return;
+    rec.stopping = true;
+    clearInterval(rec.countdown);
+    if (rec.recorder && rec.recorder.state !== 'inactive') rec.recorder.stop();
+    else finishRecording(rec, null);
+  };
+
+  const finishRecording = (rec, blob) => {
+    clearInterval(rec.drawTimer);
+    rec.stream.getTracks().forEach((track) => track.stop());
+    root.getElementById('count').hidden = true;
+    window.__devframeRec = null;
+    if (blob && blob.size) {
+      const ext = rec.mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      const name = `${L.deviceName.replace(/[^\w.-]+/g, '-')}-${L.screen.w}x${L.screen.h}`;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `device-frame-${name}-${stamp}.${ext}`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+      toast(ext === 'mp4' ? 'Recording saved to Downloads' : 'Recording saved as WebM (MP4 not supported by this Chrome)');
+    }
+    send({ type: 'rec-state', recording: false }); // background redraws the controls
+  };
+
+  const startRecording = async () => {
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: 30 },
+        audio: false,
+        preferCurrentTab: true,
+        selfBrowserSurface: 'include',
+        surfaceSwitching: 'exclude',
+      });
+    } catch (e) {
+      toast(e.name === 'NotAllowedError' ? 'Recording cancelled' : `Can't record: ${e.message}`);
+      return;
+    }
+    const mime = ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm']
+      .find((type) => MediaRecorder.isTypeSupported(type));
+    const rec = { stream, mime };
+    window.__devframeRec = rec;
+    send({ type: 'rec-state', recording: true });
+    showRecording();
+    stream.getVideoTracks()[0].addEventListener('ended', stopRecording); // Chrome's "Stop sharing"
+
+    const video = document.createElement('video');
+    video.muted = true;
+    video.srcObject = stream;
+    // Don't hang if playback never starts; give up after 3 s.
+    const playing = await Promise.race([
+      video.play().then(() => true, () => false),
+      new Promise((resolve) => setTimeout(() => resolve(false), 3000)),
+    ]);
+    if (!playing || !video.videoWidth) {
+      toast("Can't record: the tab capture didn't start");
+      rec.stopping = true;
+      return finishRecording(rec, null);
+    }
+
+    // Countdown, then record. The overlay is gone before the first frame.
+    const count = root.getElementById('count');
+    let n = 3;
+    count.textContent = n;
+    count.hidden = false;
+    await new Promise((resolve) => {
+      rec.countdown = setInterval(() => {
+        n -= 1;
+        if (n > 0) { count.textContent = n; return; }
+        clearInterval(rec.countdown);
+        count.hidden = true;
+        resolve();
+      }, 1000);
+    });
+    if (rec.stopping) return finishRecording(rec, null);
+    await new Promise((resolve) => setTimeout(resolve, 100)); // let the overlay disappear from the stream
+
+    // Crop: the device plus a little room for its side buttons, in CSS px,
+    // mapped to video pixels (video width / viewport width covers zoom + DPR).
+    const pad = 8;
+    const crop = { x: L.phone.x - pad, y: L.phone.y - pad, w: L.phone.w + pad * 2, h: L.phone.h + pad * 2 };
+    const scale0 = video.videoWidth / window.innerWidth;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(crop.w * scale0 / 2) * 2; // even sizes for H.264
+    canvas.height = Math.round(crop.h * scale0 / 2) * 2;
+    const ctx = canvas.getContext('2d');
+    // A timer rather than requestAnimationFrame, which pauses whenever the
+    // window isn't painting (e.g. covered by another window).
+    const draw = () => {
+      const scale = video.videoWidth / window.innerWidth;
+      ctx.drawImage(video, crop.x * scale, crop.y * scale, crop.w * scale, crop.h * scale, 0, 0, canvas.width, canvas.height);
+    };
+    draw();
+    rec.drawTimer = setInterval(draw, 1000 / 30);
+
+    const chunks = [];
+    rec.recorder = new MediaRecorder(canvas.captureStream(30), { mimeType: mime, videoBitsPerSecond: 8_000_000 });
+    rec.recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    rec.recorder.onstop = () => finishRecording(rec, new Blob(chunks, { type: mime.split(';')[0] }));
+    rec.recorder.start(1000);
+    rec.started = Date.now();
+    showRecording();
+  };
+
+  recBtn.addEventListener('click', () => {
+    if (window.__devframeRec) stopRecording();
+    else startRecording();
+  });
 
   root.getElementById('shot').addEventListener('click', () => {
     // The background captures, crops and downloads the PNG, then hands it back
