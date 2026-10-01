@@ -57,7 +57,7 @@ when you're done.
 | <img src="docs/icons/trash.svg" width="20"> | Delete | Shown when a **Saved** device is selected: click twice to delete it. |
 | <img src="docs/icons/rotate.svg" width="20"> | Rotate | Switch between portrait and landscape (phones and tablets only). |
 | <img src="docs/icons/wifi.svg" width="20"> / <img src="docs/icons/wifiOff.svg" width="20"> | Status bar | Show / hide an Android status bar (clock, signal, Wi-Fi, battery). Slashed = hidden. |
-| <img src="docs/icons/sliders.svg" width="20"> | Settings | Background, frame colour, tap indicator, countdown, microphone (see section 5). |
+| <img src="docs/icons/sliders.svg" width="20"> | Settings | Background, frame color, tap indicator, countdown, microphone (see section 5). |
 | <img src="docs/icons/reload.svg" width="20"> | Reload | Reload the page (F5 also works). |
 | <img src="docs/icons/record.svg" width="20"> | Record | Record a video of the device (see section 7). Turns red with a timer while recording; click again to stop. |
 | <img src="docs/icons/camera.svg" width="20"> | Screenshot | Picture of the device: copied to the clipboard **and** saved to Downloads (see section 6). |
@@ -88,7 +88,7 @@ Good to know:
 - If a device is bigger than your monitor, the window automatically zooms
   out to fit. The page still lays out at the full size.
 - Laptop and Desktop are always landscape and have no status bar, so those
-  buttons are greyed out.
+  buttons are grayed out.
 
 <img src="docs/images/laptop.png" alt="The Laptop frame" width="520">
 
@@ -96,9 +96,9 @@ Good to know:
 
 Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere else to close it.
 
-- **Background** – Light grey (default), White, or Dark. This is the area
+- **Background** – Light gray (default), White, or Dark. This is the area
   around the device.
-- **Frame colour** – Black, Silver, White, Blue, or Manhattan. (The Zebra,
+- **Frame color** – Black, Silver, White, Blue, or Manhattan. (The Zebra,
   Rugged Handheld, and Desktop keep their own look.)
 - **Show taps** – shows a soft circle wherever you click, plus a round
   fingertip cursor. Great for screen-shared demos and recordings, so viewers
@@ -137,7 +137,7 @@ Tips:
 - Only the device is recorded – not the control bar.
 - Turn on **Show taps** so viewers can see where you clicked (the mouse
   pointer itself isn't recorded).
-- The video is a rectangle, so the **background colour** shows in the corners
+- The video is a rectangle, so the **background color** shows in the corners
   around a phone. Pick the background that matches your slides (e.g. White)
   before recording. In PowerPoint you can also use **Video Format → Video
   Shape → Rounded Rectangle** to trim the corners.

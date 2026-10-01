@@ -1,4 +1,4 @@
-// Device catalogue and frame geometry. Sizes are CSS pixels (what the page
+// Device catalog and frame geometry. Sizes are CSS pixels (what the page
 // sees), matching Chrome DevTools' device presets where one exists.
 
 const DEVICES = {
@@ -48,13 +48,13 @@ const DEVICES = {
 };
 
 const DEFAULT_DEVICE = 'pixel8';
-const MARGIN = 16; // grey space around the phone
+const MARGIN = 16; // gray space around the phone
 const BAR = 40;    // control bar height
 const STATUS_BAR = 24; // Android status bar height inside the screen
 const BACKGROUNDS = ['light', 'white', 'dark'];
 
-// Body colours for the phone/tablet frames (gradient light -> dark). 'black'
-// keeps each device's own colours; devices with fixedColor ignore this.
+// Body colors for the phone/tablet frames (gradient light -> dark). 'black'
+// keeps each device's own colors; devices with fixedColor ignore this.
 const FRAME_COLORS = {
   black: null,
   silver: ['#eceef1', '#a5a9af'],

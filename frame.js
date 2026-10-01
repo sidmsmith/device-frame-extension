@@ -13,12 +13,12 @@ function drawFrame(L) {
     white: { page: '#ffffff', bar: '#f6f7f9', barBorder: '#dadce0', text: '#202124', ctl: '#ffffff', ctlBorder: '#c4c7cc', ctlHover: '#eceef1', shadow: 0.3 },
     dark: { page: '#2b2d33', bar: '#1e1f23', barBorder: '#000000', text: '#e6e6e6', ctl: '#3a3c44', ctlBorder: '#50535c', ctlHover: '#474a53', shadow: 0.6 },
   };
-  const BG_LABEL = { light: 'Light grey', white: 'White', dark: 'Dark' };
+  const BG_LABEL = { light: 'Light gray', white: 'White', dark: 'Dark' };
   const FRAME_LABEL = { black: 'Black', silver: 'Silver', white: 'White', blue: 'Blue', manhattan: 'Manhattan' };
   const FRAME_SWATCH = { black: '#202124', silver: '#c9ccd1', white: '#ffffff', blue: '#2f5597', manhattan: '#083332' };
   const t = THEMES[L.background] ?? THEMES.light;
 
-  // Line icons; stroke follows the control bar's text colour.
+  // Line icons; stroke follows the control bar's text color.
   const svg = (size, body) =>
     `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
   const WIFI = '<path d="M1.8 6.2a9 9 0 0 1 12.4 0"/><path d="M4.2 8.8a5.5 5.5 0 0 1 7.6 0"/><circle cx="8" cy="11.9" r="1.2" fill="currentColor" stroke="none"/>';
@@ -260,7 +260,7 @@ function drawFrame(L) {
       ${L.preset ? `<button id="delpreset" title="Delete saved device &quot;${L.preset.name}&quot;">${ICON.trash}</button>` : ''}
       <button id="rotate"${L.canRotate ? ` title="Rotate to ${rotateTo}"` : ' title="This device doesn\'t rotate" disabled data-fixed-off="1"'}>${ICON.rotate}</button>
       <button id="status"${L.hasStatusBar ? ` title="${L.statusBar ? 'Hide' : 'Show'} status bar"` : ' title="No status bar on this device" disabled data-fixed-off="1"'}>${L.statusBar ? ICON.wifi : ICON.wifiOff}</button>
-      <button id="appearance" title="Settings: background, frame colour, taps, microphone">${ICON.sliders}</button>
+      <button id="appearance" title="Settings: background, frame color, taps, microphone">${ICON.sliders}</button>
       <button id="reload" title="Reload page">&#x27F3;</button>
       <button id="rec">${ICON.record}</button>
       <button id="shot" title="Screenshot of the device: copy to clipboard and save PNG${L.copyShortcut ? ` (${L.copyShortcut} copies only)` : ''}">${ICON.camera}</button>
@@ -286,7 +286,7 @@ function drawFrame(L) {
       <div class="seg">
         ${Object.keys(BG_LABEL).map((k) => `<button data-bg="${k}" class="${k === L.background ? 'sel' : ''}">${BG_LABEL[k]}</button>`).join('')}
       </div>
-      <div class="lbl">Frame colour${L.frameColorFixed ? ' <span class="note">(fixed for this device)</span>' : ''}</div>
+      <div class="lbl">Frame color${L.frameColorFixed ? ' <span class="note">(fixed for this device)</span>' : ''}</div>
       <div class="seg">
         ${Object.keys(FRAME_LABEL).map((k) => `<button data-fc="${k}" class="${k === L.frameColor && !L.frameColorFixed ? 'sel' : ''}"${L.frameColorFixed ? ' disabled' : ''}><span class="sw" style="background:${FRAME_SWATCH[k]}"></span>${FRAME_LABEL[k]}</button>`).join('')}
       </div>
@@ -571,7 +571,7 @@ function drawFrame(L) {
           surfaceSwitching: 'exclude',
         });
     } catch (e) {
-      toast(e.name === 'NotAllowedError' && !streamId ? 'Recording cancelled' : `Can't record: ${e.message || e.name}`);
+      toast(e.name === 'NotAllowedError' && !streamId ? 'Recording canceled' : `Can't record: ${e.message || e.name}`);
       console.warn('Device Frame: recording failed to start', e);
       return;
     }
