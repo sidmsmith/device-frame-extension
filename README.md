@@ -22,7 +22,7 @@ The control bar above the device has:
 
 | Control | What it does |
 |---|---|
-| Device dropdown | Pixel 8, Galaxy S24, Zebra TC52, Android Tablet |
+| Device dropdown | Pixel 8, Galaxy S24, Moto G4, Zebra TC52, Android Tablet |
 | ⟲ | Rotate between portrait and landscape |
 | ▭ | Show/hide the Android status bar (clock, signal, Wi-Fi, battery) |
 | ◐ | Cycle the window background: light grey (default), white, dark |

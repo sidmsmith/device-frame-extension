@@ -12,6 +12,11 @@ const DEVICES = {
     bezel: { side: 10, top: 28, bottom: 28 }, radius: 42, screenRadius: 30,
     colors: ['#45464c', '#16171a'],
   },
+  motoG4: {
+    name: 'Moto G4', width: 360, height: 640,
+    bezel: { side: 14, top: 64, bottom: 64 }, radius: 38, screenRadius: 2,
+    colors: ['#3c3d42', '#111214'],
+  },
   zebraTC52: {
     name: 'Zebra TC52', width: 360, height: 640,
     bezel: { side: 20, top: 58, bottom: 72 }, radius: 30, screenRadius: 6,
