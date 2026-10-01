@@ -283,12 +283,16 @@ function drawFrame(L) {
 
   const send = (msg) => chrome.runtime.sendMessage(msg);
   const toastEl = root.getElementById('toast');
-  const toast = (text) => {
+  const toast = (text, ms = 2500) => {
+    window.__devframePendingToast = { text, until: Date.now() + ms };
     toastEl.textContent = text;
     toastEl.classList.add('show');
     clearTimeout(window.__devframeToast);
-    window.__devframeToast = setTimeout(() => toastEl.classList.remove('show'), 2500);
+    window.__devframeToast = setTimeout(() => toastEl.classList.remove('show'), ms);
   };
+  // Re-show a message cut short by the redraw (e.g. after a recording ends).
+  const pending = window.__devframePendingToast;
+  if (pending && pending.until > Date.now() + 300) toast(pending.text, pending.until - Date.now());
 
   // Keep typing in our controls away from the app's own key handlers (e.g. scanner input).
   const bar = root.querySelector('.bar');
@@ -449,10 +453,11 @@ function drawFrame(L) {
   window.__devframeRecTick = setInterval(() => { if (window.__devframeRec?.recorder) showRecording(); }, 500);
   showRecording();
 
-  const stopRecording = () => {
+  const stopRecording = (reason = 'stopped') => {
     const rec = window.__devframeRec;
     if (!rec || rec.stopping) return;
     rec.stopping = true;
+    rec.reason = rec.reason || reason;
     clearInterval(rec.countdown);
     if (rec.recorder && rec.recorder.state !== 'inactive') rec.recorder.stop();
     else finishRecording(rec, null);
@@ -472,7 +477,13 @@ function drawFrame(L) {
       a.download = `device-frame-${name}-${stamp}.${ext}`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-      toast(ext === 'mp4' ? 'Recording saved to Downloads' : 'Recording saved as WebM (MP4 not supported by this Chrome)');
+      if (rec.error) toast(`Recording stopped early (${rec.error}); saved what was recorded`, 8000);
+      else toast(ext === 'mp4' ? 'Recording saved to Downloads' : 'Recording saved as WebM (MP4 not supported by this Chrome)');
+    } else if (rec.recorder) {
+      // Started but nothing usable was recorded: say why.
+      const why = rec.error || rec.reason || 'unknown reason';
+      console.warn('Device Frame: recording produced no video:', why, rec);
+      toast(`Recording failed: ${why}`, 8000);
     }
     send({ type: 'rec-state', recording: false }); // background redraws the controls
   };
@@ -485,7 +496,17 @@ function drawFrame(L) {
       stream = streamId
         ? await navigator.mediaDevices.getUserMedia({
           audio: false,
-          video: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId, maxFrameRate: 30 } },
+          video: {
+            mandatory: {
+              chromeMediaSource: 'tab',
+              chromeMediaSourceId: streamId,
+              maxFrameRate: 30,
+              minWidth: Math.round(window.innerWidth * devicePixelRatio),
+              maxWidth: Math.round(window.innerWidth * devicePixelRatio),
+              minHeight: Math.round(window.innerHeight * devicePixelRatio),
+              maxHeight: Math.round(window.innerHeight * devicePixelRatio),
+            },
+          },
         })
         : await navigator.mediaDevices.getDisplayMedia({
           video: { frameRate: 30 },
@@ -505,7 +526,7 @@ function drawFrame(L) {
     window.__devframeRec = rec;
     send({ type: 'rec-state', recording: true });
     showRecording();
-    stream.getVideoTracks()[0].addEventListener('ended', stopRecording); // Chrome's "Stop sharing"
+    stream.getVideoTracks()[0].addEventListener('ended', () => stopRecording('the tab capture ended')); // e.g. Chrome's "Stop sharing"
 
     const video = document.createElement('video');
     video.muted = true;
@@ -560,13 +581,23 @@ function drawFrame(L) {
     rec.recorder = new MediaRecorder(canvas.captureStream(30), { mimeType: mime, videoBitsPerSecond: 8_000_000 });
     rec.recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
     rec.recorder.onstop = () => finishRecording(rec, new Blob(chunks, { type: mime.split(';')[0] }));
-    rec.recorder.start(1000);
+    rec.recorder.onerror = (e) => {
+      rec.error = `${e.error?.name || 'error'}: ${e.error?.message || 'the recorder stopped'}`;
+      console.warn('Device Frame: recorder error', e.error);
+    };
+    try {
+      rec.recorder.start(1000);
+    } catch (e) {
+      rec.error = `${e.name}: ${e.message}`;
+      rec.stopping = true;
+      return finishRecording(rec, null);
+    }
     rec.started = Date.now();
     showRecording();
   };
 
   recBtn.addEventListener('click', () => {
-    if (window.__devframeRec) stopRecording();
+    if (window.__devframeRec) stopRecording('stopped with the button');
     else startRecording();
   });
 
@@ -574,7 +605,7 @@ function drawFrame(L) {
   // page's lifetime, forwarding to the latest drawFrame's handlers.
   window.__devframeOnMessage = (msg) => {
     if (msg?.type === 'df-record-start' && !window.__devframeRec) startRecording(msg.streamId);
-    if (msg?.type === 'df-record-stop') stopRecording();
+    if (msg?.type === 'df-record-stop') stopRecording('stopped with the shortcut');
   };
   if (!window.__devframeMessageBound) {
     chrome.runtime.onMessage.addListener((msg) => { window.__devframeOnMessage?.(msg); });
