@@ -12,7 +12,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const markdown = readFileSync(join(root, 'USER_GUIDE.md'), 'utf8');
-const version = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8')).version;
+// The guide is versioned by minor release (x.y); patch releases don't change it.
+const version = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8')).version.split('.').slice(0, 2).join('.');
 
 const body = execFileSync('gh', ['api', 'markdown', '--input', '-'], {
   input: JSON.stringify({ text: markdown, mode: 'markdown', context: 'sidmsmith/device-frame-extension' }),
@@ -62,7 +63,7 @@ const html = `<!doctype html>
 </head>
 <body>
 <main>
-${inlined.replace(/(<\/h1>)/, `$1\n<p class="version">Version ${version}</p>`)}
+${inlined.replace(/(<\/h1>)/, `$1\n<p class="version">Guide for version ${version}</p>`)}
 </main>
 </body>
 </html>

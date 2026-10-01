@@ -76,8 +76,12 @@ remembered. Keyboard shortcuts can be changed at
 
 ## Releasing a new version (maintainer)
 
-1. Bump `version` in `manifest.json` (and update `USER_GUIDE.md` if needed), commit.
-2. Run `./release.sh "What changed"` – it regenerates `USER_GUIDE.html`
-   (`node scripts/build-guide.mjs`, committed if it changed), pushes, builds the zip from `HEAD`,
+Versioning: **x.y.Z** (patch, e.g. 0.14.1) for fixes and small tweaks – the user
+guide is left as is. **x.Y.0** (minor, e.g. 0.15.0) for new features or
+noticeable changes – update `USER_GUIDE.md` first.
+
+1. Bump `version` in `manifest.json` (and update `USER_GUIDE.md` for a minor release), commit.
+2. Run `./release.sh "What changed"` – for a minor release it regenerates `USER_GUIDE.html`
+   (`node scripts/build-guide.mjs`, committed if it changed); then it pushes, builds the zip from `HEAD`,
    and publishes a GitHub release with `device_frame_extension.zip` attached,
    so the download link above always gets the newest version.

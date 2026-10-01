@@ -10,11 +10,17 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
-# Regenerate the HTML guide from USER_GUIDE.md and commit it if it changed.
-node scripts/build-guide.mjs
-if [ -n "$(git status --porcelain USER_GUIDE.html)" ]; then
-  git add USER_GUIDE.html
-  git commit -q -m "Regenerate USER_GUIDE.html for v$V"
+# Versioning: x.y.Z (patch) = fixes/small tweaks, guide untouched;
+# x.Y.0 (minor) = features/notable changes, update USER_GUIDE.md first and
+# the HTML guide is regenerated here.
+if [ "${V##*.}" = "0" ]; then
+  node scripts/build-guide.mjs
+  if [ -n "$(git status --porcelain USER_GUIDE.html)" ]; then
+    git add USER_GUIDE.html
+    git commit -q -m "Regenerate USER_GUIDE.html for v$V"
+  fi
+else
+  echo "Patch release v$V: leaving the user guide as is."
 fi
 
 mkdir -p dist
