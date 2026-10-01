@@ -197,6 +197,13 @@ function drawFrame(L) {
       .seg button.sel { border-color: #1a73e8; box-shadow: inset 0 0 0 1px #1a73e8; }
       .sw { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .35); }
       .pop input[type=text] { width: 100%; flex: none; height: 26px; font-size: 12px; }
+      .pop textarea {
+        display: block; width: 100%; box-sizing: border-box; resize: vertical; min-height: 54px;
+        font: 12px ui-monospace, Consolas, monospace; color: inherit; padding: 4px 6px;
+        background: ${t.ctl}; border: 1px solid ${t.ctlBorder}; border-radius: 4px;
+      }
+      .pop textarea.bad { border-color: #d93025; }
+      #rulesNote { color: #d93025; opacity: 1; margin-top: 2px; }
       .help { margin-top: 12px; padding-top: 8px; border-top: 1px solid ${t.barBorder}; }
       .help a { color: #1a73e8; text-decoration: none; font-weight: 600; }
       .help a:hover { text-decoration: underline; }
@@ -288,7 +295,10 @@ function drawFrame(L) {
       <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
       <div class="lbl">Window title</div>
-      <input id="mupTitle" type="text" maxlength="60" value="${L.mupTitle}" placeholder="(keep the page's own title)" title="Shown as this window's title for every page (and instead of &quot;MUP&quot; in normal tabs). Leave blank to keep the page's own title. Press Enter to save.">
+      <input id="mupTitle" type="text" maxlength="60" value="${L.mupTitle}" placeholder="(use the renames below)" title="Shown as this window's title for every page. Leave blank to use the renames below. Press Enter to save.">
+      <div class="lbl">Rename titles <span class="note">(Old = New, one per line)</span></div>
+      <textarea id="titleRules" rows="3" spellcheck="false" placeholder="MUP = WM Mobile" title="One rename per line: Old title = New title. Matches the whole title, ignoring capitals; end the old title with * to match titles that start with it. Applies to all tabs. Saved when you click away.">${L.titleRules}</textarea>
+      <div class="note" id="rulesNote"></div>
       <div class="help"><a href="#" id="guide">? User Guide</a></div>
     </div>
     <div class="count" id="count" hidden></div>
@@ -399,6 +409,21 @@ function drawFrame(L) {
   };
   titleInput.addEventListener('change', saveTitle);
   titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveTitle(); } });
+  // Title renames: flag lines that can't be read (no "Old = New"); those are
+  // skipped by title.js. Saved when the box loses focus.
+  const rulesBox = root.getElementById('titleRules');
+  const rulesNote = root.getElementById('rulesNote');
+  const checkRules = () => {
+    const bad = rulesBox.value.split(/\r?\n/)
+      .map((line, i) => ({ line: line.trim(), n: i + 1 }))
+      .filter(({ line }) => line && !line.startsWith('#') && !/^[^=]*[^=\s*][^=]*\s*=\s*\S/.test(line))
+      .map(({ n }) => n);
+    rulesBox.classList.toggle('bad', bad.length > 0);
+    rulesNote.textContent = bad.length ? `Line ${bad.join(', ')} skipped: use "Old title = New title"` : '';
+  };
+  checkRules();
+  rulesBox.addEventListener('input', checkRules);
+  rulesBox.addEventListener('change', () => send({ type: 'set-pref', prefs: { titleRules: rulesBox.value } }));
   root.getElementById('guide').addEventListener('click', (e) => {
     e.preventDefault();
     setPop(false);
