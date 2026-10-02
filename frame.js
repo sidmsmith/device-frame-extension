@@ -297,6 +297,7 @@ function drawFrame(L) {
       </div>
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> Show taps (circle + fingertip cursor)</label>
       <label class="chk" style="margin-top: 6px" title="Shrink pages that are wider than the device screen so they fit without scrolling sideways (this window only)"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> Fit page to screen width</label>
+      <label class="chk" style="margin-top: 6px" title="Every new frame window starts with this toolbar hidden (show it with a double-click on the frame${L.shortcut ? `, ${L.shortcut}` : ''}, or the tab at the top)"><input type="checkbox" id="openHidden"${L.openHidden ? ' checked' : ''}> Open with toolbar hidden</label>
       <div class="lbl">Recording</div>
       <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
@@ -414,6 +415,7 @@ function drawFrame(L) {
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
   root.getElementById('fitWidth').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { fitWidth: e.target.checked } }));
+  root.getElementById('openHidden').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { openHidden: e.target.checked } }));
   root.getElementById('mic').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { mic: e.target.checked } }));
   // Title renames: flag lines that can't be read (no "Old = New"); those are
   // skipped by title.js. Saved when the box loses focus.

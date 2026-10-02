@@ -12,7 +12,7 @@ importScripts('devices.js', 'frame.js');
 // ---- state ---------------------------------------------------------------
 // session: framed[tabId] = { windowId, device, orientation, recording }
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
-//                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, fitWidth, presets: [{ id, name, width, height }] }
+//                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, fitWidth, openHidden, presets: [{ id, name, width, height }] }
 
 async function getFramed() {
   return (await chrome.storage.session.get('framed')).framed ?? {};
@@ -39,6 +39,9 @@ async function saveLast(patch) {
 chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.url || !/^https?:/i.test(tab.url)) return; // chrome:// etc. can't be framed
 
+  // "Open with toolbar hidden" (default on): start every frame window with the
+  // toolbar hidden, whatever it was last time.
+  if ((await getLast()).openHidden !== false) await saveLast({ toolbarHidden: true });
   const last = await getLast();
   const device = isDeviceKey(last.device, last) ? last.device : DEFAULT_DEVICE;
   const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
@@ -238,6 +241,7 @@ async function handleControl(tabId, tab, msg) {
       if (typeof msg.prefs.titleRules === 'string') prefs.titleRules = msg.prefs.titleRules.slice(0, 4000);
       if (typeof msg.prefs.iconAlways === 'boolean') prefs.iconAlways = msg.prefs.iconAlways;
       if (typeof msg.prefs.fitWidth === 'boolean') prefs.fitWidth = msg.prefs.fitWidth;
+      if (typeof msg.prefs.openHidden === 'boolean') prefs.openHidden = msg.prefs.openHidden;
       await saveLast(prefs);
       await reframe(tabId, state);
       break;
