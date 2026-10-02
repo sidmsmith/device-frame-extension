@@ -250,3 +250,29 @@ Reading mode.)
 | "Recording failed: …" | Try the record button instead of the shortcut, and send the message text to whoever maintains the extension. |
 | "Clipboard copy blocked" | The PNG was still saved to Downloads. Click inside the frame window first, then try again. |
 | A strange text-only view appeared | That's Chrome's Reading mode (Alt+Shift+R) – click the ✕ to close it. |
+
+## 12. Release History
+
+Newest first. Each version's main additions (smaller fixes in between are
+included in the version they lead up to).
+
+| Version | Date | Highlights |
+|---|---|---|
+| **0.19** | Oct 2, 2026 | New **Always open with toolbar hidden** setting (on by default), so every frame window starts with a clean screen. |
+| **0.18** | Oct 2, 2026 | Real product photos for the **Zebra MC9400, TC72, TC8300 and WT6300**; the drawn Rugged Handheld, TC52 and TC8000 were retired (saved selections move to the new devices). |
+| **0.17** | Oct 2, 2026 | Pages fit the device screen: too-wide pages shrink to fit, screen-relative sizes use the device screen (fixing cut-off footer buttons), and single words like PERFORMANCE stay on one line. |
+| **0.16** | Oct 2, 2026 | Redesigned Rugged Handheld and a **Tab icon** setting to show your own icon on renamed tabs. |
+| **0.15** | Oct 1, 2026 | **Rename tab titles** (e.g. MUP → WM Mobile), clearer update instructions, and American spelling throughout. |
+| **0.14** | Oct 1, 2026 | User Guide included in the download – double-click `USER_GUIDE.html` or use **Settings → ? User Guide**. |
+| **0.13** | Oct 1, 2026 | **Laptop** and frameless **Desktop** sizes for recording full WMS screens, the Manhattan frame color, an optional recording countdown, and a grouped device list. |
+| **0.12** | Oct 1, 2026 | Optional **microphone** narration in recordings. |
+| **0.11** | Oct 1, 2026 | **Alt+Shift+V** records without Chrome's share prompt, and shortcuts no longer type into the app. |
+| **0.10** | Oct 1, 2026 | **Record the device to MP4**, with a 3-2-1 countdown. |
+| **0.9** | Oct 1, 2026 | Settings panel with frame colors, the **Show taps** indicator, and saved custom devices. |
+| **0.8** | Oct 1, 2026 | Icon buttons and **Alt+Shift+S** copy-only screenshots. |
+| **0.7** | Oct 1, 2026 | Hideable toolbar (double-click the frame, Alt+Shift+H, or the tab at the top). |
+| **0.6** | Oct 1, 2026 | Screenshots are also copied to the clipboard. |
+| **0.5** | Oct 1, 2026 | Moto G4 and **Custom** screen sizes. |
+| **0.4** | Oct 1, 2026 | Background choices and an optional Android status bar. |
+| **0.3** | Oct 1, 2026 | Device picker, rotate, and screenshots. |
+| **0.1–0.2** | Oct 1, 2026 | First version: WM Mobile shown inside a phone frame in its own window. |

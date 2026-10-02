@@ -14,6 +14,12 @@ fi
 # x.Y.0 (minor) = features/notable changes, update USER_GUIDE.md first and
 # the HTML guide is regenerated here.
 if [ "${V##*.}" = "0" ]; then
+  # Every minor release needs its line in the guide's Release History.
+  MINOR="${V%.*}"
+  if ! grep -q "^| \*\*${MINOR}\*\* |" USER_GUIDE.md; then
+    echo "Add a '| **${MINOR}** | <date> | <highlights> |' row to Release History in USER_GUIDE.md first." >&2
+    exit 1
+  fi
   node scripts/build-guide.mjs
   if [ -n "$(git status --porcelain USER_GUIDE.html)" ]; then
     git add USER_GUIDE.html

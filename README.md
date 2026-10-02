@@ -98,7 +98,8 @@ Versioning: **x.y.Z** (patch, e.g. 0.14.1) for fixes and small tweaks – the us
 guide is left as is. **x.Y.0** (minor, e.g. 0.15.0) for new features or
 noticeable changes – update `USER_GUIDE.md` first.
 
-1. Bump `version` in `manifest.json` (and update `USER_GUIDE.md` for a minor release), commit.
+1. Bump `version` in `manifest.json` (and for a minor release update `USER_GUIDE.md`, including a
+   row in **12. Release History** – `release.sh` refuses a minor release without it), commit.
 2. Run `./release.sh "What changed"` – for a minor release it regenerates `USER_GUIDE.html`
    (`node scripts/build-guide.mjs`, committed if it changed); then it pushes, builds the zip from `HEAD`,
    and publishes a GitHub release with `device_frame_extension.zip` attached,
