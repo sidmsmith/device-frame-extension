@@ -30,7 +30,8 @@ shows Chrome's "Share this tab" prompt.
 To include your voice, tick "Record microphone" in the settings (sliders)
 panel; Chrome asks for microphone permission the first time.
 Tab titles (e.g. "MUP") can be renamed in the settings panel under
-"Rename titles", one per line: Old title = New title.
+"Rename titles", one per line: Old title = New title. "Tab icon" lets you
+pick an icon for renamed tabs (or every page in the frame window).
 To hide the bar: click the eye-slash button (far right). To show it again: double-click the
 device frame, press Alt+Shift+H, or click the small tab at the top.
 

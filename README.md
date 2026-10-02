@@ -68,7 +68,9 @@ remembered. Keyboard shortcuts can be changed at
   with), in all tabs including frame windows. Re-applied when the page resets
   its title. If a **Tab icon** is chosen in the settings panel (stored as a
   64×64 PNG under `tabIcon`), renamed tabs also show it instead of the page's
-  own icon.
+  own icon (with "Always display", every page in frame windows does).
+- The Rugged Handheld brings its own artwork (`ruggedArt()` in `devices.js`),
+  drawn in device coordinates and rotated for landscape.
 
 ## Known limitations
 

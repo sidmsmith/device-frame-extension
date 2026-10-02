@@ -71,7 +71,7 @@ click away: **Settings** <img src="docs/icons/sliders.svg" width="16"> → **? U
 The device dropdown has three sections:
 
 - **Mobile** – Android Tablet, Galaxy S24, Moto G4, Pixel 8, Rugged Handheld
-  (with keypad and scan triggers), Zebra TC52.
+  (a warehouse scanner with keypad, scan key and side triggers), Zebra TC52.
 - **Full Screen** – for laptop/PC/fixed-station screens:
   - **Laptop (1366×768)** – the page inside a laptop frame.
   - **Desktop (no frame, 1920×1080)** – just the screen, no frame at all.
@@ -90,7 +90,7 @@ Good to know:
 - Laptop and Desktop are always landscape and have no status bar, so those
   buttons are grayed out.
 
-<img src="docs/images/laptop.png" alt="The Laptop frame" width="520">
+<img src="docs/images/rugged.png" alt="The Rugged Handheld" width="250"> <img src="docs/images/laptop.png" alt="The Laptop frame" width="520">
 
 ## 5. Settings panel
 
@@ -106,7 +106,7 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
 - **3-2-1 countdown before recording** – on by default; untick to start
   recording immediately.
 - **Record microphone** – include your voice in recordings (see section 7).
-- **Rename titles** – friendlier names for browser tabs (see section 9).
+- **Rename titles** and **Tab icon** – friendlier names and icons for browser tabs (see section 9).
 - **? User Guide** – opens this guide in a new tab.
 
 All settings are remembered.
@@ -160,7 +160,7 @@ Click <img src="docs/icons/eyeOff.svg" width="16"> to hide the bar for a clean, 
 - press **Alt+Shift+H**, or
 - move the mouse to the top edge of the window and click the small tab <img src="docs/icons/expand.svg" width="14"> that appears.
 
-## 9. Renaming tab titles
+## 9. Tab titles and icons
 
 Some apps have unhelpful page titles (WM Mobile shows **MUP**). The
 **Rename titles** box in the settings panel replaces them in the browser tab
@@ -185,6 +185,19 @@ WM Desktop* = Warehouse Management
 **If a tab isn't renamed:** tabs that were already open when you installed or
 updated the extension don't have it yet – press **F5** on that tab once.
 
+### Tab icon
+
+You can also replace the small icon shown in the tab and the frame window's
+title bar. Under **Tab icon** in the settings panel:
+
+- **Choose…** – pick an image (PNG, JPG, SVG, or ICO). It's shrunk to a small
+  icon automatically.
+- By default the icon is shown on **tabs renamed by your list** (e.g. the
+  WM Mobile tab); every other tab keeps its own icon.
+- **Always display in this window** – the frame window shows your icon for
+  every page, renamed or not. (Normal tabs still only get it when renamed.)
+- **Remove** – go back to each page's own icon.
+
 ## 10. Keyboard shortcuts
 
 | Shortcut | Does |
@@ -205,7 +218,7 @@ Reading mode.)
 | Clicking the toolbar icon does nothing | It only works on normal web pages (`http`/`https`), not on `chrome://` pages. |
 | A shortcut does nothing | Check `chrome://extensions/shortcuts` – Chrome sometimes leaves a new shortcut blank; set it there. |
 | A shortcut types a letter into the page | Close the frame window and open it again (needed once after installing or updating). |
-| A tab title isn't renamed | Press **F5** on that tab (tabs open before installing/updating need one refresh). Check the old title in the list matches the page's title. |
+| A tab title or icon isn't changed | Press **F5** on that tab (tabs open before installing/updating need one refresh). Check the old title in the list matches the page's title. |
 | Still the old version after updating | The zip was probably extracted to a new folder like `device_frame_extension (1)`. Extract into your original folder and click **Reload** on the extension card. |
 | "Recording failed: …" | Try the record button instead of the shortcut, and send the message text to whoever maintains the extension. |
 | "Clipboard copy blocked" | The PNG was still saved to Downloads. Click inside the frame window first, then try again. |
