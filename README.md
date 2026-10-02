@@ -75,8 +75,10 @@ remembered. Keyboard shortcuts can be changed at
 ## Known limitations
 
 - The page still sees a desktop user agent and no touch input.
-- Media queries and `vw` units see the whole window width (device plus bezel
-  and margin), not exactly the device width.
+- `vw`/`vh` (and `dvh`, `vmin`, …) in the page's stylesheets and inline styles
+  are rewritten in frame windows to the device screen size (cross-origin
+  stylesheets can't be read, so units there stay window-based). CSS media
+  queries and scripts reading `window.innerWidth` still see the whole window.
 - `chrome://` pages and the Chrome Web Store can't be framed.
 - A recording ends if the page fully reloads (e.g. a login redirect); in-app
   navigation in single-page apps like MUP is fine. The mouse pointer itself

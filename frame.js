@@ -50,7 +50,15 @@ function drawFrame(L) {
     document.documentElement.appendChild(style);
   }
   style.textContent = `
-    html { background: ${t.page} !important; overflow: hidden !important; }
+    html {
+      background: ${t.page} !important; overflow: hidden !important;
+      /* The device screen as "the viewport": vw/vh in the page are rewritten to
+         these (see viewport units below), following the fit-to-width zoom. */
+      --df-vw: calc(${c.w}px / var(--df-fit, 1) / 100);
+      --df-vh: calc(${c.h}px / var(--df-fit, 1) / 100);
+      --df-vmin: min(var(--df-vw), var(--df-vh));
+      --df-vmax: max(var(--df-vw), var(--df-vh));
+    }
     body {
       position: fixed !important;
       /* --df-fit < 1 shrinks a too-wide page to the screen width (see fitWidth below):
@@ -520,6 +528,60 @@ function drawFrame(L) {
     window.__devframeFitObserver = new MutationObserver(scheduleFit);
     window.__devframeFitObserver.observe(document.body, { childList: true, subtree: true });
     window.__devframeFitTimer = setInterval(fitWidth, 2000); // catches style-only changes
+  }
+
+  // Viewport units: vw/vh in the page normally measure the whole frame window
+  // (device + bezel + margin), so things sized as "35vw" or "100vh" come out
+  // too big for the device screen. Rewrite them in the page's stylesheets and
+  // inline styles to the --df-vw/--df-vh variables above (the screen size).
+  // Set up once per page; it keeps watching for styles the app adds later.
+  if (!window.__devframeViewport) {
+    const units = { vw: '--df-vw', dvw: '--df-vw', svw: '--df-vw', lvw: '--df-vw', vh: '--df-vh', dvh: '--df-vh', svh: '--df-vh', lvh: '--df-vh', vmin: '--df-vmin', vmax: '--df-vmax' };
+    const find = /(-?(?:\d+\.?\d*|\.\d+))(dvw|svw|lvw|vw|dvh|svh|lvh|vh|vmin|vmax)\b/g;
+    const has = /(?:\d|\.)(?:d|s|l)?v(?:w|h|min|max)\b/;
+    const done = new WeakSet();
+    const fixStyle = (style) => {
+      for (let i = 0; i < style.length; i++) {
+        const prop = style[i];
+        const value = style.getPropertyValue(prop);
+        if (has.test(value)) style.setProperty(prop, value.replace(find, (_, n, u) => `calc(${n} * var(${units[u]}))`), style.getPropertyPriority(prop));
+      }
+    };
+    const fixRules = (rules) => {
+      for (const rule of rules) {
+        if (rule.style && !done.has(rule)) { fixStyle(rule.style); done.add(rule); }
+        if (rule.cssRules) fixRules(rule.cssRules);
+      }
+    };
+    const fixSheets = () => {
+      for (const sheet of document.styleSheets) {
+        if (sheet.ownerNode?.id === '__devframe-style') continue;
+        let rules;
+        try { rules = sheet.cssRules; } catch { continue; } // cross-origin sheet: can't read
+        fixRules(rules);
+      }
+    };
+    const fixInline = (root) => {
+      if (root.nodeType !== 1) return;
+      if (root.hasAttribute('style') && has.test(root.getAttribute('style'))) fixStyle(root.style);
+      for (const el of root.querySelectorAll('[style]')) if (has.test(el.getAttribute('style'))) fixStyle(el.style);
+    };
+    let pending = 0;
+    const schedule = () => { clearTimeout(pending); pending = setTimeout(fixSheets, 50); };
+    window.__devframeViewport = new MutationObserver((records) => {
+      for (const r of records) {
+        if (r.type === 'attributes') fixInline(r.target);
+        for (const node of r.addedNodes) {
+          if (node.nodeName === 'STYLE' || node.nodeName === 'LINK') { schedule(); node.addEventListener?.('load', schedule); }
+          else if (r.target !== document.head) fixInline(node);
+        }
+        if (r.type === 'characterData' || r.target.nodeName === 'STYLE') schedule();
+      }
+    });
+    window.__devframeViewport.observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style'] });
+    fixSheets();
+    if (document.body) fixInline(document.body);
+    window.addEventListener('load', fixSheets);
   }
 
   // Re-fit the window when its size drifts from the layout (e.g. Chrome's
