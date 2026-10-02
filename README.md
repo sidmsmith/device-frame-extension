@@ -31,12 +31,12 @@ The control bar above the device has:
 
 | Control | What it does |
 |---|---|
-| Device dropdown | Mobile: Android Tablet, Galaxy S24, Moto G4, Pixel 8, Rugged Handheld, Zebra MC9400, Zebra TC72, Zebra TC8300, Zebra WT6300 (photo devices). Full Screen: Desktop (1920×1080, no frame — for recording normal WMS screens), Laptop (1366×768). Plus your saved devices and Custom |
+| Device dropdown | Mobile: Android Tablet, Galaxy S24, Moto G4, Pixel 8, Zebra MC9400, Zebra TC72, Zebra TC8300, Zebra WT6300 (photo devices). Full Screen: Desktop (1920×1080, no frame — for recording normal WMS screens), Laptop (1366×768). Plus your saved devices and Custom |
 | Custom… (in dropdown) / ✎ | Enter any width × height (240–2560); Enter applies, Esc cancels. **Save…** names it and adds it to the dropdown under *Saved* |
 | Trash icon | Shown when a saved device is selected; click twice to delete it |
 | Rotate icon | Rotate between portrait and landscape (not for Laptop/Desktop) |
 | Wi-Fi icon | Show/hide the Android status bar (clock, signal, Wi-Fi, battery); slashed when hidden |
-| Sliders icon | Settings panel: background (light gray / white / dark), frame color (black / silver / white / blue / Manhattan; Zebra, Rugged and Desktop keep their own), **Show taps** (a circle where you click plus a fingertip cursor, for screen-shared demos), **3-2-1 countdown** before recording (on by default), and **Record microphone** (narration as AAC audio in the MP4; Chrome asks for mic permission for the site the first time) |
+| Sliders icon | Settings panel: background (light gray / white / dark), frame color (black / silver / white / blue / Manhattan; Zebra devices and Desktop keep their own), **Show taps** (a circle where you click plus a fingertip cursor, for screen-shared demos), **3-2-1 countdown** before recording (on by default), and **Record microphone** (narration as AAC audio in the MP4; Chrome asks for mic permission for the site the first time) |
 | ⟳ | Reload the page (F5 also works) |
 | Record icon | Record the device to **MP4**. **Alt+Shift+V** starts/stops recording with no prompt; the button works too but goes through Chrome's *Share this tab* prompt. Then the 3-2-1 countdown runs, then use the app. Click the red stop button (shows the elapsed time) or Chrome's *Stop sharing* to save it to Downloads. Device/rotate/appearance/hide are locked while recording. Turn on *Show taps* so viewers see where you tapped |
 | Camera icon | Save a PNG of just the device (transparent background) to Downloads and copy it to the clipboard. **Alt+Shift+S** copies to the clipboard only (no download) |
@@ -72,8 +72,6 @@ remembered. Keyboard shortcuts can be changed at
   its title. If a **Tab icon** is chosen in the settings panel (stored as a
   64×64 PNG under `tabIcon`), renamed tabs also show it instead of the page's
   own icon (with "Always display", every page in frame windows does).
-- The Rugged Handheld brings its own artwork (`ruggedArt()` in `devices.js`),
-  drawn in device coordinates and rotated for landscape.
 - Photo devices (Zebra MC9400, TC72, TC8300, WT6300) use product photos from
   zebra.com: `scripts/build-skins.py` removes the background and floor shadow,
   crops, cuts the display out and writes `skins/*.webp` (originals in

@@ -17,11 +17,6 @@ const DEVICES = {
     bezel: { side: 14, top: 64, bottom: 64 }, radius: 38, screenRadius: 2,
     colors: ['#3c3d42', '#111214'],
   },
-  rugged: {
-    name: 'Rugged Handheld', width: 360, height: 640,
-    bezel: { side: 24, top: 74, bottom: 330 }, radius: 40, screenRadius: 3,
-    colors: ['#2a2c30', '#1c1d20'], style: 'rugged', fixedColor: true,
-  },
   // Photo devices: product photos (skins/*.webp, built by scripts/build-skins.py)
   // with the display cut out. skin.screen is the display rect in skin pixels.
   zebraMC9400: {
@@ -116,7 +111,7 @@ function normalizeCustom(size) {
 }
 
 // Devices that were replaced: saved selections carry over to the new one.
-const DEVICE_ALIASES = { zebraTC52: 'zebraTC72', zebraTC8000: 'zebraTC8300' };
+const DEVICE_ALIASES = { zebraTC52: 'zebraTC72', zebraTC8000: 'zebraTC8300', rugged: 'zebraMC9400' };
 
 function isDeviceKey(key, prefs = {}) {
   key = DEVICE_ALIASES[key] ?? key;
@@ -156,7 +151,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
   const custom = normalizeCustom(prefs.custom);
   const landscape = orientation === 'landscape' && !d.fixedOrientation;
   // Devices with their own artwork (drawn in portrait device coordinates).
-  const ART = { rugged: ruggedArt, photo: photoArt };
+  const ART = { photo: photoArt };
   const art = ART[d.style] ? ART[d.style](d) : null;
   // Bezel per edge (portrait). Artwork may extend below the screen (keypad,
   // grip) or be off-center (photos), so it can supply its own.
@@ -197,11 +192,10 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     const x = edge === 'right' ? phone.x + phone.w : phone.x - t;
     return { x, y: phone.y + pos, w: t, h: len, color };
   };
-  const rugged = d.style === 'rugged';
   const phoneLike = d.style !== 'laptop' && d.style !== 'bare';
-  // The rugged device brings its own artwork (drawn in portrait device
-  // coordinates); its side triggers are passed on as invisible "buttons" so
-  // screenshots and bounds include them.
+  // Devices with their own artwork (photos) are drawn in portrait device
+  // coordinates; any parts sticking out (e.g. side triggers) are passed on as
+  // invisible "buttons" so screenshots and bounds include them.
   const toWindow = (r) => (landscape
     ? { x: phone.x + r.y, y: phone.y + art.W - (r.x + r.w), w: r.h, h: r.w }
     : { x: phone.x + r.x, y: phone.y + r.y, w: r.w, h: r.h });
@@ -269,101 +263,6 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
       transform: landscape ? `translate(${phone.x},${phone.y + art.W}) rotate(-90)` : `translate(${phone.x},${phone.y})`,
     } : null,
   };
-}
-
-const RUGGED_ACCENT = ['#ff8a3d', '#d4561a']; // safety orange (triggers, scan key)
-
-// Rugged handheld artwork (concept A: charcoal polycarbonate shell in a
-// rubber overmold, safety-orange triggers and scan key, scan window, status
-// LEDs, speaker, recessed glass screen, D-pad + soft keys + numeric keypad).
-// Drawn in portrait device coordinates (0,0 = top-left of the body) and
-// rotated into place for landscape. The screen area is left open (even-odd
-// holes) so the page shows through. Returns { svg, transform, triggers } with
-// the triggers as local rects (for screenshot masks / bounds).
-function ruggedArt(d) {
-  const { side: SIDE, top: TOP } = d.bezel;
-  const SW = d.width, SH = d.height;
-  const W = SW + SIDE * 2, H = TOP + SH + d.bezel.bottom;
-  const sx = SIDE, sy = TOP;
-  const rr = (x, y, w, h, r) => roundRectPath({ x, y, w, h, r });
-  const hole = rr(sx, sy, SW, SH, d.screenRadius);
-  const font = 'font-family="Segoe UI, system-ui, sans-serif"';
-
-  // A raised rubber key: shadow, body gradient, top highlight, label(s).
-  const key = (x, y, w, h, { label = '', sub = '', fill = 'rg-key', text = '#eef0f2', size = 15, r = 7, icon = '' } = {}) => `
-    <rect x="${x}" y="${y + 2}" width="${w}" height="${h}" rx="${r}" fill="#000" opacity=".55"/>
-    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="url(#${fill})"/>
-    <rect x="${x + 1}" y="${y + 1}" width="${w - 2}" height="${h * 0.45}" rx="${r - 1}" fill="#fff" opacity=".07"/>
-    <rect x="${x + 0.5}" y="${y + 0.5}" width="${w - 1}" height="${h - 1}" rx="${r}" fill="none" stroke="#000" stroke-opacity=".5"/>
-    ${icon}
-    ${label ? `<text x="${x + w / 2 - (sub ? 6 : 0)}" y="${y + h / 2 + 1}" text-anchor="middle" dominant-baseline="central" ${font} font-weight="600" font-size="${size}" fill="${text}">${label}</text>` : ''}
-    ${sub ? `<text x="${x + w / 2 + 12}" y="${y + h / 2 + 2}" text-anchor="middle" dominant-baseline="central" ${font} font-size="8" fill="${text}" opacity=".6">${sub}</text>` : ''}`;
-
-  const barcode = (cx, cy, color) => {
-    let x = cx - 14, out = '';
-    [2, 1, 3, 1, 1, 2, 1, 3, 2, 1, 1, 2].forEach((b, i) => {
-      if (i % 2 === 0) out += `<rect x="${x}" y="${cy - 7}" width="${b}" height="14" fill="${color}"/>`;
-      x += b + 0.6;
-    });
-    return out;
-  };
-
-  // Keypad: soft keys + D-pad, ESC / SCAN / ENT, then 0-9 with letters.
-  const kp = sy + SH + 18;
-  const cx = W / 2;
-  let keys = key(28, kp + 4, 92, 28, { label: 'F1', fill: 'rg-fn', size: 13 })
-    + key(28, kp + 40, 92, 28, { label: 'F2', fill: 'rg-fn', size: 13 })
-    + key(W - 120, kp + 4, 92, 28, { label: 'F3', fill: 'rg-fn', size: 13 })
-    + key(W - 120, kp + 40, 92, 28, { label: 'F4', fill: 'rg-fn', size: 13 });
-  const arrows = ['M-5,3 l5,-6 l5,6', 'M-5,-3 l5,6 l5,-6', 'M3,-5 l-6,5 l6,5', 'M-3,-5 l6,5 l-6,5'];
-  keys += `<circle cx="${cx}" cy="${kp + 36}" r="37" fill="#000" opacity=".5"/>
-    <circle cx="${cx}" cy="${kp + 35}" r="36" fill="url(#rg-key)" stroke="#000" stroke-opacity=".5"/>
-    <circle cx="${cx}" cy="${kp + 35}" r="15" fill="url(#rg-fn)" stroke="#000" stroke-opacity=".6"/>
-    <text x="${cx}" y="${kp + 36}" text-anchor="middle" dominant-baseline="central" ${font} font-size="9" font-weight="700" fill="#cfd2d6">OK</text>
-    ${[[0, -25], [0, 25], [-25, 0], [25, 0]].map(([dx, dy], i) => `<path transform="translate(${cx + dx},${kp + 35 + dy})" d="${arrows[i]}" fill="none" stroke="#cfd2d6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`).join('')}`;
-  const y2 = kp + 82;
-  keys += key(28, y2, 80, 34, { label: 'ESC', size: 12 })
-    + key(cx - 74, y2, 148, 34, { fill: 'rg-accent', r: 17, icon: barcode(cx, y2 + 17, '#2a1406') })
-    + key(W - 108, y2, 80, 34, { label: 'ENT', size: 12, text: '#9fe0a4' });
-  const nums = [['1', ''], ['2', 'ABC'], ['3', 'DEF'], ['4', 'GHI'], ['5', 'JKL'], ['6', 'MNO'], ['7', 'PQRS'], ['8', 'TUV'], ['9', 'WXYZ'], ['*', ''], ['0', '&#x2423;'], ['#', '']];
-  const kw = (W - 56 - 16) / 3, kh = 32, y0 = y2 + 46;
-  nums.forEach(([l, sub], i) => { keys += key(28 + (i % 3) * (kw + 8), y0 + Math.floor(i / 3) * (kh + 7), kw, kh, { label: l, sub, size: 16 }); });
-
-  const triggers = [{ x: -7, y: sy + 150, w: 10, h: 84 }, { x: W - 3, y: sy + 150, w: 10, h: 84 }];
-  const svg = `
-    <defs>
-      <linearGradient id="rg-shell" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a4d52"/><stop offset=".55" stop-color="#2a2c30"/><stop offset="1" stop-color="#1c1d20"/></linearGradient>
-      <linearGradient id="rg-rubber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#202124"/><stop offset="1" stop-color="#111213"/></linearGradient>
-      <linearGradient id="rg-key" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d4045"/><stop offset="1" stop-color="#26282c"/></linearGradient>
-      <linearGradient id="rg-fn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4d52"/><stop offset="1" stop-color="#33363a"/></linearGradient>
-      <linearGradient id="rg-accent" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${RUGGED_ACCENT[0]}"/><stop offset="1" stop-color="${RUGGED_ACCENT[1]}"/></linearGradient>
-      <linearGradient id="rg-scan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d1d1d"/><stop offset=".5" stop-color="#3b0b0b"/><stop offset="1" stop-color="#5a1212"/></linearGradient>
-      <linearGradient id="rg-glare" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
-      <radialGradient id="rg-ledg"><stop offset="0" stop-color="#b6ff9c"/><stop offset=".5" stop-color="#2fbf3a"/><stop offset="1" stop-color="#0b3d10"/></radialGradient>
-      <radialGradient id="rg-leda"><stop offset="0" stop-color="#ffe0a0"/><stop offset=".5" stop-color="#d98a12"/><stop offset="1" stop-color="#4a2a02"/></radialGradient>
-      <filter id="rg-inset"><feGaussianBlur stdDeviation="3"/></filter>
-      <clipPath id="rg-screen"><path d="${hole}"/></clipPath>
-    </defs>
-    ${triggers.map((t) => `<rect x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" rx="4" fill="url(#rg-accent)" stroke="#000" stroke-opacity=".4"/>`).join('')}
-    <path fill="url(#rg-rubber)" fill-rule="evenodd" d="${rr(0, 0, W, H, d.radius)} ${hole}"/>
-    <path fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="2" d="${rr(0, 0, W, H, d.radius)}"/>
-    ${[[0, 0], [W - 64, 0], [0, H - 64], [W - 64, H - 64]].map(([x, y]) => `<path d="${rr(x, y, 64, 64, 30)}" fill="#1a1b1d" opacity=".95"/>`).join('')}
-    <path fill="url(#rg-shell)" fill-rule="evenodd" d="${rr(9, 9, W - 18, H - 18, d.radius - 8)} ${hole}"/>
-    <path fill="none" stroke="#fff" stroke-opacity=".12" d="${rr(9.5, 9.5, W - 19, H - 19, d.radius - 8)}"/>
-    <path d="${rr(cx - 74, 16, 148, 16, 6)}" fill="url(#rg-scan)" stroke="#000" stroke-opacity=".6"/>
-    <rect x="${cx - 66}" y="18" width="132" height="4" rx="2" fill="#fff" opacity=".18"/>
-    <circle cx="44" cy="${TOP / 2 + 8}" r="4.5" fill="url(#rg-ledg)"/><circle cx="60" cy="${TOP / 2 + 8}" r="4.5" fill="url(#rg-leda)"/>
-    ${[0, 1, 2, 3, 4].map((i) => `<rect x="${W - 92 + i * 11}" y="${TOP / 2 + 3}" width="6" height="12" rx="3" fill="#0b0c0d" opacity=".9"/>`).join('')}
-    <circle cx="${cx}" cy="${TOP / 2 + 9}" r="3.5" fill="#0b0c0d"/><circle cx="${cx - 1}" cy="${TOP / 2 + 8}" r="1.2" fill="#3a4a6a"/>
-    <path fill="#050607" fill-rule="evenodd" d="${rr(sx - 7, sy - 7, SW + 14, SH + 14, 8)} ${hole}"/>
-    <path fill="none" stroke="#000" stroke-opacity=".7" stroke-width="1.5" d="${rr(sx - 7.5, sy - 7.5, SW + 15, SH + 15, 8)}"/>
-    <g clip-path="url(#rg-screen)">
-      <rect x="${sx - 6}" y="${sy - 6}" width="${SW + 12}" height="${SH + 12}" fill="none" stroke="#000" stroke-width="8" opacity=".3" filter="url(#rg-inset)"/>
-      <path d="M${sx},${sy} h${SW * 0.75} L${sx},${sy + SH * 0.42} z" fill="url(#rg-glare)"/>
-    </g>
-    <path d="${rr(16, kp - 8, W - 32, H - kp - 8, 20)}" fill="#000" opacity=".22"/>
-    ${keys}`;
-  return { svg, triggers, W, H };
 }
 
 // Photo device artwork: the product photo scaled so its display cut-out

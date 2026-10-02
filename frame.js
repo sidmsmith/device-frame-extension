@@ -127,7 +127,7 @@ function drawFrame(L) {
       </g>`;
   }
 
-  // Devices with their own artwork (the rugged handheld) replace the plain
+  // Devices with their own artwork (the photo devices) replace the plain
   // body, outline and camera.
   const art = L.decor ? `<g transform="${L.decor.transform}">${L.decor.svg}</g>` : '';
 

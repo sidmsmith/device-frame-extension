@@ -70,8 +70,12 @@ click away: **Settings** <img src="docs/icons/sliders.svg" width="16"> → **? U
 
 The device dropdown has three sections:
 
-- **Mobile** – Android Tablet, Galaxy S24, Moto G4, Pixel 8, Rugged Handheld
-  (a warehouse scanner with keypad, scan key and side triggers), Zebra TC52.
+- **Mobile** – Android Tablet, Galaxy S24, Moto G4, Pixel 8, and four Zebra
+  devices shown with real product photos:
+  - **Zebra MC9400** (320×533) – gun-style computer with a full keypad.
+  - **Zebra TC72** (360×640) – rugged touch computer.
+  - **Zebra TC8300** (320×533) – touch computer with a pistol grip.
+  - **Zebra WT6300** (512×320) – wrist-worn, landscape only.
 - **Full Screen** – for laptop/PC/fixed-station screens:
   - **Laptop (1366×768)** – the page inside a laptop frame.
   - **Desktop (no frame, 1920×1080)** – just the screen, no frame at all.
@@ -103,7 +107,9 @@ on by default – frame window only, normal tabs are never affected):
   buttons next to it are shrunk by the same amount so they still match.
   Phrases like "INDIRECT EVENT" can still wrap between words.
 
-<img src="docs/images/rugged.png" alt="The Rugged Handheld" width="250"> <img src="docs/images/laptop.png" alt="The Laptop frame" width="520">
+<img src="docs/images/zebra-devices.jpg" alt="The Zebra MC9400, TC72, TC8300 and WT6300" width="700">
+
+<img src="docs/images/laptop.png" alt="The Laptop frame" width="520">
 
 ## 5. Settings panel
 
@@ -111,8 +117,8 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
 
 - **Background** – Light gray (default), White, or Dark. This is the area
   around the device.
-- **Frame color** – Black, Silver, White, Blue, or Manhattan. (The Zebra,
-  Rugged Handheld, and Desktop keep their own look.)
+- **Frame color** – Black, Silver, White, Blue, or Manhattan. (The Zebra
+  devices and Desktop keep their own look.)
 - **Show taps** – shows a soft circle wherever you click, plus a round
   fingertip cursor. Great for screen-shared demos and recordings, so viewers
   can see what you tapped.
