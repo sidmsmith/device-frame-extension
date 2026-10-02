@@ -204,6 +204,10 @@ function drawFrame(L) {
       }
       .pop textarea.bad { border-color: #d93025; }
       #rulesNote { color: #d93025; opacity: 1; margin-top: 2px; }
+      .iconrow { display: flex; align-items: center; gap: 6px; }
+      .iconrow button { height: 26px; font-size: 12px; }
+      .iconprev { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; }
+      .iconprev img { width: 20px; height: 20px; object-fit: contain; }
       .help { margin-top: 12px; padding-top: 8px; border-top: 1px solid ${t.barBorder}; }
       .help a { color: #1a73e8; text-decoration: none; font-weight: 600; }
       .help a:hover { text-decoration: underline; }
@@ -297,6 +301,13 @@ function drawFrame(L) {
       <div class="lbl">Rename titles <span class="note">(Old = New, one per line)</span></div>
       <textarea id="titleRules" rows="4" wrap="off" spellcheck="false" placeholder="MUP = WM Mobile" title="One rename per line: Old title = New title. Matches the whole title, ignoring capitals; end the old title with * to match titles that start with it. Applies to all tabs, including this window. Saved when you click away.">${L.titleRules}</textarea>
       <div class="note" id="rulesNote"></div>
+      <div class="lbl">Tab icon <span class="note">(for renamed tabs)</span></div>
+      <div class="iconrow">
+        <span class="iconprev">${L.tabIcon ? `<img src="${L.tabIcon}" alt="">` : '<span class="note">page&#x2019;s own</span>'}</span>
+        <button type="button" id="iconPick" title="Choose an image (PNG, JPG, SVG or ICO) to show as the icon of renamed tabs">Choose&#x2026;</button>
+        ${L.tabIcon ? '<button type="button" id="iconClear" title="Go back to each page&#x2019;s own icon">Remove</button>' : ''}
+        <input type="file" id="iconFile" accept="image/*,.ico" hidden>
+      </div>
       <div class="help"><a href="#" id="guide">? User Guide</a></div>
     </div>
     <div class="count" id="count" hidden></div>
@@ -415,6 +426,29 @@ function drawFrame(L) {
   checkRules();
   rulesBox.addEventListener('input', checkRules);
   rulesBox.addEventListener('change', () => send({ type: 'set-pref', prefs: { titleRules: rulesBox.value } }));
+
+  // Tab icon: shrink the chosen image to a 64x64 PNG (keeps storage small).
+  const iconFile = root.getElementById('iconFile');
+  root.getElementById('iconPick').addEventListener('click', () => iconFile.click());
+  root.getElementById('iconClear')?.addEventListener('click', () => send({ type: 'set-icon', dataUrl: null }));
+  iconFile.addEventListener('change', () => {
+    const file = iconFile.files[0];
+    if (!file) return;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const size = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const scale = Math.min(size / img.naturalWidth, size / img.naturalHeight) || 1;
+      const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
+      canvas.getContext('2d').drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+      URL.revokeObjectURL(url);
+      send({ type: 'set-icon', dataUrl: canvas.toDataURL('image/png') });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); toast("Couldn't read that image", 4000); };
+    img.src = url;
+  });
   root.getElementById('guide').addEventListener('click', (e) => {
     e.preventDefault();
     setPop(false);

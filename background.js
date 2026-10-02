@@ -77,7 +77,12 @@ async function onLoaded({ tabId, frameId, url }) {
 
 async function reframe(tabId, state, shiftY = 0) {
   const keys = await shortcuts();
-  const L = { ...computeLayout(state.device, state.orientation, await getLast()), shortcut: keys['toggle-toolbar'], copyShortcut: keys['copy-screenshot'], recordShortcut: keys.record };
+  const { tabIcon } = await chrome.storage.local.get('tabIcon');
+  const L = {
+    ...computeLayout(state.device, state.orientation, await getLast()),
+    shortcut: keys['toggle-toolbar'], copyShortcut: keys['copy-screenshot'], recordShortcut: keys.record,
+    tabIcon: tabIcon ?? null,
+  };
   try {
     const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId },
@@ -163,6 +168,15 @@ async function handleControl(tabId, tab, msg) {
   if (!state) return;
   if (state.recording && REDRAWS.includes(msg.type)) return;
   if (msg.type === 'open-guide') return openGuide();
+  if (msg.type === 'set-icon') {
+    // Tab icon for renamed tabs (title.js applies it). Kept outside 'last'
+    // so the image isn't re-read with every other setting.
+    const ok = typeof msg.dataUrl === 'string' && msg.dataUrl.startsWith('data:image/png;base64,') && msg.dataUrl.length < 300_000;
+    if (ok) await chrome.storage.local.set({ tabIcon: msg.dataUrl });
+    else await chrome.storage.local.remove('tabIcon');
+    if (!state.recording) await reframe(tabId, state);
+    return;
+  }
 
   switch (msg.type) {
     case 'set-device': {

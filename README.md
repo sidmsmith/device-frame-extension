@@ -66,7 +66,9 @@ remembered. Keyboard shortcuts can be changed at
 - `title.js` renames page titles (tab + window title) using the "Rename
   titles" list (`Old = New` per line, default `MUP = WM Mobile`, `*` = starts
   with), in all tabs including frame windows. Re-applied when the page resets
-  its title.
+  its title. If a **Tab icon** is chosen in the settings panel (stored as a
+  64×64 PNG under `tabIcon`), renamed tabs also show it instead of the page's
+  own icon.
 
 ## Known limitations
 

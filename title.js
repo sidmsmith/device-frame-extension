@@ -7,12 +7,15 @@
 // Applies to the tab / window title everywhere, including frame windows.
 // Re-applies whenever the page changes its title, and restores the page's
 // own title when no rule applies any more.
+// If a tab icon is set (storage key tabIcon, a PNG data URL), renamed tabs
+// also show it instead of the page's own icon.
 
 (() => {
   const DEFAULT_RULES = 'MUP = WM Mobile';
   let rules = [];
   let own = null; // the page's own (latest) title
   let shown = null; // the title we set, if any
+  let icon = null; // tab icon data URL, or null for the page's own
 
   const parseRules = (text) => text.split(/\r?\n/).flatMap((raw) => {
     const line = raw.trim();
@@ -34,16 +37,46 @@
 
   const show = (title) => {
     if (document.title !== title) document.title = title;
+    syncIcon();
+  };
+
+  // Our icon while the tab is renamed and an icon is set; otherwise the
+  // page's own. The page's icon links are switched off (rel renamed), not
+  // removed, so they can be restored. Idempotent: safe to call on every change.
+  const OFF = 'x-devframe-off';
+  const syncIcon = () => {
+    const head = document.head;
+    if (!head) return;
+    const ours = head.querySelector('link#__devframe-icon');
+    if (shown !== null && icon) {
+      for (const link of head.querySelectorAll('link[rel~="icon"]:not(#__devframe-icon)')) {
+        link.dataset.devframeRel = link.rel;
+        link.rel = OFF;
+      }
+      if (!ours) {
+        const link = document.createElement('link');
+        link.id = '__devframe-icon';
+        link.rel = 'icon';
+        link.href = icon;
+        head.appendChild(link);
+      } else if (ours.href !== icon) {
+        ours.href = icon;
+      }
+    } else {
+      ours?.remove();
+      for (const link of head.querySelectorAll(`link[rel="${OFF}"]`)) link.rel = link.dataset.devframeRel || 'icon';
+    }
   };
 
   // Called when the page's title may have changed.
   const apply = () => {
     const current = document.title;
-    if (shown !== null && current === shown) return; // our own change
+    if (shown !== null && current === shown) return syncIcon(); // our own change (or the app added an icon)
     own = current;
     const want = target(own);
     shown = want && want !== own ? want : null;
     if (shown !== null) show(shown);
+    else syncIcon();
   };
 
   // Re-evaluate after the rules change.
@@ -59,9 +92,17 @@
     refresh();
   };
 
-  chrome.storage.local.get('last').then(({ last }) => load(last), () => {});
+  chrome.storage.local.get(['last', 'tabIcon']).then(({ last, tabIcon }) => {
+    icon = tabIcon ?? null;
+    load(last);
+  }, () => {});
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes.last) load(changes.last.newValue);
+    if (area !== 'local') return;
+    if (changes.tabIcon) {
+      icon = changes.tabIcon.newValue ?? null;
+      syncIcon();
+    }
+    if (changes.last) load(changes.last.newValue);
   });
 
   // Watch the <title> (and its replacement) so renames survive the app
