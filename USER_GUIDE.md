@@ -132,6 +132,12 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
   recording immediately.
 - **Record microphone** – include your voice in recordings (see section 7).
 - **Rename titles** and **Tab icon** – friendlier names and icons for browser tabs (see section 9).
+- **Language** – the language of the toolbar, tooltips, settings and
+  messages: English, Français (French) or Español (Spanish, Mexico).
+  **Auto** (the default) follows Chrome's own language, and anything other
+  than French or Spanish shows English. Chrome's own pages (the Extensions
+  and Keyboard shortcuts pages) always follow Chrome's language. This guide
+  is in English only.
 - **? User Guide** – opens this guide in a new tab.
 
 All settings are remembered.
@@ -258,6 +264,7 @@ included in the version they lead up to).
 
 | Version | Date | Highlights |
 |---|---|---|
+| **0.20** | Oct 2, 2026 | The extension speaks **French and Spanish (Mexico)**: it follows Chrome's language, or pick one under **Settings → Language**. |
 | **0.19** | Oct 2, 2026 | New **Always open with toolbar hidden** setting (on by default), so every frame window starts with a clean screen. |
 | **0.18** | Oct 2, 2026 | Real product photos for the **Zebra MC9400, TC72, TC8300 and WT6300**; the drawn Rugged Handheld, TC52 and TC8000 were retired (saved selections move to the new devices). |
 | **0.17** | Oct 2, 2026 | Pages fit the device screen: too-wide pages shrink to fit, screen-relative sizes use the device screen (fixing cut-off footer buttons), and single words like PERFORMANCE stay on one line. |
