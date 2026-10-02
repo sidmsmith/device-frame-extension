@@ -297,7 +297,7 @@ function drawFrame(L) {
       </div>
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> Show taps (circle + fingertip cursor)</label>
       <label class="chk" style="margin-top: 6px" title="Shrink pages that are wider than the device screen so they fit without scrolling sideways (this window only)"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> Fit page to screen width</label>
-      <label class="chk" style="margin-top: 6px" title="Every new frame window starts with this toolbar hidden (show it with a double-click on the frame${L.shortcut ? `, ${L.shortcut}` : ''}, or the tab at the top)"><input type="checkbox" id="openHidden"${L.openHidden ? ' checked' : ''}> Open with toolbar hidden</label>
+      <label class="chk" style="margin-top: 6px" title="Every new frame window starts with this toolbar hidden (show it with a double-click on the frame${L.shortcut ? `, ${L.shortcut}` : ''}, or the tab at the top)"><input type="checkbox" id="openHidden"${L.openHidden ? ' checked' : ''}> Always open with toolbar hidden</label>
       <div class="lbl">Recording</div>
       <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>

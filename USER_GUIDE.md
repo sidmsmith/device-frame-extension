@@ -124,6 +124,10 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
   can see what you tapped.
 - **Fit page to screen width** – shrink too-wide pages and long words to fit
   the device screen (see section 4). Untick to see the page at its true size.
+- **Always open with toolbar hidden** – on by default. Every new frame window
+  starts with the toolbar hidden for a clean, demo-ready screen, no matter how
+  you left it last time (see section 8 to show it). Untick it to have the
+  window remember whether the toolbar was showing.
 - **3-2-1 countdown before recording** – on by default; untick to start
   recording immediately.
 - **Record microphone** – include your voice in recordings (see section 7).
@@ -175,7 +179,9 @@ recorded without sound.
 
 ## 8. Hiding the toolbar
 
-Click <img src="docs/icons/eyeOff.svg" width="16"> to hide the bar for a clean, minimal window. To bring it back:
+New frame windows open with the toolbar **already hidden** (setting **Always
+open with toolbar hidden**, on by default – untick it in the settings panel to
+keep the toolbar showing). You can also click <img src="docs/icons/eyeOff.svg" width="16"> to hide the bar at any time. To bring it back:
 
 - **double-click** the device frame or the background around it,
 - press **Alt+Shift+H**, or

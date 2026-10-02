@@ -44,7 +44,8 @@ The control bar above the device has:
 
 Close the window to turn the frame off. Device, custom size, orientation,
 status bar, background, toolbar visibility and window position are all
-remembered. Keyboard shortcuts can be changed at
+remembered (with **Always open with toolbar hidden**, on by default, new windows
+start with the toolbar hidden). Keyboard shortcuts can be changed at
 `chrome://extensions/shortcuts`.
 
 ## How it works
