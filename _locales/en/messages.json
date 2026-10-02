@@ -1,0 +1,302 @@
+{
+  "extName": {
+    "message": "Device Frame"
+  },
+  "extDescription": {
+    "message": "Show the current page inside a phone, handheld or laptop frame for demos, screenshots and recordings."
+  },
+  "actionTitle": {
+    "message": "Open this page in a device frame"
+  },
+  "cmdToggleToolbar": {
+    "message": "Show/hide the control bar in the device frame window"
+  },
+  "cmdCopyScreenshot": {
+    "message": "Copy a screenshot of the device to the clipboard (no download)"
+  },
+  "cmdRecord": {
+    "message": "Start/stop recording the device to MP4 (no share prompt)"
+  },
+  "groupMobile": {
+    "message": "Mobile"
+  },
+  "groupFull": {
+    "message": "Full Screen"
+  },
+  "groupSaved": {
+    "message": "Saved"
+  },
+  "customDevice": {
+    "message": "Custom"
+  },
+  "tipDevice": {
+    "message": "Device"
+  },
+  "tipEditCustom": {
+    "message": "Change custom size"
+  },
+  "tipDeletePreset": {
+    "message": "Delete saved device \"$1\""
+  },
+  "tipRotateLandscape": {
+    "message": "Rotate to landscape"
+  },
+  "tipRotatePortrait": {
+    "message": "Rotate to portrait"
+  },
+  "tipNoRotate": {
+    "message": "This device doesn't rotate"
+  },
+  "tipStatusShow": {
+    "message": "Show status bar"
+  },
+  "tipStatusHide": {
+    "message": "Hide status bar"
+  },
+  "tipNoStatus": {
+    "message": "No status bar on this device"
+  },
+  "tipSettings": {
+    "message": "Settings: background, frame color, taps, microphone, language"
+  },
+  "tipReload": {
+    "message": "Reload page"
+  },
+  "tipRecord": {
+    "message": "Record the device to MP4"
+  },
+  "tipRecordShortcut": {
+    "message": "Record the device to MP4 ($1 starts without Chrome's share prompt)"
+  },
+  "tipStop": {
+    "message": "Stop recording and save MP4"
+  },
+  "tipStopShortcut": {
+    "message": "Stop recording and save MP4 (or $1)"
+  },
+  "tipShot": {
+    "message": "Screenshot of the device: copy to clipboard and save PNG"
+  },
+  "tipShotShortcut": {
+    "message": "Screenshot of the device: copy to clipboard and save PNG ($1 copies only)"
+  },
+  "tipHide": {
+    "message": "Hide toolbar (or double-click the frame)"
+  },
+  "tipHideShortcut": {
+    "message": "Hide toolbar (or double-click the frame, or $1)"
+  },
+  "tipShowToolbar": {
+    "message": "Show toolbar"
+  },
+  "tipShowToolbarShortcut": {
+    "message": "Show toolbar ($1)"
+  },
+  "editorSize": {
+    "message": "Size"
+  },
+  "tipWidth": {
+    "message": "Width ($1-$2)"
+  },
+  "tipHeight": {
+    "message": "Height ($1-$2)"
+  },
+  "tipApply": {
+    "message": "Apply custom size"
+  },
+  "btnApply": {
+    "message": "Apply"
+  },
+  "btnSaveEllipsis": {
+    "message": "Save…"
+  },
+  "tipSavePreset": {
+    "message": "Save this size as a named device in the dropdown"
+  },
+  "tipCancel": {
+    "message": "Cancel"
+  },
+  "namePlaceholder": {
+    "message": "Name, e.g. Zebra TC21"
+  },
+  "tipPresetName": {
+    "message": "Name for this saved device"
+  },
+  "btnSave": {
+    "message": "Save"
+  },
+  "tipSaveToDropdown": {
+    "message": "Save to the device dropdown"
+  },
+  "tipBack": {
+    "message": "Back"
+  },
+  "lblBackground": {
+    "message": "Background"
+  },
+  "bgLight": {
+    "message": "Light gray"
+  },
+  "bgWhite": {
+    "message": "White"
+  },
+  "bgDark": {
+    "message": "Dark"
+  },
+  "lblFrameColor": {
+    "message": "Frame color"
+  },
+  "noteFixedColor": {
+    "message": "(fixed for this device)"
+  },
+  "fcBlack": {
+    "message": "Black"
+  },
+  "fcSilver": {
+    "message": "Silver"
+  },
+  "fcWhite": {
+    "message": "White"
+  },
+  "fcBlue": {
+    "message": "Blue"
+  },
+  "fcManhattan": {
+    "message": "Manhattan"
+  },
+  "optShowTaps": {
+    "message": "Show taps (circle + fingertip cursor)"
+  },
+  "optFitWidth": {
+    "message": "Fit page to screen width"
+  },
+  "tipFitWidth": {
+    "message": "Shrink pages that are wider than the device screen so they fit without scrolling sideways (this window only)"
+  },
+  "optOpenHidden": {
+    "message": "Always open with toolbar hidden"
+  },
+  "tipOpenHidden": {
+    "message": "Every new frame window starts with this toolbar hidden (show it with a double-click on the frame or the tab at the top)"
+  },
+  "tipOpenHiddenShortcut": {
+    "message": "Every new frame window starts with this toolbar hidden (show it with a double-click on the frame, $1, or the tab at the top)"
+  },
+  "lblRecording": {
+    "message": "Recording"
+  },
+  "optCountdown": {
+    "message": "3-2-1 countdown before recording"
+  },
+  "optMic": {
+    "message": "Record microphone"
+  },
+  "lblRename": {
+    "message": "Rename titles"
+  },
+  "noteRename": {
+    "message": "(Old = New, one per line)"
+  },
+  "tipRename": {
+    "message": "One rename per line: Old title = New title. Matches the whole title, ignoring capitals; end the old title with * to match titles that start with it. Applies to all tabs, including this window. Saved when you click away."
+  },
+  "rulesSkipped": {
+    "message": "Line $1 skipped: use \"Old title = New title\""
+  },
+  "lblTabIcon": {
+    "message": "Tab icon"
+  },
+  "noteTabIcon": {
+    "message": "(for renamed tabs)"
+  },
+  "iconPageOwn": {
+    "message": "page's own"
+  },
+  "tipIconPick": {
+    "message": "Choose an image (PNG, JPG, SVG or ICO) to show as the icon of renamed tabs"
+  },
+  "btnChoose": {
+    "message": "Choose…"
+  },
+  "tipIconRemove": {
+    "message": "Go back to each page's own icon"
+  },
+  "btnRemove": {
+    "message": "Remove"
+  },
+  "optIconAlways": {
+    "message": "Always display in this window"
+  },
+  "tipIconAlways": {
+    "message": "On: every page in this window shows the tab icon. Off: only tabs renamed by the list above."
+  },
+  "lblLanguage": {
+    "message": "Language"
+  },
+  "langAuto": {
+    "message": "Auto (browser)"
+  },
+  "linkGuide": {
+    "message": "? User Guide"
+  },
+  "msgDeleteAgain": {
+    "message": "Click again to delete this saved device"
+  },
+  "msgBadImage": {
+    "message": "Couldn't read that image"
+  },
+  "msgRecStoppedEarly": {
+    "message": "Recording stopped early ($1); saved what was recorded"
+  },
+  "msgRecSaved": {
+    "message": "Recording saved to Downloads"
+  },
+  "msgRecSavedWebm": {
+    "message": "Recording saved as WebM (MP4 not supported by this Chrome)"
+  },
+  "msgRecFailed": {
+    "message": "Recording failed: $1"
+  },
+  "msgRecCanceled": {
+    "message": "Recording canceled"
+  },
+  "msgCantRecord": {
+    "message": "Can't record: $1"
+  },
+  "msgMicUnavailable": {
+    "message": "Microphone unavailable ($1); recording without sound"
+  },
+  "msgCaptureNoStart": {
+    "message": "Can't record: the tab capture didn't start"
+  },
+  "msgCopiedSaved": {
+    "message": "Copied to clipboard & saved to Downloads"
+  },
+  "msgSavedClipBlocked": {
+    "message": "Saved to Downloads (clipboard copy blocked)"
+  },
+  "msgCopied": {
+    "message": "Copied to clipboard"
+  },
+  "msgClipBlocked": {
+    "message": "Clipboard copy blocked ($1)"
+  },
+  "msgShotFailed": {
+    "message": "Screenshot failed"
+  },
+  "whyCaptureEnded": {
+    "message": "the tab capture ended"
+  },
+  "whyButton": {
+    "message": "stopped with the button"
+  },
+  "whyShortcut": {
+    "message": "stopped with the shortcut"
+  },
+  "whyUnknown": {
+    "message": "unknown reason"
+  },
+  "whyStopped": {
+    "message": "stopped"
+  }
+}

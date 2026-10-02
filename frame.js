@@ -13,8 +13,12 @@ function drawFrame(L) {
     white: { page: '#ffffff', bar: '#f6f7f9', barBorder: '#dadce0', text: '#202124', ctl: '#ffffff', ctlBorder: '#c4c7cc', ctlHover: '#eceef1', shadow: 0.3 },
     dark: { page: '#2b2d33', bar: '#1e1f23', barBorder: '#000000', text: '#e6e6e6', ctl: '#3a3c44', ctlBorder: '#50535c', ctlHover: '#474a53', shadow: 0.6 },
   };
-  const BG_LABEL = { light: 'Light gray', white: 'White', dark: 'Dark' };
-  const FRAME_LABEL = { black: 'Black', silver: 'Silver', white: 'White', blue: 'Blue', manhattan: 'Manhattan' };
+  // UI text in the chosen language (L.t, from _locales); $1, $2 are filled in.
+  // E() is the HTML-escaped version for markup.
+  const T = (key, ...subs) => (L.t?.[key] ?? key).replace(/\$(\d)/g, (m, n) => subs[n - 1] ?? m);
+  const E = (key, ...subs) => T(key, ...subs).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+  const BG_LABEL = { light: E('bgLight'), white: E('bgWhite'), dark: E('bgDark') };
+  const FRAME_LABEL = { black: E('fcBlack'), silver: E('fcSilver'), white: E('fcWhite'), blue: E('fcBlue'), manhattan: E('fcManhattan') };
   const FRAME_SWATCH = { black: '#202124', silver: '#c9ccd1', white: '#ffffff', blue: '#2f5597', manhattan: '#083332' };
   const t = THEMES[L.background] ?? THEMES.light;
 
@@ -94,18 +98,18 @@ function drawFrame(L) {
   // The device outline: phone/lid body plus any extra parts (laptop base).
   const devicePath = L.silhouette ? L.silhouette.map(rr).join(' ') : [phonePath, ...L.extras.map(rr)].join(' ');
   const outside = `M0,0H${L.W}V${L.H}H0z ${devicePath}`;
-  const option = (d) => `<option value="${d.key}"${d.key === L.deviceKey ? ' selected' : ''}>${d.name}</option>`;
+  const option = (d) => `<option value="${d.key}"${d.key === L.deviceKey ? ' selected' : ''}>${d.group === 'custom' ? d.name.replace(/^Custom/, E('customDevice')) : d.name}</option>`;
   const group = (key, label) => {
     const items = L.devices.filter((d) => d.group === key);
     return items.length ? `<optgroup label="${label}">${items.map(option).join('')}</optgroup>` : '';
   };
   const options = [
-    group('mobile', 'Mobile'),
-    group('full', 'Full Screen'),
-    group('saved', 'Saved'),
+    group('mobile', E('groupMobile')),
+    group('full', E('groupFull')),
+    group('saved', E('groupSaved')),
     ...L.devices.filter((d) => d.group === 'custom').map(option),
   ].join('');
-  const rotateTo = L.orientation === 'portrait' ? 'landscape' : 'portrait';
+  const rotateTip = L.orientation === 'portrait' ? E('tipRotateLandscape') : E('tipRotatePortrait');
 
   // Android-style status bar: clock on the left; signal, wifi, battery on the right.
   let statusBar = '';
@@ -166,6 +170,7 @@ function drawFrame(L) {
         box-sizing: border-box; padding: 0 6px;
         background: ${t.ctl}; border: 1px solid ${t.ctlBorder}; border-radius: 4px;
       }
+      input[type=number] { min-width: 54px; } /* room for 4 digits when labels are long */
       input:invalid { border-color: #d93025; }
       button.primary { background: #1a73e8; border-color: #1a73e8; color: #fff; }
       .toast {
@@ -213,7 +218,10 @@ function drawFrame(L) {
       .help { margin-top: 12px; padding-top: 8px; border-top: 1px solid ${t.barBorder}; }
       .help a { color: #1a73e8; text-decoration: none; font-weight: 600; }
       .help a:hover { text-decoration: underline; }
+      .pop select.langsel { flex: none; width: 100%; height: 26px; font-size: 12px; }
       .chk { display: flex; align-items: center; gap: 6px; margin-top: 10px; cursor: pointer; }
+      .chk { white-space: normal; } /* long translations wrap */
+      .chk input { flex: none; }
       .ripple {
         position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
         background: rgba(0, 0, 0, .11); box-sizing: border-box; pointer-events: none;
@@ -260,63 +268,68 @@ function drawFrame(L) {
     <div id="ripples"></div>
     <div class="bar"${L.toolbarHidden ? ' hidden' : ''}>
       <div class="row" id="main">
-      <select id="device" title="Device">${options}</select>
-      ${L.deviceKey === 'custom' ? '<button id="edit" title="Change custom size">&#x270E;</button>' : ''}
-      ${L.preset ? `<button id="delpreset" title="Delete saved device &quot;${L.preset.name}&quot;">${ICON.trash}</button>` : ''}
-      <button id="rotate"${L.canRotate ? ` title="Rotate to ${rotateTo}"` : ' title="This device doesn\'t rotate" disabled data-fixed-off="1"'}>${ICON.rotate}</button>
-      <button id="status"${L.hasStatusBar ? ` title="${L.statusBar ? 'Hide' : 'Show'} status bar"` : ' title="No status bar on this device" disabled data-fixed-off="1"'}>${L.statusBar ? ICON.wifi : ICON.wifiOff}</button>
-      <button id="appearance" title="Settings: background, frame color, taps, microphone">${ICON.sliders}</button>
-      <button id="reload" title="Reload page">&#x27F3;</button>
+      <select id="device" title="${E('tipDevice')}">${options}</select>
+      ${L.deviceKey === 'custom' ? `<button id="edit" title="${E('tipEditCustom')}">&#x270E;</button>` : ''}
+      ${L.preset ? `<button id="delpreset" title="${E('tipDeletePreset', L.preset.name)}">${ICON.trash}</button>` : ''}
+      <button id="rotate"${L.canRotate ? ` title="${rotateTip}"` : ` title="${E('tipNoRotate')}" disabled data-fixed-off="1"`}>${ICON.rotate}</button>
+      <button id="status"${L.hasStatusBar ? ` title="${E(L.statusBar ? 'tipStatusHide' : 'tipStatusShow')}"` : ` title="${E('tipNoStatus')}" disabled data-fixed-off="1"`}>${L.statusBar ? ICON.wifi : ICON.wifiOff}</button>
+      <button id="appearance" title="${E('tipSettings')}">${ICON.sliders}</button>
+      <button id="reload" title="${E('tipReload')}">&#x27F3;</button>
       <button id="rec">${ICON.record}</button>
-      <button id="shot" title="Screenshot of the device: copy to clipboard and save PNG${L.copyShortcut ? ` (${L.copyShortcut} copies only)` : ''}">${ICON.camera}</button>
-      <button id="hide" title="Hide toolbar (or double-click the frame${L.shortcut ? `, or ${L.shortcut}` : ''})">${ICON.eyeOff}</button>
+      <button id="shot" title="${L.copyShortcut ? E('tipShotShortcut', L.copyShortcut) : E('tipShot')}">${ICON.camera}</button>
+      <button id="hide" title="${L.shortcut ? E('tipHideShortcut', L.shortcut) : E('tipHide')}">${ICON.eyeOff}</button>
       </div>
       <form class="row" id="editor" hidden>
-        <label for="w">Size</label>
-        <input id="w" type="number" required min="${L.custom.min}" max="${L.custom.max}" step="1" value="${L.custom.width}" title="Width (${L.custom.min}-${L.custom.max})">
+        <label for="w">${E('editorSize')}</label>
+        <input id="w" type="number" required min="${L.custom.min}" max="${L.custom.max}" step="1" value="${L.custom.width}" title="${E('tipWidth', L.custom.min, L.custom.max)}">
         <span>&#xD7;</span>
-        <input id="h" type="number" required min="${L.custom.min}" max="${L.custom.max}" step="1" value="${L.custom.height}" title="Height (${L.custom.min}-${L.custom.max})">
-        <button type="submit" class="primary" title="Apply custom size">Apply</button>
-        <button type="button" id="savepreset" title="Save this size as a named device in the dropdown">Save&#x2026;</button>
-        <button type="button" id="cancel" title="Cancel">&#x2715;</button>
+        <input id="h" type="number" required min="${L.custom.min}" max="${L.custom.max}" step="1" value="${L.custom.height}" title="${E('tipHeight', L.custom.min, L.custom.max)}">
+        <button type="submit" class="primary" title="${E('tipApply')}">${E('btnApply')}</button>
+        <button type="button" id="savepreset" title="${E('tipSavePreset')}">${E('btnSaveEllipsis')}</button>
+        <button type="button" id="cancel" title="${E('tipCancel')}">&#x2715;</button>
       </form>
       <form class="row" id="namer" hidden>
-        <input id="pname" type="text" required maxlength="${L.presetNameMax}" placeholder="Name, e.g. Zebra TC21" title="Name for this saved device">
-        <button type="submit" class="primary" title="Save to the device dropdown">Save</button>
-        <button type="button" id="ncancel" title="Back">&#x2715;</button>
+        <input id="pname" type="text" required maxlength="${L.presetNameMax}" placeholder="${E('namePlaceholder')}" title="${E('tipPresetName')}">
+        <button type="submit" class="primary" title="${E('tipSaveToDropdown')}">${E('btnSave')}</button>
+        <button type="button" id="ncancel" title="${E('tipBack')}">&#x2715;</button>
       </form>
     </div>
     <div class="pop" id="pop" hidden>
-      <div class="lbl">Background</div>
+      <div class="lbl">${E('lblBackground')}</div>
       <div class="seg">
         ${Object.keys(BG_LABEL).map((k) => `<button data-bg="${k}" class="${k === L.background ? 'sel' : ''}">${BG_LABEL[k]}</button>`).join('')}
       </div>
-      <div class="lbl">Frame color${L.frameColorFixed ? ' <span class="note">(fixed for this device)</span>' : ''}</div>
+      <div class="lbl">${E('lblFrameColor')}${L.frameColorFixed ? ` <span class="note">${E('noteFixedColor')}</span>` : ''}</div>
       <div class="seg">
         ${Object.keys(FRAME_LABEL).map((k) => `<button data-fc="${k}" class="${k === L.frameColor && !L.frameColorFixed ? 'sel' : ''}"${L.frameColorFixed ? ' disabled' : ''}><span class="sw" style="background:${FRAME_SWATCH[k]}"></span>${FRAME_LABEL[k]}</button>`).join('')}
       </div>
-      <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> Show taps (circle + fingertip cursor)</label>
-      <label class="chk" style="margin-top: 6px" title="Shrink pages that are wider than the device screen so they fit without scrolling sideways (this window only)"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> Fit page to screen width</label>
-      <label class="chk" style="margin-top: 6px" title="Every new frame window starts with this toolbar hidden (show it with a double-click on the frame${L.shortcut ? `, ${L.shortcut}` : ''}, or the tab at the top)"><input type="checkbox" id="openHidden"${L.openHidden ? ' checked' : ''}> Always open with toolbar hidden</label>
-      <div class="lbl">Recording</div>
-      <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
-      <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
-      <div class="lbl">Rename titles <span class="note">(Old = New, one per line)</span></div>
-      <textarea id="titleRules" rows="4" wrap="off" spellcheck="false" placeholder="MUP = WM Mobile" title="One rename per line: Old title = New title. Matches the whole title, ignoring capitals; end the old title with * to match titles that start with it. Applies to all tabs, including this window. Saved when you click away.">${L.titleRules}</textarea>
+      <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> ${E('optShowTaps')}</label>
+      <label class="chk" style="margin-top: 6px" title="${E('tipFitWidth')}"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> ${E('optFitWidth')}</label>
+      <label class="chk" style="margin-top: 6px" title="${L.shortcut ? E('tipOpenHiddenShortcut', L.shortcut) : E('tipOpenHidden')}"><input type="checkbox" id="openHidden"${L.openHidden ? ' checked' : ''}> ${E('optOpenHidden')}</label>
+      <div class="lbl">${E('lblRecording')}</div>
+      <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> ${E('optCountdown')}</label>
+      <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> ${E('optMic')}</label>
+      <div class="lbl">${E('lblRename')} <span class="note">${E('noteRename')}</span></div>
+      <textarea id="titleRules" rows="4" wrap="off" spellcheck="false" placeholder="MUP = WM Mobile" title="${E('tipRename')}">${L.titleRules}</textarea>
       <div class="note" id="rulesNote"></div>
-      <div class="lbl">Tab icon <span class="note">(for renamed tabs)</span></div>
+      <div class="lbl">${E('lblTabIcon')} <span class="note">${E('noteTabIcon')}</span></div>
       <div class="iconrow">
-        <span class="iconprev">${L.tabIcon ? `<img src="${L.tabIcon}" alt="">` : '<span class="note">page&#x2019;s own</span>'}</span>
-        <button type="button" id="iconPick" title="Choose an image (PNG, JPG, SVG or ICO) to show as the icon of renamed tabs">Choose&#x2026;</button>
-        ${L.tabIcon ? '<button type="button" id="iconClear" title="Go back to each page&#x2019;s own icon">Remove</button>' : ''}
+        <span class="iconprev">${L.tabIcon ? `<img src="${L.tabIcon}" alt="">` : `<span class="note">${E('iconPageOwn')}</span>`}</span>
+        <button type="button" id="iconPick" title="${E('tipIconPick')}">${E('btnChoose')}</button>
+        ${L.tabIcon ? `<button type="button" id="iconClear" title="${E('tipIconRemove')}">${E('btnRemove')}</button>` : ''}
         <input type="file" id="iconFile" accept="image/*,.ico" hidden>
       </div>
-      <label class="chk" style="margin-top: 6px" title="On: every page in this window shows the tab icon. Off: only tabs renamed by the list above."><input type="checkbox" id="iconAlways"${L.iconAlways ? ' checked' : ''}${L.tabIcon ? '' : ' disabled'}> Always display in this window</label>
-      <div class="help"><a href="#" id="guide">? User Guide</a></div>
+      <label class="chk" style="margin-top: 6px" title="${E('tipIconAlways')}"><input type="checkbox" id="iconAlways"${L.iconAlways ? ' checked' : ''}${L.tabIcon ? '' : ' disabled'}> ${E('optIconAlways')}</label>
+      <div class="lbl">${E('lblLanguage')}</div>
+      <select id="lang" class="langsel">
+        ${[['auto', E('langAuto')], ['en', 'English'], ['fr', 'Fran&#xE7;ais'], ['es_419', 'Espa&#xF1;ol']]
+          .map(([v, name]) => `<option value="${v}"${v === L.lang ? ' selected' : ''}>${name}</option>`).join('')}
+      </select>
+      <div class="help"><a href="#" id="guide">${E('linkGuide')}</a></div>
     </div>
     <div class="count" id="count" hidden></div>
     <div class="toast" id="toast"></div>
-    ${L.toolbarHidden ? `<div class="handle" id="handle" title="Show toolbar${L.shortcut ? ` (${L.shortcut})` : ''}">${ICON.expand}</div>` : ''}`;
+    ${L.toolbarHidden ? `<div class="handle" id="handle" title="${L.shortcut ? E('tipShowToolbarShortcut', L.shortcut) : E('tipShowToolbar')}">${ICON.expand}</div>` : ''}`;
 
   const clock = root.getElementById('clock');
   if (clock) {
@@ -391,7 +404,7 @@ function drawFrame(L) {
       return;
     }
     del.classList.add('danger');
-    toast('Click again to delete this saved device');
+    toast(T('msgDeleteAgain'));
     setTimeout(() => del.classList.remove('danger'), 3000);
   });
 
@@ -427,7 +440,7 @@ function drawFrame(L) {
       .filter(({ line }) => line && !line.startsWith('#') && !/^[^=]*[^=\s*][^=]*\s*=\s*\S/.test(line))
       .map(({ n }) => n);
     rulesBox.classList.toggle('bad', bad.length > 0);
-    rulesNote.textContent = bad.length ? `Line ${bad.join(', ')} skipped: use "Old title = New title"` : '';
+    rulesNote.textContent = bad.length ? T('rulesSkipped', bad.join(', ')) : '';
   };
   checkRules();
   rulesBox.addEventListener('input', checkRules);
@@ -453,7 +466,7 @@ function drawFrame(L) {
       URL.revokeObjectURL(url);
       send({ type: 'set-icon', dataUrl: canvas.toDataURL('image/png') });
     };
-    img.onerror = () => { URL.revokeObjectURL(url); toast("Couldn't read that image", 4000); };
+    img.onerror = () => { URL.revokeObjectURL(url); toast(T('msgBadImage'), 4000); };
     img.src = url;
   });
   root.getElementById('guide').addEventListener('click', (e) => {
@@ -461,6 +474,7 @@ function drawFrame(L) {
     setPop(false);
     send({ type: 'open-guide' });
   });
+  root.getElementById('lang').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { lang: e.target.value } }));
   root.getElementById('countdown').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { countdown: e.target.checked } }));
 
   // Toolbar show/hide: hide button, handle tab (fades in near the top edge),
@@ -692,8 +706,8 @@ function drawFrame(L) {
     if (rec) setPop(false);
     recBtn.classList.toggle('rec-on', Boolean(rec?.recorder));
     recBtn.title = rec
-      ? `Stop recording and save MP4${L.recordShortcut ? ` (or ${L.recordShortcut})` : ''}`
-      : `Record the device to MP4${L.recordShortcut ? ` (${L.recordShortcut} starts without Chrome's share prompt)` : ''}`;
+      ? (L.recordShortcut ? T('tipStopShortcut', L.recordShortcut) : T('tipStop'))
+      : (L.recordShortcut ? T('tipRecordShortcut', L.recordShortcut) : T('tipRecord'));
     if (!rec?.recorder) {
       recBtn.innerHTML = rec ? ICON.stop : ICON.record;
       return;
@@ -705,7 +719,7 @@ function drawFrame(L) {
   window.__devframeRecTick = setInterval(() => { if (window.__devframeRec?.recorder) showRecording(); }, 500);
   showRecording();
 
-  const stopRecording = (reason = 'stopped') => {
+  const stopRecording = (reason = T('whyStopped')) => {
     const rec = window.__devframeRec;
     if (!rec || rec.stopping) return;
     rec.stopping = true;
@@ -730,13 +744,13 @@ function drawFrame(L) {
       a.download = `device-frame-${name}-${stamp}.${ext}`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-      if (rec.error) toast(`Recording stopped early (${rec.error}); saved what was recorded`, 8000);
-      else toast(ext === 'mp4' ? 'Recording saved to Downloads' : 'Recording saved as WebM (MP4 not supported by this Chrome)');
+      if (rec.error) toast(T('msgRecStoppedEarly', rec.error), 8000);
+      else toast(ext === 'mp4' ? T('msgRecSaved') : T('msgRecSavedWebm'));
     } else if (rec.recorder) {
       // Started but nothing usable was recorded: say why.
-      const why = rec.error || rec.reason || 'unknown reason';
+      const why = rec.error || rec.reason || T('whyUnknown');
       console.warn('Device Frame: recording produced no video:', why, rec);
-      toast(`Recording failed: ${why}`, 8000);
+      toast(T('msgRecFailed', why), 8000);
     }
     send({ type: 'rec-state', recording: false }); // background redraws the controls
   };
@@ -769,7 +783,7 @@ function drawFrame(L) {
           surfaceSwitching: 'exclude',
         });
     } catch (e) {
-      toast(e.name === 'NotAllowedError' && !streamId ? 'Recording canceled' : `Can't record: ${e.message || e.name}`);
+      toast(e.name === 'NotAllowedError' && !streamId ? T('msgRecCanceled') : T('msgCantRecord', e.message || e.name));
       console.warn('Device Frame: recording failed to start', e);
       return;
     }
@@ -782,7 +796,7 @@ function drawFrame(L) {
         mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       } catch (e) {
         console.warn('Device Frame: microphone unavailable', e);
-        toast(`Microphone unavailable (${e.name}); recording without sound`, 6000);
+        toast(T('msgMicUnavailable', e.name), 6000);
       }
     }
     // AAC audio in MP4 so PowerPoint can play it.
@@ -794,7 +808,7 @@ function drawFrame(L) {
     window.__devframeRec = rec;
     send({ type: 'rec-state', recording: true });
     showRecording();
-    stream.getVideoTracks()[0].addEventListener('ended', () => stopRecording('the tab capture ended')); // e.g. Chrome's "Stop sharing"
+    stream.getVideoTracks()[0].addEventListener('ended', () => stopRecording(T('whyCaptureEnded'))); // e.g. Chrome's "Stop sharing"
 
     const video = document.createElement('video');
     video.muted = true;
@@ -805,7 +819,7 @@ function drawFrame(L) {
       new Promise((resolve) => setTimeout(() => resolve(false), 3000)),
     ]);
     if (!playing || !video.videoWidth) {
-      toast("Can't record: the tab capture didn't start");
+      toast(T('msgCaptureNoStart'));
       rec.stopping = true;
       return finishRecording(rec, null);
     }
@@ -868,7 +882,7 @@ function drawFrame(L) {
   };
 
   recBtn.addEventListener('click', () => {
-    if (window.__devframeRec) stopRecording('stopped with the button');
+    if (window.__devframeRec) stopRecording(T('whyButton'));
     else startRecording();
   });
 
@@ -876,7 +890,7 @@ function drawFrame(L) {
   // page's lifetime, forwarding to the latest drawFrame's handlers.
   window.__devframeOnMessage = (msg) => {
     if (msg?.type === 'df-record-start' && !window.__devframeRec) startRecording(msg.streamId);
-    if (msg?.type === 'df-record-stop') stopRecording('stopped with the shortcut');
+    if (msg?.type === 'df-record-stop') stopRecording(T('whyShortcut'));
   };
   if (!window.__devframeMessageBound) {
     chrome.runtime.onMessage.addListener((msg) => { window.__devframeOnMessage?.(msg); });
@@ -889,7 +903,7 @@ function drawFrame(L) {
     // keeps the click's user activation for the clipboard write.
     const png = new Promise((resolve, reject) => {
       chrome.runtime.sendMessage({ type: 'screenshot' }, (res) => {
-        if (!res?.dataUrl) return reject(new Error(res?.error || 'Screenshot failed'));
+        if (!res?.dataUrl) return reject(new Error(res?.error || T('msgShotFailed')));
         const bytes = atob(res.dataUrl.split(',')[1]);
         const buf = new Uint8Array(bytes.length);
         for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
@@ -897,8 +911,8 @@ function drawFrame(L) {
       });
     });
     navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
-      .then(() => toast('Copied to clipboard & saved to Downloads'))
-      .catch(() => png.then(() => toast('Saved to Downloads (clipboard copy blocked)'), (e) => toast(e.message)));
+      .then(() => toast(T('msgCopiedSaved')))
+      .catch(() => png.then(() => toast(T('msgSavedClipBlocked')), (e) => toast(e.message)));
   });
 
   return {
@@ -916,15 +930,16 @@ function drawFrame(L) {
 // Injected for the copy-only screenshot shortcut: put the PNG on the
 // clipboard and show the toast. No click here, so this relies on the frame
 // window being focused (it is, since the shortcut was pressed in it).
-async function copyImageToClipboard(dataUrl) {
+// msgs: { copied, blocked } in the UI language (blocked has $1 for the error).
+async function copyImageToClipboard(dataUrl, msgs) {
   const bytes = atob(dataUrl.split(',')[1]);
   const buf = new Uint8Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
-  let message = 'Copied to clipboard';
+  let message = msgs.copied;
   try {
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': new Blob([buf], { type: 'image/png' }) })]);
   } catch (e) {
-    message = `Clipboard copy blocked (${e.name})`;
+    message = msgs.blocked.replace('$1', e.name);
   }
   const toastEl = document.getElementById('__devframe')?.shadowRoot?.getElementById('toast');
   if (toastEl) {

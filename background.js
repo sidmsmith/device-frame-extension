@@ -12,7 +12,7 @@ importScripts('devices.js', 'frame.js');
 // ---- state ---------------------------------------------------------------
 // session: framed[tabId] = { windowId, device, orientation, recording }
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
-//                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, fitWidth, openHidden, presets: [{ id, name, width, height }] }
+//                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, fitWidth, openHidden, lang, presets: [{ id, name, width, height }] }
 
 async function getFramed() {
   return (await chrome.storage.session.get('framed')).framed ?? {};
@@ -32,6 +32,37 @@ async function getLast() {
 
 async function saveLast(patch) {
   await chrome.storage.local.set({ last: { ...(await getLast()), ...patch } });
+}
+
+// ---- language ------------------------------------------------------------
+// UI text comes from _locales/<lang>/messages.json. 'auto' follows Chrome's
+// language; the settings panel can override it. English fills any gaps.
+
+const LANGS = ['en', 'fr', 'es_419'];
+const messageCache = {};
+
+function resolveLang(pref) {
+  if (LANGS.includes(pref)) return pref;
+  const ui = chrome.i18n.getUILanguage().toLowerCase();
+  if (ui.startsWith('fr')) return 'fr';
+  if (ui.startsWith('es')) return 'es_419';
+  return 'en';
+}
+
+async function loadMessages(lang) {
+  if (!messageCache[lang]) {
+    const res = await fetch(chrome.runtime.getURL(`_locales/${lang}/messages.json`));
+    const json = await res.json();
+    messageCache[lang] = Object.fromEntries(Object.entries(json).map(([k, v]) => [k, v.message]));
+  }
+  return messageCache[lang];
+}
+
+// { key: text } for the chosen language, English as fallback.
+async function uiText(pref) {
+  const lang = resolveLang(pref);
+  const en = await loadMessages('en');
+  return lang === 'en' ? en : { ...en, ...(await loadMessages(lang)) };
 }
 
 // ---- open ----------------------------------------------------------------
@@ -81,8 +112,11 @@ async function onLoaded({ tabId, frameId, url }) {
 async function reframe(tabId, state, shiftY = 0) {
   const keys = await shortcuts();
   const { tabIcon } = await chrome.storage.local.get('tabIcon');
+  const last = await getLast();
   const L = {
-    ...computeLayout(state.device, state.orientation, await getLast()),
+    ...computeLayout(state.device, state.orientation, last),
+    lang: LANGS.includes(last.lang) ? last.lang : 'auto',
+    t: await uiText(last.lang),
     shortcut: keys['toggle-toolbar'], copyShortcut: keys['copy-screenshot'], recordShortcut: keys.record,
     tabIcon: tabIcon ?? null,
   };
@@ -242,6 +276,7 @@ async function handleControl(tabId, tab, msg) {
       if (typeof msg.prefs.iconAlways === 'boolean') prefs.iconAlways = msg.prefs.iconAlways;
       if (typeof msg.prefs.fitWidth === 'boolean') prefs.fitWidth = msg.prefs.fitWidth;
       if (typeof msg.prefs.openHidden === 'boolean') prefs.openHidden = msg.prefs.openHidden;
+      if (msg.prefs.lang === 'auto' || LANGS.includes(msg.prefs.lang)) prefs.lang = msg.prefs.lang;
       await saveLast(prefs);
       await reframe(tabId, state);
       break;
@@ -299,8 +334,11 @@ async function toggleRecording(tab, state) {
 
 // Copy-only screenshot: capture in the background, write the clipboard in the page.
 async function copyScreenshot(tab, state) {
-  const dataUrl = await captureDevice(tab, computeLayout(state.device, state.orientation, await getLast()));
-  await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: copyImageToClipboard, args: [dataUrl] });
+  const last = await getLast();
+  const dataUrl = await captureDevice(tab, computeLayout(state.device, state.orientation, last));
+  const t = await uiText(last.lang);
+  const msgs = { copied: t.msgCopied, blocked: t.msgClipBlocked };
+  await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: copyImageToClipboard, args: [dataUrl, msgs] });
 }
 
 // { commandName: 'Alt+Shift+H', ... } as currently assigned (may be changed by the user).

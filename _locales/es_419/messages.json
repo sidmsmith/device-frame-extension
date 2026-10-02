@@ -1,0 +1,302 @@
+{
+  "extName": {
+    "message": "Device Frame"
+  },
+  "extDescription": {
+    "message": "Muestra la página actual dentro del marco de un teléfono, terminal portátil o laptop para demos, capturas de pantalla y grabaciones."
+  },
+  "actionTitle": {
+    "message": "Abrir esta página en un marco de dispositivo"
+  },
+  "cmdToggleToolbar": {
+    "message": "Mostrar/ocultar la barra de controles en la ventana del marco"
+  },
+  "cmdCopyScreenshot": {
+    "message": "Copiar una captura del dispositivo al portapapeles (sin descarga)"
+  },
+  "cmdRecord": {
+    "message": "Iniciar/detener la grabación del dispositivo en MP4 (sin aviso para compartir)"
+  },
+  "groupMobile": {
+    "message": "Móvil"
+  },
+  "groupFull": {
+    "message": "Pantalla completa"
+  },
+  "groupSaved": {
+    "message": "Guardados"
+  },
+  "customDevice": {
+    "message": "Personalizado"
+  },
+  "tipDevice": {
+    "message": "Dispositivo"
+  },
+  "tipEditCustom": {
+    "message": "Cambiar el tamaño personalizado"
+  },
+  "tipDeletePreset": {
+    "message": "Eliminar el dispositivo guardado \"$1\""
+  },
+  "tipRotateLandscape": {
+    "message": "Girar a horizontal"
+  },
+  "tipRotatePortrait": {
+    "message": "Girar a vertical"
+  },
+  "tipNoRotate": {
+    "message": "Este dispositivo no gira"
+  },
+  "tipStatusShow": {
+    "message": "Mostrar la barra de estado"
+  },
+  "tipStatusHide": {
+    "message": "Ocultar la barra de estado"
+  },
+  "tipNoStatus": {
+    "message": "Este dispositivo no tiene barra de estado"
+  },
+  "tipSettings": {
+    "message": "Configuración: fondo, color del marco, toques, micrófono, idioma"
+  },
+  "tipReload": {
+    "message": "Recargar la página"
+  },
+  "tipRecord": {
+    "message": "Grabar el dispositivo en MP4"
+  },
+  "tipRecordShortcut": {
+    "message": "Grabar el dispositivo en MP4 ($1 inicia sin el aviso para compartir de Chrome)"
+  },
+  "tipStop": {
+    "message": "Detener la grabación y guardar el MP4"
+  },
+  "tipStopShortcut": {
+    "message": "Detener la grabación y guardar el MP4 (o $1)"
+  },
+  "tipShot": {
+    "message": "Captura del dispositivo: copiar al portapapeles y guardar PNG"
+  },
+  "tipShotShortcut": {
+    "message": "Captura del dispositivo: copiar al portapapeles y guardar PNG ($1 solo copia)"
+  },
+  "tipHide": {
+    "message": "Ocultar la barra de herramientas (o doble clic en el marco)"
+  },
+  "tipHideShortcut": {
+    "message": "Ocultar la barra de herramientas (o doble clic en el marco, o $1)"
+  },
+  "tipShowToolbar": {
+    "message": "Mostrar la barra de herramientas"
+  },
+  "tipShowToolbarShortcut": {
+    "message": "Mostrar la barra de herramientas ($1)"
+  },
+  "editorSize": {
+    "message": "Tamaño"
+  },
+  "tipWidth": {
+    "message": "Ancho ($1-$2)"
+  },
+  "tipHeight": {
+    "message": "Alto ($1-$2)"
+  },
+  "tipApply": {
+    "message": "Aplicar el tamaño personalizado"
+  },
+  "btnApply": {
+    "message": "Aplicar"
+  },
+  "btnSaveEllipsis": {
+    "message": "Guardar…"
+  },
+  "tipSavePreset": {
+    "message": "Guardar este tamaño como dispositivo con nombre en la lista"
+  },
+  "tipCancel": {
+    "message": "Cancelar"
+  },
+  "namePlaceholder": {
+    "message": "Nombre, p. ej. Zebra TC21"
+  },
+  "tipPresetName": {
+    "message": "Nombre de este dispositivo guardado"
+  },
+  "btnSave": {
+    "message": "Guardar"
+  },
+  "tipSaveToDropdown": {
+    "message": "Guardar en la lista de dispositivos"
+  },
+  "tipBack": {
+    "message": "Atrás"
+  },
+  "lblBackground": {
+    "message": "Fondo"
+  },
+  "bgLight": {
+    "message": "Gris claro"
+  },
+  "bgWhite": {
+    "message": "Blanco"
+  },
+  "bgDark": {
+    "message": "Oscuro"
+  },
+  "lblFrameColor": {
+    "message": "Color del marco"
+  },
+  "noteFixedColor": {
+    "message": "(fijo para este dispositivo)"
+  },
+  "fcBlack": {
+    "message": "Negro"
+  },
+  "fcSilver": {
+    "message": "Plata"
+  },
+  "fcWhite": {
+    "message": "Blanco"
+  },
+  "fcBlue": {
+    "message": "Azul"
+  },
+  "fcManhattan": {
+    "message": "Manhattan"
+  },
+  "optShowTaps": {
+    "message": "Mostrar toques (círculo + cursor de dedo)"
+  },
+  "optFitWidth": {
+    "message": "Ajustar la página al ancho de la pantalla"
+  },
+  "tipFitWidth": {
+    "message": "Reduce las páginas más anchas que la pantalla del dispositivo para que quepan sin desplazamiento horizontal (solo esta ventana)"
+  },
+  "optOpenHidden": {
+    "message": "Abrir siempre con la barra de herramientas oculta"
+  },
+  "tipOpenHidden": {
+    "message": "Cada nueva ventana del marco se abre con esta barra oculta (muéstrala con doble clic en el marco o con la pestaña de arriba)"
+  },
+  "tipOpenHiddenShortcut": {
+    "message": "Cada nueva ventana del marco se abre con esta barra oculta (muéstrala con doble clic en el marco, con $1 o con la pestaña de arriba)"
+  },
+  "lblRecording": {
+    "message": "Grabación"
+  },
+  "optCountdown": {
+    "message": "Cuenta regresiva 3-2-1 antes de grabar"
+  },
+  "optMic": {
+    "message": "Grabar el micrófono"
+  },
+  "lblRename": {
+    "message": "Renombrar títulos"
+  },
+  "noteRename": {
+    "message": "(Anterior = Nuevo, uno por línea)"
+  },
+  "tipRename": {
+    "message": "Un cambio por línea: Título anterior = Título nuevo. Debe coincidir el título completo, sin importar mayúsculas; termina el título anterior con * para los títulos que empiezan así. Se aplica a todas las pestañas, incluida esta ventana. Se guarda al hacer clic fuera."
+  },
+  "rulesSkipped": {
+    "message": "Línea $1 omitida: usa \"Título anterior = Título nuevo\""
+  },
+  "lblTabIcon": {
+    "message": "Ícono de pestaña"
+  },
+  "noteTabIcon": {
+    "message": "(pestañas renombradas)"
+  },
+  "iconPageOwn": {
+    "message": "el de la página"
+  },
+  "tipIconPick": {
+    "message": "Elige una imagen (PNG, JPG, SVG o ICO) como ícono de las pestañas renombradas"
+  },
+  "btnChoose": {
+    "message": "Elegir…"
+  },
+  "tipIconRemove": {
+    "message": "Volver al ícono de cada página"
+  },
+  "btnRemove": {
+    "message": "Quitar"
+  },
+  "optIconAlways": {
+    "message": "Mostrar siempre en esta ventana"
+  },
+  "tipIconAlways": {
+    "message": "Activado: todas las páginas de esta ventana muestran el ícono. Desactivado: solo las pestañas renombradas por la lista de arriba."
+  },
+  "lblLanguage": {
+    "message": "Idioma"
+  },
+  "langAuto": {
+    "message": "Automático (navegador)"
+  },
+  "linkGuide": {
+    "message": "? Guía de usuario"
+  },
+  "msgDeleteAgain": {
+    "message": "Haz clic de nuevo para eliminar este dispositivo guardado"
+  },
+  "msgBadImage": {
+    "message": "No se pudo leer esa imagen"
+  },
+  "msgRecStoppedEarly": {
+    "message": "La grabación se detuvo antes de tiempo ($1); se guardó lo grabado"
+  },
+  "msgRecSaved": {
+    "message": "Grabación guardada en Descargas"
+  },
+  "msgRecSavedWebm": {
+    "message": "Grabación guardada como WebM (este Chrome no admite MP4)"
+  },
+  "msgRecFailed": {
+    "message": "Falló la grabación: $1"
+  },
+  "msgRecCanceled": {
+    "message": "Grabación cancelada"
+  },
+  "msgCantRecord": {
+    "message": "No se puede grabar: $1"
+  },
+  "msgMicUnavailable": {
+    "message": "Micrófono no disponible ($1); grabando sin sonido"
+  },
+  "msgCaptureNoStart": {
+    "message": "No se puede grabar: la captura de la pestaña no inició"
+  },
+  "msgCopiedSaved": {
+    "message": "Copiado al portapapeles y guardado en Descargas"
+  },
+  "msgSavedClipBlocked": {
+    "message": "Guardado en Descargas (copia al portapapeles bloqueada)"
+  },
+  "msgCopied": {
+    "message": "Copiado al portapapeles"
+  },
+  "msgClipBlocked": {
+    "message": "Copia al portapapeles bloqueada ($1)"
+  },
+  "msgShotFailed": {
+    "message": "Falló la captura de pantalla"
+  },
+  "whyCaptureEnded": {
+    "message": "la captura de la pestaña terminó"
+  },
+  "whyButton": {
+    "message": "detenida con el botón"
+  },
+  "whyShortcut": {
+    "message": "detenida con el atajo"
+  },
+  "whyUnknown": {
+    "message": "motivo desconocido"
+  },
+  "whyStopped": {
+    "message": "detenida"
+  }
+}

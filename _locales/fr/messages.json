@@ -1,0 +1,302 @@
+{
+  "extName": {
+    "message": "Device Frame"
+  },
+  "extDescription": {
+    "message": "Affiche la page actuelle dans le cadre d'un téléphone, d'un terminal ou d'un ordinateur portable pour les démos, captures d'écran et enregistrements."
+  },
+  "actionTitle": {
+    "message": "Ouvrir cette page dans un cadre d'appareil"
+  },
+  "cmdToggleToolbar": {
+    "message": "Afficher/masquer la barre de contrôle dans la fenêtre du cadre"
+  },
+  "cmdCopyScreenshot": {
+    "message": "Copier une capture de l'appareil dans le presse-papiers (sans téléchargement)"
+  },
+  "cmdRecord": {
+    "message": "Démarrer/arrêter l'enregistrement de l'appareil en MP4 (sans invite de partage)"
+  },
+  "groupMobile": {
+    "message": "Mobile"
+  },
+  "groupFull": {
+    "message": "Plein écran"
+  },
+  "groupSaved": {
+    "message": "Enregistrés"
+  },
+  "customDevice": {
+    "message": "Personnalisé"
+  },
+  "tipDevice": {
+    "message": "Appareil"
+  },
+  "tipEditCustom": {
+    "message": "Modifier la taille personnalisée"
+  },
+  "tipDeletePreset": {
+    "message": "Supprimer l'appareil enregistré « $1 »"
+  },
+  "tipRotateLandscape": {
+    "message": "Passer en mode paysage"
+  },
+  "tipRotatePortrait": {
+    "message": "Passer en mode portrait"
+  },
+  "tipNoRotate": {
+    "message": "Cet appareil ne pivote pas"
+  },
+  "tipStatusShow": {
+    "message": "Afficher la barre d'état"
+  },
+  "tipStatusHide": {
+    "message": "Masquer la barre d'état"
+  },
+  "tipNoStatus": {
+    "message": "Pas de barre d'état sur cet appareil"
+  },
+  "tipSettings": {
+    "message": "Paramètres : arrière-plan, couleur du cadre, touchers, microphone, langue"
+  },
+  "tipReload": {
+    "message": "Recharger la page"
+  },
+  "tipRecord": {
+    "message": "Enregistrer l'appareil en MP4"
+  },
+  "tipRecordShortcut": {
+    "message": "Enregistrer l'appareil en MP4 ($1 démarre sans l'invite de partage de Chrome)"
+  },
+  "tipStop": {
+    "message": "Arrêter l'enregistrement et sauvegarder le MP4"
+  },
+  "tipStopShortcut": {
+    "message": "Arrêter l'enregistrement et sauvegarder le MP4 (ou $1)"
+  },
+  "tipShot": {
+    "message": "Capture de l'appareil : copier dans le presse-papiers et enregistrer en PNG"
+  },
+  "tipShotShortcut": {
+    "message": "Capture de l'appareil : copier dans le presse-papiers et enregistrer en PNG ($1 copie uniquement)"
+  },
+  "tipHide": {
+    "message": "Masquer la barre d'outils (ou double-cliquer sur le cadre)"
+  },
+  "tipHideShortcut": {
+    "message": "Masquer la barre d'outils (ou double-cliquer sur le cadre, ou $1)"
+  },
+  "tipShowToolbar": {
+    "message": "Afficher la barre d'outils"
+  },
+  "tipShowToolbarShortcut": {
+    "message": "Afficher la barre d'outils ($1)"
+  },
+  "editorSize": {
+    "message": "Taille"
+  },
+  "tipWidth": {
+    "message": "Largeur ($1-$2)"
+  },
+  "tipHeight": {
+    "message": "Hauteur ($1-$2)"
+  },
+  "tipApply": {
+    "message": "Appliquer la taille personnalisée"
+  },
+  "btnApply": {
+    "message": "Appliquer"
+  },
+  "btnSaveEllipsis": {
+    "message": "Sauver…"
+  },
+  "tipSavePreset": {
+    "message": "Enregistrer cette taille comme appareil nommé dans la liste"
+  },
+  "tipCancel": {
+    "message": "Annuler"
+  },
+  "namePlaceholder": {
+    "message": "Nom, p. ex. Zebra TC21"
+  },
+  "tipPresetName": {
+    "message": "Nom de cet appareil enregistré"
+  },
+  "btnSave": {
+    "message": "Enregistrer"
+  },
+  "tipSaveToDropdown": {
+    "message": "Ajouter à la liste des appareils"
+  },
+  "tipBack": {
+    "message": "Retour"
+  },
+  "lblBackground": {
+    "message": "Arrière-plan"
+  },
+  "bgLight": {
+    "message": "Gris clair"
+  },
+  "bgWhite": {
+    "message": "Blanc"
+  },
+  "bgDark": {
+    "message": "Sombre"
+  },
+  "lblFrameColor": {
+    "message": "Couleur du cadre"
+  },
+  "noteFixedColor": {
+    "message": "(fixe pour cet appareil)"
+  },
+  "fcBlack": {
+    "message": "Noir"
+  },
+  "fcSilver": {
+    "message": "Argent"
+  },
+  "fcWhite": {
+    "message": "Blanc"
+  },
+  "fcBlue": {
+    "message": "Bleu"
+  },
+  "fcManhattan": {
+    "message": "Manhattan"
+  },
+  "optShowTaps": {
+    "message": "Afficher les touchers (cercle + curseur doigt)"
+  },
+  "optFitWidth": {
+    "message": "Ajuster la page à la largeur de l'écran"
+  },
+  "tipFitWidth": {
+    "message": "Réduit les pages plus larges que l'écran de l'appareil pour éviter le défilement horizontal (cette fenêtre uniquement)"
+  },
+  "optOpenHidden": {
+    "message": "Toujours ouvrir avec la barre d'outils masquée"
+  },
+  "tipOpenHidden": {
+    "message": "Chaque nouvelle fenêtre de cadre s'ouvre avec cette barre masquée (réaffichez-la en double-cliquant sur le cadre ou avec l'onglet en haut)"
+  },
+  "tipOpenHiddenShortcut": {
+    "message": "Chaque nouvelle fenêtre de cadre s'ouvre avec cette barre masquée (réaffichez-la en double-cliquant sur le cadre, avec $1 ou avec l'onglet en haut)"
+  },
+  "lblRecording": {
+    "message": "Enregistrement"
+  },
+  "optCountdown": {
+    "message": "Compte à rebours 3-2-1 avant l'enregistrement"
+  },
+  "optMic": {
+    "message": "Enregistrer le microphone"
+  },
+  "lblRename": {
+    "message": "Renommer les titres"
+  },
+  "noteRename": {
+    "message": "(Ancien = Nouveau, un par ligne)"
+  },
+  "tipRename": {
+    "message": "Un renommage par ligne : Ancien titre = Nouveau titre. Le titre entier doit correspondre, sans tenir compte des majuscules ; terminez l'ancien titre par * pour viser les titres qui commencent ainsi. S'applique à tous les onglets, y compris cette fenêtre. Enregistré quand vous cliquez ailleurs."
+  },
+  "rulesSkipped": {
+    "message": "Ligne $1 ignorée : utilisez « Ancien titre = Nouveau titre »"
+  },
+  "lblTabIcon": {
+    "message": "Icône d'onglet"
+  },
+  "noteTabIcon": {
+    "message": "(onglets renommés)"
+  },
+  "iconPageOwn": {
+    "message": "celle de la page"
+  },
+  "tipIconPick": {
+    "message": "Choisir une image (PNG, JPG, SVG ou ICO) comme icône des onglets renommés"
+  },
+  "btnChoose": {
+    "message": "Choisir…"
+  },
+  "tipIconRemove": {
+    "message": "Revenir à l'icône de chaque page"
+  },
+  "btnRemove": {
+    "message": "Supprimer"
+  },
+  "optIconAlways": {
+    "message": "Toujours afficher dans cette fenêtre"
+  },
+  "tipIconAlways": {
+    "message": "Activé : toutes les pages de cette fenêtre affichent l'icône. Désactivé : seulement les onglets renommés par la liste ci-dessus."
+  },
+  "lblLanguage": {
+    "message": "Langue"
+  },
+  "langAuto": {
+    "message": "Auto (navigateur)"
+  },
+  "linkGuide": {
+    "message": "? Guide d'utilisation"
+  },
+  "msgDeleteAgain": {
+    "message": "Cliquez à nouveau pour supprimer cet appareil enregistré"
+  },
+  "msgBadImage": {
+    "message": "Impossible de lire cette image"
+  },
+  "msgRecStoppedEarly": {
+    "message": "Enregistrement interrompu ($1) ; la partie enregistrée a été sauvegardée"
+  },
+  "msgRecSaved": {
+    "message": "Enregistrement sauvegardé dans Téléchargements"
+  },
+  "msgRecSavedWebm": {
+    "message": "Enregistrement sauvegardé en WebM (MP4 non pris en charge par ce Chrome)"
+  },
+  "msgRecFailed": {
+    "message": "Échec de l'enregistrement : $1"
+  },
+  "msgRecCanceled": {
+    "message": "Enregistrement annulé"
+  },
+  "msgCantRecord": {
+    "message": "Impossible d'enregistrer : $1"
+  },
+  "msgMicUnavailable": {
+    "message": "Microphone indisponible ($1) ; enregistrement sans son"
+  },
+  "msgCaptureNoStart": {
+    "message": "Impossible d'enregistrer : la capture de l'onglet n'a pas démarré"
+  },
+  "msgCopiedSaved": {
+    "message": "Copié dans le presse-papiers et sauvegardé dans Téléchargements"
+  },
+  "msgSavedClipBlocked": {
+    "message": "Sauvegardé dans Téléchargements (copie dans le presse-papiers bloquée)"
+  },
+  "msgCopied": {
+    "message": "Copié dans le presse-papiers"
+  },
+  "msgClipBlocked": {
+    "message": "Copie dans le presse-papiers bloquée ($1)"
+  },
+  "msgShotFailed": {
+    "message": "Échec de la capture d'écran"
+  },
+  "whyCaptureEnded": {
+    "message": "la capture de l'onglet s'est arrêtée"
+  },
+  "whyButton": {
+    "message": "arrêté avec le bouton"
+  },
+  "whyShortcut": {
+    "message": "arrêté avec le raccourci"
+  },
+  "whyUnknown": {
+    "message": "raison inconnue"
+  },
+  "whyStopped": {
+    "message": "arrêté"
+  }
+}

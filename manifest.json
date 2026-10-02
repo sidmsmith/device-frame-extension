@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Device Frame",
-  "version": "0.19.1",
-  "description": "Show the current page inside an Android phone frame for demos.",
+  "name": "__MSG_extName__",
+  "default_locale": "en",
+  "version": "0.19.2",
+  "description": "__MSG_extDescription__",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -10,7 +11,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "Open this page in a device frame",
+    "default_title": "__MSG_actionTitle__",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png"
@@ -19,15 +20,15 @@
   "commands": {
     "toggle-toolbar": {
       "suggested_key": { "default": "Alt+Shift+H" },
-      "description": "Show/hide the control bar in the device frame window"
+      "description": "__MSG_cmdToggleToolbar__"
     },
     "copy-screenshot": {
       "suggested_key": { "default": "Alt+Shift+S" },
-      "description": "Copy a screenshot of the device to the clipboard (no download)"
+      "description": "__MSG_cmdCopyScreenshot__"
     },
     "record": {
       "suggested_key": { "default": "Alt+Shift+V" },
-      "description": "Start/stop recording the device to MP4 (no share prompt)"
+      "description": "__MSG_cmdRecord__"
     }
   },
   "content_scripts": [
