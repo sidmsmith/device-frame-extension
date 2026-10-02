@@ -227,6 +227,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     mic: Boolean(prefs.mic),
     countdown: prefs.countdown !== false,
     iconAlways: Boolean(prefs.iconAlways),
+    fitWidth: prefs.fitWidth !== false,
     titleRules: escapeHtml(typeof prefs.titleRules === 'string' ? prefs.titleRules : 'MUP = WM Mobile'),
     decor: art ? {
       svg: art.svg,

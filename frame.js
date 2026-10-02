@@ -53,8 +53,11 @@ function drawFrame(L) {
     html { background: ${t.page} !important; overflow: hidden !important; }
     body {
       position: fixed !important;
-      left: ${c.x}px !important; top: ${c.y}px !important;
-      width: ${c.w}px !important; height: ${c.h}px !important;
+      /* --df-fit < 1 shrinks a too-wide page to the screen width (see fitWidth below):
+         the page lays out wider, and zoom scales it (and these lengths) back down. */
+      zoom: var(--df-fit, 1) !important;
+      left: calc(${c.x}px / var(--df-fit, 1)) !important; top: calc(${c.y}px / var(--df-fit, 1)) !important;
+      width: calc(${c.w}px / var(--df-fit, 1)) !important; height: calc(${c.h}px / var(--df-fit, 1)) !important;
       min-width: 0 !important; min-height: 0 !important;
       max-width: none !important; max-height: none !important;
       margin: 0 !important;
@@ -285,6 +288,7 @@ function drawFrame(L) {
         ${Object.keys(FRAME_LABEL).map((k) => `<button data-fc="${k}" class="${k === L.frameColor && !L.frameColorFixed ? 'sel' : ''}"${L.frameColorFixed ? ' disabled' : ''}><span class="sw" style="background:${FRAME_SWATCH[k]}"></span>${FRAME_LABEL[k]}</button>`).join('')}
       </div>
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> Show taps (circle + fingertip cursor)</label>
+      <label class="chk" style="margin-top: 6px" title="Shrink pages that are wider than the device screen so they fit without scrolling sideways (this window only)"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> Fit page to screen width</label>
       <div class="lbl">Recording</div>
       <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> 3-2-1 countdown before recording</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> Record microphone</label>
@@ -401,6 +405,7 @@ function drawFrame(L) {
   pop.querySelectorAll('[data-bg]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { background: b.dataset.bg } })));
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
+  root.getElementById('fitWidth').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { fitWidth: e.target.checked } }));
   root.getElementById('mic').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { mic: e.target.checked } }));
   // Title renames: flag lines that can't be read (no "Old = New"); those are
   // skipped by title.js. Saved when the box loses focus.
@@ -480,6 +485,42 @@ function drawFrame(L) {
   for (const [type, fn] of Object.entries(window.__devframeListeners ?? {})) document.removeEventListener(type, fn, true);
   for (const [type, fn] of Object.entries(listeners)) document.addEventListener(type, fn, true);
   window.__devframeListeners = listeners;
+
+  // Fit page to screen width: measure how wide the page wants to be at 100%
+  // and, if that's wider than the screen, zoom it down to fit (never below
+  // 50%). Measuring and applying happen in one go, so nothing flickers; it
+  // re-checks when the page changes so screens that fit go back to 100%.
+  window.__devframeFitObserver?.disconnect();
+  clearInterval(window.__devframeFitTimer);
+  const rootStyle = document.documentElement.style;
+  const fitWidth = () => {
+    const body = document.body;
+    if (!body) return;
+    if (!L.fitWidth) { rootStyle.removeProperty('--df-fit'); return; }
+    const before = rootStyle.getPropertyValue('--df-fit');
+    rootStyle.setProperty('--df-fit', '1');
+    const width = body.clientWidth;
+    let need = body.scrollWidth;
+    // Full-width app shells often scroll inside their own containers.
+    for (const el of body.getElementsByTagName('*')) {
+      const w = el.clientWidth;
+      if (w >= width * 0.9 && el.scrollWidth > w + 1) need = Math.max(need, Math.round(el.scrollWidth * width / w));
+    }
+    const fit = need > width + 1 ? Math.max(0.5, Math.floor((width / need) * 1000) / 1000) : 1;
+    if (String(fit) !== before || before === '') rootStyle.setProperty('--df-fit', String(fit));
+    else rootStyle.setProperty('--df-fit', before);
+  };
+  let fitPending = 0;
+  const scheduleFit = () => {
+    clearTimeout(fitPending);
+    fitPending = setTimeout(fitWidth, 250);
+  };
+  fitWidth();
+  if (L.fitWidth && document.body) {
+    window.__devframeFitObserver = new MutationObserver(scheduleFit);
+    window.__devframeFitObserver.observe(document.body, { childList: true, subtree: true });
+    window.__devframeFitTimer = setInterval(fitWidth, 2000); // catches style-only changes
+  }
 
   // Re-fit the window when its size drifts from the layout (e.g. Chrome's
   // "sharing this tab" bar appears, or the user drags the window edge).

@@ -12,7 +12,7 @@ importScripts('devices.js', 'frame.js');
 // ---- state ---------------------------------------------------------------
 // session: framed[tabId] = { windowId, device, orientation, recording }
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
-//                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, presets: [{ id, name, width, height }] }
+//                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, fitWidth, presets: [{ id, name, width, height }] }
 
 async function getFramed() {
   return (await chrome.storage.session.get('framed')).framed ?? {};
@@ -237,6 +237,7 @@ async function handleControl(tabId, tab, msg) {
       if (typeof msg.prefs.countdown === 'boolean') prefs.countdown = msg.prefs.countdown;
       if (typeof msg.prefs.titleRules === 'string') prefs.titleRules = msg.prefs.titleRules.slice(0, 4000);
       if (typeof msg.prefs.iconAlways === 'boolean') prefs.iconAlways = msg.prefs.iconAlways;
+      if (typeof msg.prefs.fitWidth === 'boolean') prefs.fitWidth = msg.prefs.fitWidth;
       await saveLast(prefs);
       await reframe(tabId, state);
       break;
