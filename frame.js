@@ -504,7 +504,7 @@ function drawFrame(L) {
   const fitWidth = () => {
     const body = document.body;
     if (!body) return;
-    if (!L.fitWidth) { rootStyle.removeProperty('--df-fit'); return; }
+    if (!L.fitWidth) { rootStyle.removeProperty('--df-fit'); fitWords(); return; }
     const before = rootStyle.getPropertyValue('--df-fit');
     rootStyle.setProperty('--df-fit', '1');
     const width = body.clientWidth;
@@ -517,7 +517,55 @@ function drawFrame(L) {
     const fit = need > width + 1 ? Math.max(0.5, Math.floor((width / need) * 1000) / 1000) : 1;
     if (String(fit) !== before || before === '') rootStyle.setProperty('--df-fit', String(fit));
     else rootStyle.setProperty('--df-fit', before);
+    fitWords();
   };
+
+  // Long words: when a single word is wider than the box it's in (so the
+  // browser splits it, e.g. "PERFORMA/NCE" on a button), shrink that
+  // element's text just enough to keep the word on one line (not below 60%).
+  // Phrases may still wrap between words. Sizes are worked out from each
+  // element's original font size, so repeated passes don't compound.
+  const shrunk = window.__devframeShrunk ?? (window.__devframeShrunk = new Map()); // element -> original font size (px)
+  const canvas = fitWords.canvas ?? (fitWords.canvas = document.createElement('canvas').getContext('2d'));
+  function fitWords() {
+    const body = document.body;
+    if (!body) return;
+    if (!L.fitWidth) {
+      for (const el of shrunk.keys()) el.style.removeProperty('font-size');
+      shrunk.clear();
+      return;
+    }
+    for (const el of shrunk.keys()) if (!el.isConnected) shrunk.delete(el);
+    for (const el of body.getElementsByTagName('*')) {
+      let text = '';
+      for (const node of el.childNodes) if (node.nodeType === 3) text += node.data;
+      const words = text.split(/\s+/).filter((w) => w.length > 1);
+      if (!words.length) continue;
+      const cs = getComputedStyle(el);
+      if (cs.whiteSpace.startsWith('nowrap') || cs.whiteSpace === 'pre') continue;
+      // The width available: this element's content box, or its nearest
+      // non-inline ancestor's for inline text holders like <span>.
+      let box = el;
+      while (box && box !== body && getComputedStyle(box).display.startsWith('inline') && !getComputedStyle(box).display.includes('block')) box = box.parentElement;
+      const bs = getComputedStyle(box);
+      const avail = box.clientWidth - parseFloat(bs.paddingLeft) - parseFloat(bs.paddingRight);
+      if (avail <= 0) continue;
+      const original = shrunk.get(el) ?? parseFloat(cs.fontSize);
+      canvas.font = `${cs.fontStyle} ${cs.fontWeight} ${original}px ${cs.fontFamily}`;
+      const transform = (w) => (cs.textTransform === 'uppercase' ? w.toUpperCase() : cs.textTransform === 'lowercase' ? w.toLowerCase() : w);
+      const spacing = parseFloat(cs.letterSpacing) || 0;
+      const widest = Math.max(...words.map((w) => canvas.measureText(transform(w)).width + spacing * w.length));
+      const scale = widest > avail + 0.5 ? Math.max(0.6, avail / widest) : 1;
+      if (scale < 1) {
+        const size = `${Math.floor(original * scale * 10) / 10}px`;
+        if (!shrunk.has(el)) shrunk.set(el, original);
+        if (el.style.getPropertyValue('font-size') !== size) el.style.setProperty('font-size', size, 'important');
+      } else if (shrunk.has(el)) {
+        el.style.removeProperty('font-size');
+        shrunk.delete(el);
+      }
+    }
+  }
   let fitPending = 0;
   const scheduleFit = () => {
     clearTimeout(fitPending);
