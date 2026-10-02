@@ -60,6 +60,9 @@ remembered. Keyboard shortcuts can be changed at
 - The window is resized so the viewport matches the layout, and per-tab zoom
   shrinks it to fit the screen. Zoom is scoped to that tab only.
 - Device sizes and bezel geometry live in `devices.js`.
+- "Fit page to screen width" (frame windows): CSS `zoom` on `<body>` (with its
+  geometry divided by the same factor) shrinks pages wider than the screen;
+  long single words get a smaller font-size, shared by matching neighbors.
 - `keyguard.js` loads at the start of every page but only acts in frame
   windows: it stops the extension's own keyboard shortcuts from also reaching
   the app (otherwise e.g. Alt+Shift+V typed a V into MUP's search box).

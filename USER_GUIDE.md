@@ -90,6 +90,19 @@ Good to know:
 - Laptop and Desktop are always landscape and have no status bar, so those
   buttons are grayed out.
 
+**Fitting pages to the device screen** (setting **Fit page to screen width**,
+on by default – frame window only, normal tabs are never affected):
+
+- Pages that are wider than the device screen are shrunk just enough to fit,
+  so you don't have to scroll sideways. Screens that already fit stay at 100%.
+- Sizes the page sets as a share of "the screen" (e.g. buttons 35% wide, or a
+  full-height panel) are measured against the device screen, not the whole
+  window – so footer buttons and full-height screens fit like on a real device.
+- If a single word is too wide for its button (e.g. PERFORMANCE splitting onto
+  two lines), the text is shrunk a little to keep it on one line, and the
+  buttons next to it are shrunk by the same amount so they still match.
+  Phrases like "INDIRECT EVENT" can still wrap between words.
+
 <img src="docs/images/rugged.png" alt="The Rugged Handheld" width="250"> <img src="docs/images/laptop.png" alt="The Laptop frame" width="520">
 
 ## 5. Settings panel
@@ -103,6 +116,8 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
 - **Show taps** – shows a soft circle wherever you click, plus a round
   fingertip cursor. Great for screen-shared demos and recordings, so viewers
   can see what you tapped.
+- **Fit page to screen width** – shrink too-wide pages and long words to fit
+  the device screen (see section 4). Untick to see the page at its true size.
 - **3-2-1 countdown before recording** – on by default; untick to start
   recording immediately.
 - **Record microphone** – include your voice in recordings (see section 7).
