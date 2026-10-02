@@ -17,11 +17,6 @@ const DEVICES = {
     bezel: { side: 14, top: 64, bottom: 64 }, radius: 38, screenRadius: 2,
     colors: ['#3c3d42', '#111214'],
   },
-  zebraTC52: {
-    name: 'Zebra TC52', width: 360, height: 640,
-    bezel: { side: 20, top: 58, bottom: 72 }, radius: 30, screenRadius: 6,
-    colors: ['#505156', '#1b1c1e'], fixedColor: true,
-  },
   rugged: {
     name: 'Rugged Handheld', width: 360, height: 640,
     bezel: { side: 24, top: 74, bottom: 330 }, radius: 40, screenRadius: 3,
@@ -38,6 +33,11 @@ const DEVICES = {
     name: 'Zebra TC8300', width: 320, height: 533, screenRadius: 0, radius: 40,
     colors: ['#3b3f45', '#25282c'], style: 'photo', fixedColor: true,
     skin: { file: 'skins/tc8300.webp', w: 697, h: 1946, screen: [111, 213, 485, 799] },
+  },
+  zebraTC72: {
+    name: 'Zebra TC72', width: 360, height: 640, screenRadius: 0, radius: 40,
+    colors: ['#3b3f45', '#25282c'], style: 'photo', fixedColor: true,
+    skin: { file: 'skins/tc72.webp', w: 900, h: 1705, screen: [132, 242, 643, 1116] },
   },
   zebraWT6300: {
     name: 'Zebra WT6300', width: 512, height: 320, screenRadius: 0, radius: 40,
@@ -115,11 +115,16 @@ function normalizeCustom(size) {
   };
 }
 
+// Devices that were replaced: saved selections carry over to the new one.
+const DEVICE_ALIASES = { zebraTC52: 'zebraTC72', zebraTC8000: 'zebraTC8300' };
+
 function isDeviceKey(key, prefs = {}) {
+  key = DEVICE_ALIASES[key] ?? key;
   return key === CUSTOM_KEY || Boolean(DEVICES[key]) || Boolean(findPreset(prefs, key));
 }
 
 function resolveDevice(key, prefs) {
+  key = DEVICE_ALIASES[key] ?? key;
   if (key === CUSTOM_KEY) return genericDevice('Custom', prefs.custom);
   const preset = findPreset(prefs, key);
   if (preset) return genericDevice(preset.name, preset);
@@ -146,7 +151,7 @@ function genericDevice(name, size) {
 // right-edge buttons end up on the top edge. `content` is the part of the
 // screen the page gets (the screen minus the status bar, when shown).
 function computeLayout(deviceKey, orientation, prefs = {}) {
-  const key = isDeviceKey(deviceKey, prefs) ? deviceKey : DEFAULT_DEVICE;
+  const key = isDeviceKey(deviceKey, prefs) ? (DEVICE_ALIASES[deviceKey] ?? deviceKey) : DEFAULT_DEVICE;
   const d = resolveDevice(key, prefs);
   const custom = normalizeCustom(prefs.custom);
   const landscape = orientation === 'landscape' && !d.fixedOrientation;

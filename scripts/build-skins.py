@@ -24,6 +24,9 @@ SKINS = {
     'mc9400': {'file': 'mc9400-front.jpg', 'screen': (1546, 386, 500, 833), 'maxWidth': 900},
     # Zebra TC8300 (zebra.com product photo); screen averaged (slight perspective).
     'tc8300': {'file': 'tc8300-front.jpg', 'screen': (1557, 452, 485, 799), 'maxWidth': 900},
+    # Zebra TC72 (zebra.com product photo); its back/home/recent keys are
+    # physical, below the display. Screen averaged (slight perspective).
+    'tc72': {'file': 'tc72-front.jpg', 'screen': (1449, 525, 731, 1269), 'maxWidth': 900},
     # Zebra WT6300 (zebra.com product photo); app area only, the on-screen
     # Android buttons to its right stay part of the skin.
     'wt6300': {'file': 'wt6300-front.jpg', 'screen': (987, 752, 1626, 1016), 'maxWidth': 1500},

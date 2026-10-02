@@ -31,7 +31,7 @@ The control bar above the device has:
 
 | Control | What it does |
 |---|---|
-| Device dropdown | Pixel 8, Galaxy S24, Moto G4, Zebra TC52, Rugged Handheld, Laptop (1366×768, laptop frame), Desktop (1920×1080, no frame — for recording normal WMS screens), Android Tablet, your saved devices, Custom |
+| Device dropdown | Mobile: Android Tablet, Galaxy S24, Moto G4, Pixel 8, Rugged Handheld, Zebra MC9400, Zebra TC72, Zebra TC8300, Zebra WT6300 (photo devices). Full Screen: Desktop (1920×1080, no frame — for recording normal WMS screens), Laptop (1366×768). Plus your saved devices and Custom |
 | Custom… (in dropdown) / ✎ | Enter any width × height (240–2560); Enter applies, Esc cancels. **Save…** names it and adds it to the dropdown under *Saved* |
 | Trash icon | Shown when a saved device is selected; click twice to delete it |
 | Rotate icon | Rotate between portrait and landscape (not for Laptop/Desktop) |
@@ -74,7 +74,7 @@ remembered. Keyboard shortcuts can be changed at
   own icon (with "Always display", every page in frame windows does).
 - The Rugged Handheld brings its own artwork (`ruggedArt()` in `devices.js`),
   drawn in device coordinates and rotated for landscape.
-- Photo devices (Zebra MC9400, TC8300, WT6300) use product photos from
+- Photo devices (Zebra MC9400, TC72, TC8300, WT6300) use product photos from
   zebra.com: `scripts/build-skins.py` removes the background and floor shadow,
   crops, cuts the display out and writes `skins/*.webp` (originals in
   `skins/src/`, not shipped in the zip). The skin size and screen rectangle
