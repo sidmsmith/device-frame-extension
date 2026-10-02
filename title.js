@@ -8,7 +8,8 @@
 // Re-applies whenever the page changes its title, and restores the page's
 // own title when no rule applies any more.
 // If a tab icon is set (storage key tabIcon, a PNG data URL), renamed tabs
-// also show it instead of the page's own icon.
+// also show it instead of the page's own icon; with "Always display"
+// (prefs.iconAlways) every page in a frame window shows it.
 
 (() => {
   const DEFAULT_RULES = 'MUP = WM Mobile';
@@ -16,6 +17,8 @@
   let own = null; // the page's own (latest) title
   let shown = null; // the title we set, if any
   let icon = null; // tab icon data URL, or null for the page's own
+  let iconAlways = false; // show the icon on every page in frame windows
+  let framed = false; // set by the background for frame windows
 
   const parseRules = (text) => text.split(/\r?\n/).flatMap((raw) => {
     const line = raw.trim();
@@ -48,7 +51,7 @@
     const head = document.head;
     if (!head) return;
     const ours = head.querySelector('link#__devframe-icon');
-    if (shown !== null && icon) {
+    if (icon && (shown !== null || (framed && iconAlways))) {
       for (const link of head.querySelectorAll('link[rel~="icon"]:not(#__devframe-icon)')) {
         link.dataset.devframeRel = link.rel;
         link.rel = OFF;
@@ -89,6 +92,7 @@
 
   const load = (last) => {
     rules = parseRules(typeof last?.titleRules === 'string' ? last.titleRules : DEFAULT_RULES);
+    iconAlways = Boolean(last?.iconAlways);
     refresh();
   };
 
@@ -103,6 +107,15 @@
       syncIcon();
     }
     if (changes.last) load(changes.last.newValue);
+  });
+
+  // The background sends this (with the shortcut list for keyguard.js) only
+  // to tabs shown in a frame window.
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg?.type === 'keyguard' && !framed) {
+      framed = true;
+      syncIcon();
+    }
   });
 
   // Watch the <title> (and its replacement) so renames survive the app

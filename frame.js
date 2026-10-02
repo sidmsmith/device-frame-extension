@@ -116,18 +116,9 @@ function drawFrame(L) {
       </g>`;
   }
 
-  let decor = '';
-  if (L.decor) {
-    const D = L.decor;
-    const shape = (p) => p.type === 'text'
-      ? `<text x="${p.x}" y="${p.y}" text-anchor="middle" dominant-baseline="central" font-family="system-ui, sans-serif" font-weight="600" font-size="${p.size}" fill="${p.fill}">${p.text}</text>`
-      : `<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="${p.rx ?? 0}" fill="${p.fill}"${p.stroke ? ` stroke="${p.stroke}"` : ''}/>`;
-    decor = `
-      <g clip-path="url(#phoneclip)" fill="${D.bumperColor}">
-        ${D.bumpers.map((b) => `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}"/>`).join('')}
-      </g>
-      <g transform="${D.transform}">${D.shapes.map(shape).join('')}</g>`;
-  }
+  // Devices with their own artwork (the rugged handheld) replace the plain
+  // body, outline and camera.
+  const art = L.decor ? `<g transform="${L.decor.transform}">${L.decor.svg}</g>` : '';
 
   root.innerHTML = `
     <style>
@@ -247,13 +238,12 @@ function drawFrame(L) {
       ${statusBar}
       <path fill="${t.page}" fill-rule="evenodd" d="${outside}"/>
       ${L.frameless ? '' : `<path fill="#000" d="${devicePath}" filter="url(#shadow)" clip-path="url(#outside)"/>`}
-      <path fill="url(#body)" fill-rule="evenodd" d="${phonePath} ${rr(L.screen)}"/>
-      ${decor}
+      ${art || `<path fill="url(#body)" fill-rule="evenodd" d="${phonePath} ${rr(L.screen)}"/>`}
       ${L.extras.map((e) => `
         <path fill="url(#base)" stroke="#8a8f96" stroke-width="1" d="${rr(e)}"/>
         <rect x="${e.x + e.w / 2 - 60}" y="${e.y}" width="120" height="5" rx="2.5" fill="#8a8f96"/>`).join('')}
-      ${L.frameless ? '' : `<path fill="none" stroke="#55575d" stroke-width="2" d="${phonePath}"/>`}
-      ${L.camera ? `<circle cx="${L.camera.cx}" cy="${L.camera.cy}" r="${L.camera.r}" fill="url(#cam)"/>` : ''}
+      ${L.frameless || art ? '' : `<path fill="none" stroke="#55575d" stroke-width="2" d="${phonePath}"/>`}
+      ${L.camera && !art ? `<circle cx="${L.camera.cx}" cy="${L.camera.cy}" r="${L.camera.r}" fill="url(#cam)"/>` : ''}
       ${L.buttons.map((b) => `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="2" fill="${b.color}"/>`).join('')}
     </svg>
     <div id="ripples"></div>
@@ -308,6 +298,7 @@ function drawFrame(L) {
         ${L.tabIcon ? '<button type="button" id="iconClear" title="Go back to each page&#x2019;s own icon">Remove</button>' : ''}
         <input type="file" id="iconFile" accept="image/*,.ico" hidden>
       </div>
+      <label class="chk" style="margin-top: 6px" title="On: every page in this window shows the tab icon. Off: only tabs renamed by the list above."><input type="checkbox" id="iconAlways"${L.iconAlways ? ' checked' : ''}${L.tabIcon ? '' : ' disabled'}> Always display in this window</label>
       <div class="help"><a href="#" id="guide">? User Guide</a></div>
     </div>
     <div class="count" id="count" hidden></div>
@@ -430,6 +421,7 @@ function drawFrame(L) {
   // Tab icon: shrink the chosen image to a 64x64 PNG (keeps storage small).
   const iconFile = root.getElementById('iconFile');
   root.getElementById('iconPick').addEventListener('click', () => iconFile.click());
+  root.getElementById('iconAlways').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { iconAlways: e.target.checked } }));
   root.getElementById('iconClear')?.addEventListener('click', () => send({ type: 'set-icon', dataUrl: null }));
   iconFile.addEventListener('change', () => {
     const file = iconFile.files[0];
