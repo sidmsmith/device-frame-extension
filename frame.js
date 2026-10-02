@@ -523,8 +523,10 @@ function drawFrame(L) {
   // Long words: when a single word is wider than the box it's in (so the
   // browser splits it, e.g. "PERFORMA/NCE" on a button), shrink that
   // element's text just enough to keep the word on one line (not below 60%).
-  // Phrases may still wrap between words. Sizes are worked out from each
-  // element's original font size, so repeated passes don't compound.
+  // Phrases may still wrap between words. Matching neighbors (e.g. the other
+  // footer buttons) shrink by the same amount so sizes stay consistent. Sizes
+  // are worked out from each element's original font size, so repeated passes
+  // don't compound.
   const shrunk = window.__devframeShrunk ?? (window.__devframeShrunk = new Map()); // element -> original font size (px)
   const canvas = fitWords.canvas ?? (fitWords.canvas = document.createElement('canvas').getContext('2d'));
   function fitWords() {
@@ -536,6 +538,8 @@ function drawFrame(L) {
       return;
     }
     for (const el of shrunk.keys()) if (!el.isConnected) shrunk.delete(el);
+    // Pass 1: for every element holding text, the scale its widest word needs.
+    const entries = [];
     for (const el of body.getElementsByTagName('*')) {
       let text = '';
       for (const node of el.childNodes) if (node.nodeType === 3) text += node.data;
@@ -556,13 +560,28 @@ function drawFrame(L) {
       const spacing = parseFloat(cs.letterSpacing) || 0;
       const widest = Math.max(...words.map((w) => canvas.measureText(transform(w)).width + spacing * w.length));
       const scale = widest > avail + 0.5 ? Math.max(0.6, avail / widest) : 1;
+      // Peers: the same kind of box side by side (e.g. footer buttons), looking
+      // past single-child wrappers. They share one scale so sizes match.
+      let item = box;
+      while (item.parentElement && item.parentElement !== body && item.parentElement.children.length === 1) item = item.parentElement;
+      entries.push({ el, original, scale, parent: item.parentElement, kind: `${box.tagName}.${box.className}` });
+    }
+    // Pass 2: the smallest scale in each peer group applies to the whole group.
+    const groups = new Map();
+    for (const e of entries) {
+      const byKind = groups.get(e.parent) ?? new Map();
+      groups.set(e.parent, byKind);
+      byKind.set(e.kind, Math.min(byKind.get(e.kind) ?? 1, e.scale));
+    }
+    for (const e of entries) {
+      const scale = groups.get(e.parent).get(e.kind);
       if (scale < 1) {
-        const size = `${Math.floor(original * scale * 10) / 10}px`;
-        if (!shrunk.has(el)) shrunk.set(el, original);
-        if (el.style.getPropertyValue('font-size') !== size) el.style.setProperty('font-size', size, 'important');
-      } else if (shrunk.has(el)) {
-        el.style.removeProperty('font-size');
-        shrunk.delete(el);
+        const size = `${Math.floor(e.original * scale * 10) / 10}px`;
+        if (!shrunk.has(e.el)) shrunk.set(e.el, e.original);
+        if (e.el.style.getPropertyValue('font-size') !== size) e.el.style.setProperty('font-size', size, 'important');
+      } else if (shrunk.has(e.el)) {
+        e.el.style.removeProperty('font-size');
+        shrunk.delete(e.el);
       }
     }
   }
