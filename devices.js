@@ -27,15 +27,22 @@ const DEVICES = {
     bezel: { side: 24, top: 74, bottom: 330 }, radius: 40, screenRadius: 3,
     colors: ['#2a2c30', '#1c1d20'], style: 'rugged', fixedColor: true,
   },
+  // Photo devices: product photos (skins/*.webp, built by scripts/build-skins.py)
+  // with the display cut out. skin.screen is the display rect in skin pixels.
   zebraMC9400: {
-    name: 'Zebra MC9400', width: 320, height: 534,
-    bezel: { side: 24, top: 64, bottom: 0 }, radius: 30, screenRadius: 2,
-    colors: ['#3b3f45', '#25282c'], style: 'mc9400', fixedColor: true,
+    name: 'Zebra MC9400', width: 320, height: 533, screenRadius: 0, radius: 40,
+    colors: ['#3b3f45', '#25282c'], style: 'photo', fixedColor: true, noStatusBar: false,
+    skin: { file: 'skins/mc9400.webp', w: 792, h: 2105, screen: [144, 246, 500, 833] },
   },
-  zebraTC8000: {
-    name: 'Zebra TC8000', width: 320, height: 534,
-    bezel: { side: 34, top: 66, bottom: 0 }, radius: 46, screenRadius: 2,
-    colors: ['#c9cdd2', '#8f949a'], style: 'tc8000', fixedColor: true,
+  zebraTC8300: {
+    name: 'Zebra TC8300', width: 320, height: 533, screenRadius: 0, radius: 40,
+    colors: ['#3b3f45', '#25282c'], style: 'photo', fixedColor: true,
+    skin: { file: 'skins/tc8300.webp', w: 697, h: 1946, screen: [111, 213, 485, 799] },
+  },
+  zebraWT6300: {
+    name: 'Zebra WT6300', width: 512, height: 320, screenRadius: 0, radius: 40,
+    colors: ['#3b3f45', '#25282c'], style: 'photo', fixedColor: true, fixedOrientation: true,
+    skin: { file: 'skins/wt6300.webp', w: 1500, h: 1102, screen: [292, 288, 920, 575] },
   },
   laptop: {
     name: 'Laptop', width: 1366, height: 768,
@@ -144,17 +151,21 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
   const custom = normalizeCustom(prefs.custom);
   const landscape = orientation === 'landscape' && !d.fixedOrientation;
   // Devices with their own artwork (drawn in portrait device coordinates).
-  const ART = { rugged: ruggedArt, tc8000: tc8000Art, mc9400: mc9400Art };
+  const ART = { rugged: ruggedArt, photo: photoArt };
   const art = ART[d.style] ? ART[d.style](d) : null;
-  const { side, top } = d.bezel;
-  // Artwork may extend below the screen (keypad, grip): its height decides.
-  const bottom = art ? art.H - top - d.height : d.bezel.bottom;
+  // Bezel per edge (portrait). Artwork may extend below the screen (keypad,
+  // grip) or be off-center (photos), so it can supply its own.
+  const pb = art?.bezel ?? {
+    left: d.bezel.side, right: d.bezel.side, top: d.bezel.top,
+    bottom: art ? art.H - d.bezel.top - d.height : d.bezel.bottom,
+  };
 
   const sw = landscape ? d.height : d.width;
   const sh = landscape ? d.width : d.height;
+  // Landscape = the device rotated anticlockwise.
   const bez = landscape
-    ? { left: top, right: bottom, top: side, bottom: side }
-    : { left: side, right: side, top, bottom };
+    ? { left: pb.top, right: pb.bottom, top: pb.right, bottom: pb.left }
+    : pb;
 
   const bar = prefs.toolbarHidden ? 0 : BAR;
   const margin = d.margin ?? MARGIN;
@@ -231,6 +242,8 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     // Device outline as rounded rects (window coords), for non-rectangular
     // artwork such as a grip below the body; null = the phone rect.
     silhouette: art?.silhouette ? art.silhouette.map((s) => ({ ...toWindow(s), r: s.r })) : null,
+    // Photo devices: the skin image is the device outline (screenshot mask).
+    skin: art?.skin ? { ...art.skin, x: phone.x, y: phone.y, landscape } : null,
     // Area to keep in screenshots/recordings, and extra room around it for buttons.
     bounds: { x: phone.x - over, y: phone.y, w: phone.w + over * 2, h: phone.h + baseH },
     cropPad: d.cropPad ?? 8,
@@ -348,145 +361,28 @@ function ruggedArt(d) {
   return { svg, triggers, W, H };
 }
 
-// A raised rubber key for device artwork. `p` prefixes the gradient ids
-// (each artwork defines <p>-key, <p>-fn, <p>-accent ... in its <defs>).
-function artKey(p, x, y, w, h, { label = '', sub = '', fill = 'key', text = '#eef0f2', size = 14, r = 6, icon = '', subColor = '' } = {}) {
-  const font = 'font-family="Segoe UI, system-ui, sans-serif"';
-  return `
-    <rect x="${x}" y="${y + 2}" width="${w}" height="${h}" rx="${r}" fill="#000" opacity=".5"/>
-    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="url(#${p}-${fill})"/>
-    <rect x="${x + 1}" y="${y + 1}" width="${w - 2}" height="${h * 0.45}" rx="${r - 1}" fill="#fff" opacity=".07"/>
-    <rect x="${x + 0.5}" y="${y + 0.5}" width="${w - 1}" height="${h - 1}" rx="${r}" fill="none" stroke="#000" stroke-opacity=".5"/>
-    ${icon}
-    ${label ? `<text x="${x + w / 2 - (sub ? 5 : 0)}" y="${y + h / 2 + 1}" text-anchor="middle" dominant-baseline="central" ${font} font-weight="600" font-size="${size}" fill="${text}">${label}</text>` : ''}
-    ${sub ? `<text x="${x + w / 2 + 11}" y="${y + h / 2 + 2}" text-anchor="middle" dominant-baseline="central" ${font} font-size="7.5" fill="${subColor || text}" opacity="${subColor ? 1 : 0.6}">${sub}</text>` : ''}`;
-}
-
-// Zebra TC8000-style handheld: silver frame with corner screws around a
-// black glass screen, scan window and power button on top, oval home button,
-// long ridged rubber grip with a silver base. Portrait device coordinates.
-function tc8000Art(d) {
-  const { side: SIDE, top: TOP } = d.bezel;
-  const SW = d.width, SH = d.height;
-  const W = SW + SIDE * 2;
-  const rr = (x, y, w, h, r) => roundRectPath({ x, y, w, h, r });
-  const sx = SIDE, sy = TOP;
-  const hole = rr(sx, sy, SW, SH, d.screenRadius);
-  const headH = TOP + SH + 78;
-  const gw = Math.round(W * 0.56), gx = (W - gw) / 2, gripH = 430, baseH = 62;
-  const neckY = headH, gripY = headH + 22, baseY = gripY + gripH;
-  const H = baseY + baseH;
-  const cx = W / 2;
-  const ridges = Array.from({ length: 7 }, (_, i) => gripY + 58 + i * 52)
-    .map((y) => `<path d="M${gx + 10},${y} Q${cx},${y + 14} ${gx + gw - 10},${y}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="3"/>
-      <path d="M${gx + 10},${y + 3} Q${cx},${y + 17} ${gx + gw - 10},${y + 3}" fill="none" stroke="#fff" stroke-opacity=".07" stroke-width="2"/>`).join('');
-  const screws = [[22, 22], [W - 22, 22], [22, headH - 22], [W - 22, headH - 22]]
-    .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="6.5" fill="#2a2c30"/><circle cx="${x}" cy="${y}" r="4" fill="#111"/><circle cx="${x - 1}" cy="${y - 1}" r="1.2" fill="#fff" opacity=".25"/>`).join('');
+// Photo device artwork: the product photo scaled so its display cut-out
+// matches the screen size exactly (x and y scaled separately, which only
+// differs by a fraction of a percent). Drop shadow follows the photo's
+// outline but is kept out of the screen. Portrait device coordinates.
+function photoArt(d) {
+  const { file, w, h, screen: [x, y, sw, sh] } = d.skin;
+  const kx = d.width / sw, ky = d.height / sh;
+  // Whole pixels, so the page inside isn't positioned on fractions (blurry text).
+  const W = Math.round(w * kx), H = Math.round(h * ky);
+  const sx = Math.round(x * kx), sy = Math.round(y * ky);
+  const url = typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL(file) : file;
+  const id = `ph-${file.replace(/\W/g, '')}`;
   const svg = `
     <defs>
-      <linearGradient id="t8-silver" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9ea3a9"/><stop offset=".18" stop-color="#e9ebee"/><stop offset=".5" stop-color="#c9cdd2"/><stop offset=".82" stop-color="#eef0f2"/><stop offset="1" stop-color="#8f949a"/></linearGradient>
-      <linearGradient id="t8-glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1d20"/><stop offset="1" stop-color="#0a0b0c"/></linearGradient>
-      <linearGradient id="t8-grip" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0d0e0f"/><stop offset=".3" stop-color="#2b2d30"/><stop offset=".6" stop-color="#1c1d1f"/><stop offset="1" stop-color="#0b0c0d"/></linearGradient>
-      <linearGradient id="t8-scan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4f55"/><stop offset="1" stop-color="#1e2124"/></linearGradient>
-      <linearGradient id="t8-glare" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
-      <clipPath id="t8-screen"><path d="${hole}"/></clipPath>
+      <filter id="${id}-shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-opacity=".35"/></filter>
+      <clipPath id="${id}-noscreen"><path clip-rule="evenodd" d="M-40,-40H${W + 40}V${H + 40}H-40z M${sx},${sy}h${d.width}v${d.height}h-${d.width}z"/></clipPath>
     </defs>
-    <path d="M${gx + 6},${neckY - 4} L${gx + gw - 6},${neckY - 4} L${gx + gw},${gripY + 30} L${gx},${gripY + 30} Z" fill="#1a1b1d"/>
-    <path d="${rr(gx, gripY, gw, gripH, 34)}" fill="url(#t8-grip)"/>
-    ${ridges}
-    <path d="${rr(gx - 4, baseY - 6, gw + 8, baseH + 6, 22)}" fill="url(#t8-silver)" stroke="#6d7277" stroke-opacity=".6"/>
-    <rect x="${cx - 26}" y="${baseY + baseH - 22}" width="52" height="8" rx="4" fill="#3a3d41"/>
-    <path fill="url(#t8-silver)" fill-rule="evenodd" d="${rr(0, 0, W, headH, 46)} ${hole}"/>
-    <path fill="none" stroke="#6d7277" stroke-opacity=".7" stroke-width="1.5" d="${rr(0.75, 0.75, W - 1.5, headH - 1.5, 46)}"/>
-    <path fill="url(#t8-glass)" fill-rule="evenodd" d="${rr(12, 12, W - 24, headH - 24, 36)} ${hole}"/>
-    ${screws}
-    <path d="${rr(cx - 36, 18, 72, 22, 6)}" fill="url(#t8-scan)" stroke="#000" stroke-opacity=".6"/>
-    <rect x="${cx - 30}" y="21" width="60" height="5" rx="2.5" fill="#fff" opacity=".18"/>
-    <circle cx="${W - 64}" cy="30" r="9" fill="#2a2c30" stroke="#000" stroke-opacity=".5"/>
-    <path d="M${W - 64},25 v5 M${W - 68},27 a5,5 0 1 0 8,0" fill="none" stroke="#9ea3a9" stroke-width="1.5" stroke-linecap="round"/>
-    <rect x="44" y="27" width="10" height="5" rx="2.5" fill="#d33" opacity=".85"/>
-    <ellipse cx="${cx}" cy="${TOP + SH + 40}" rx="24" ry="13" fill="none" stroke="#5a5f66" stroke-width="2.5"/>
-    <g clip-path="url(#t8-screen)">
-      <rect x="${sx - 6}" y="${sy - 6}" width="${SW + 12}" height="${SH + 12}" fill="none" stroke="#000" stroke-width="8" opacity=".3" filter="url(#t8-inset)"/>
-      <path d="M${sx},${sy} h${SW * 0.75} L${sx},${sy + SH * 0.42} z" fill="url(#t8-glare)"/>
-    </g>`;
+    <g clip-path="url(#${id}-noscreen)"><image href="${url}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" filter="url(#${id}-shadow)"/></g>`;
   return {
-    svg: `<defs><filter id="t8-inset"><feGaussianBlur stdDeviation="3"/></filter></defs>${svg}`,
-    triggers: [],
-    W, H,
-    // Outline pieces may overlap: masks use their union.
-    silhouette: [{ x: 0, y: 0, w: W, h: headH, r: 46 }, { x: gx, y: headH - 20, w: gw, h: gripH + 50, r: 34 }, { x: gx - 4, y: baseY - 6, w: gw + 8, h: baseH + 6, r: 22 }],
-  };
-}
-
-// Zebra MC9400-style gun computer: gunmetal body, scan window across the top,
-// 4-column keypad (function keys, arrows, yellow SCAN, color-coded Fn/Alpha/
-// Enter, numeric pad), pistol grip below. Portrait device coordinates.
-function mc9400Art(d) {
-  const { side: SIDE, top: TOP } = d.bezel;
-  const SW = d.width, SH = d.height;
-  const W = SW + SIDE * 2;
-  const rr = (x, y, w, h, r) => roundRectPath({ x, y, w, h, r });
-  const sx = SIDE, sy = TOP;
-  const hole = rr(sx, sy, SW, SH, d.screenRadius);
-  const cx = W / 2;
-  const kp = sy + SH + 20;
-  const cols = 4, gap = 7, kw = (W - 44 - gap * (cols - 1)) / cols, kh = 28, rowGap = 7;
-  const kx = (c) => 22 + c * (kw + gap);
-  const ky = (r) => kp + r * (kh + rowGap);
-  const K = (c, r, opts, span = 1, rows = 1) => artKey('m9', kx(c), ky(r), kw * span + gap * (span - 1), kh * rows + rowGap * (rows - 1), opts);
-  const arrow = (c, r, dir) => {
-    const x = kx(c) + kw / 2, y = ky(r) + kh / 2;
-    const pts = { up: '-6,3 0,-4 6,3', down: '-6,-3 0,4 6,-3', left: '3,-6 -4,0 3,6', right: '-3,-6 4,0 -3,6' }[dir];
-    return K(c, r, { icon: `<polyline transform="translate(${x},${y})" points="${pts}" fill="none" stroke="#e6e8ea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` });
-  };
-  const scanIcon = (x, y) => { let s = '', bx = x - 13; [2, 1, 3, 1, 2, 1, 1, 3, 1, 2].forEach((b, i) => { if (i % 2 === 0) s += `<rect x="${bx}" y="${y - 6}" width="${b}" height="12" fill="#3a2c00"/>`; bx += b + 0.8; }); return s; };
-  let keys = '';
-  ['F1', 'F2', 'F3', 'F4'].forEach((l, c) => { keys += K(c, 0, { label: l, fill: 'fn', size: 12 }); });
-  keys += K(0, 1, { label: 'ESC', size: 11 }) + arrow(1, 1, 'up') + K(2, 1, { label: 'TAB', size: 11 }) + K(3, 1, { label: '&#x232B;', size: 15 });
-  keys += arrow(0, 2, 'left') + K(1, 2, { fill: 'accent', r: 14, icon: scanIcon(kx(1) + kw + gap / 2, ky(2) + kh / 2) }, 2) + arrow(3, 2, 'right');
-  keys += K(0, 3, { label: 'ALPHA', size: 9.5, text: '#7fb4ff' }) + arrow(1, 3, 'down') + K(2, 3, { label: 'FN', size: 11, text: '#ffa040' }) + K(3, 3, { label: 'SP', size: 11 });
-  const nums = [['1', ''], ['2', 'ABC'], ['3', 'DEF'], ['4', 'GHI'], ['5', 'JKL'], ['6', 'MNO'], ['7', 'PQRS'], ['8', 'TUV'], ['9', 'WXYZ'], ['*', ''], ['0', ''], ['#', '']];
-  nums.forEach(([l, sub], i) => { keys += K(i % 3, 4 + Math.floor(i / 3), { label: l, sub, size: 15, subColor: '#7fb4ff' }); });
-  keys += K(3, 4, { label: '.', size: 16 }) + K(3, 5, { label: '-', size: 16 }) + K(3, 6, { label: 'ENT', size: 12, text: '#9fe0a4' }, 1, 2);
-  const bodyH = ky(8) + 14;
-  const gw = Math.round(W * 0.5), gx = (W - gw) / 2, gripY = bodyH, gripH = 300;
-  const H = gripY + gripH;
-  const svg = `
-    <defs>
-      <linearGradient id="m9-body" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2b2e33"/><stop offset=".2" stop-color="#4d5259"/><stop offset=".5" stop-color="#3b3f45"/><stop offset=".8" stop-color="#4d5259"/><stop offset="1" stop-color="#25282c"/></linearGradient>
-      <linearGradient id="m9-head" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1d20"/><stop offset="1" stop-color="#2c2f34"/></linearGradient>
-      <linearGradient id="m9-grip" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#121315"/><stop offset=".35" stop-color="#2e3135"/><stop offset=".65" stop-color="#1f2124"/><stop offset="1" stop-color="#101113"/></linearGradient>
-      <linearGradient id="m9-key" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#454950"/><stop offset="1" stop-color="#2c2f34"/></linearGradient>
-      <linearGradient id="m9-fn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b6068"/><stop offset="1" stop-color="#3e4248"/></linearGradient>
-      <linearGradient id="m9-accent" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd84a"/><stop offset="1" stop-color="#e0a800"/></linearGradient>
-      <linearGradient id="m9-scan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d1d1d"/><stop offset=".5" stop-color="#3b0b0b"/><stop offset="1" stop-color="#5a1212"/></linearGradient>
-      <linearGradient id="m9-glare" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
-      <filter id="m9-inset"><feGaussianBlur stdDeviation="3"/></filter>
-      <clipPath id="m9-screen"><path d="${hole}"/></clipPath>
-    </defs>
-    <path d="${rr(gx, gripY - 30, gw, gripH + 30, 40)}" fill="url(#m9-grip)"/>
-    ${Array.from({ length: 5 }, (_, i) => `<rect x="${gx + 14}" y="${gripY + 40 + i * 46}" width="${gw - 28}" height="5" rx="2.5" fill="#000" opacity=".45"/>`).join('')}
-    <path d="${rr(gx + 16, gripY + gripH - 34, gw - 32, 18, 9)}" fill="#3a3d41"/>
-    <path fill="url(#m9-body)" fill-rule="evenodd" d="${rr(0, 0, W, bodyH, 30)} ${hole}"/>
-    <path fill="none" stroke="#000" stroke-opacity=".5" stroke-width="1.5" d="${rr(0.75, 0.75, W - 1.5, bodyH - 1.5, 30)}"/>
-    <path fill="url(#m9-head)" d="M30,0 h${W - 60} a30,30 0 0 1 30,30 v${TOP - 44} H0 v-${TOP - 44} a30,30 0 0 1 30,-30 z"/>
-    <path d="${rr(cx - 92, 12, 184, 18, 7)}" fill="url(#m9-scan)" stroke="#000" stroke-opacity=".6"/>
-    <rect x="${cx - 84}" y="14" width="168" height="4" rx="2" fill="#fff" opacity=".18"/>
-    <circle cx="26" cy="${TOP - 26}" r="4" fill="#2fbf3a"/><circle cx="${W - 26}" cy="${TOP - 26}" r="4" fill="#d98a12"/>
-    <path fill="#06070a" fill-rule="evenodd" d="${rr(sx - 6, sy - 6, SW + 12, SH + 12, 8)} ${hole}"/>
-    <g clip-path="url(#m9-screen)">
-      <rect x="${sx - 6}" y="${sy - 6}" width="${SW + 12}" height="${SH + 12}" fill="none" stroke="#000" stroke-width="8" opacity=".3" filter="url(#m9-inset)"/>
-      <path d="M${sx},${sy} h${SW * 0.75} L${sx},${sy + SH * 0.42} z" fill="url(#m9-glare)"/>
-    </g>
-    <path d="${rr(14, kp - 8, W - 28, bodyH - kp - 2, 16)}" fill="#000" opacity=".25"/>
-    ${keys}`;
-  return {
-    svg,
-    triggers: [],
-    W, H,
-    // Outline pieces may overlap: masks use their union.
-    silhouette: [{ x: 0, y: 0, w: W, h: bodyH, r: 30 }, { x: gx, y: gripY - 30, w: gw, h: gripH + 30, r: 40 }],
+    svg, triggers: [], W, H,
+    bezel: { left: sx, right: W - sx - d.width, top: sy, bottom: H - sy - d.height },
+    skin: { url, W, H, screen: { x: sx, y: sy, w: d.width, h: d.height } },
   };
 }
 

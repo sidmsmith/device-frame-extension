@@ -248,7 +248,7 @@ function drawFrame(L) {
       </defs>
       ${statusBar}
       <path fill="${t.page}" fill-rule="evenodd" d="${outside}"/>
-      ${L.frameless ? '' : `<path fill="#000" d="${devicePath}" filter="url(#shadow)" clip-path="url(#outside)"/>`}
+      ${L.frameless || L.skin ? '' : `<path fill="#000" d="${devicePath}" filter="url(#shadow)" clip-path="url(#outside)"/>`}
       ${art || `<path fill="url(#body)" fill-rule="evenodd" d="${phonePath} ${rr(L.screen)}"/>`}
       ${L.extras.map((e) => `
         <path fill="url(#base)" stroke="#8a8f96" stroke-width="1" d="${rr(e)}"/>

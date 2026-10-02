@@ -74,6 +74,12 @@ remembered. Keyboard shortcuts can be changed at
   own icon (with "Always display", every page in frame windows does).
 - The Rugged Handheld brings its own artwork (`ruggedArt()` in `devices.js`),
   drawn in device coordinates and rotated for landscape.
+- Photo devices (Zebra MC9400, TC8300, WT6300) use product photos from
+  zebra.com: `scripts/build-skins.py` removes the background and floor shadow,
+  crops, cuts the display out and writes `skins/*.webp` (originals in
+  `skins/src/`, not shipped in the zip). The skin size and screen rectangle
+  printed by the script go into the device entry in `devices.js`; screenshots
+  use the photo's own outline as the cut-out.
 
 ## Known limitations
 

@@ -322,11 +322,28 @@ async function captureDevice(tab, L) {
   // Keep only the phone body and its buttons.
   ctx.globalCompositeOperation = 'destination-in';
   ctx.setTransform(scale, 0, 0, scale, -crop.x * scale, -crop.y * scale);
-  const mask = new Path2D();
-  for (const s of L.silhouette ?? [L.phone]) mask.addPath(new Path2D(roundRectPath(s)));
-  for (const b of L.buttons) mask.rect(b.x, b.y, b.w, b.h);
-  for (const e of L.extras) mask.addPath(new Path2D(roundRectPath(e)));
-  ctx.fill(mask);
+  if (L.skin) {
+    // Photo devices: the skin image's own outline (plus the screen) is the
+    // mask. Built on its own canvas, since each destination-in draw would
+    // erase everything outside itself.
+    const skin = await createImageBitmap(await (await fetch(L.skin.url)).blob());
+    const { W, H, screen, x, y, landscape } = L.skin;
+    const maskCanvas = new OffscreenCanvas(canvas.width, canvas.height);
+    const m = maskCanvas.getContext('2d');
+    m.setTransform(scale, 0, 0, scale, -crop.x * scale, -crop.y * scale);
+    if (landscape) m.transform(0, -1, 1, 0, x, y + W); // rotate -90deg about the device origin
+    else m.translate(x, y);
+    m.drawImage(skin, 0, 0, W, H);
+    m.fillRect(screen.x, screen.y, screen.w, screen.h);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(maskCanvas, 0, 0);
+  } else {
+    const mask = new Path2D();
+    for (const s of L.silhouette ?? [L.phone]) mask.addPath(new Path2D(roundRectPath(s)));
+    for (const b of L.buttons) mask.rect(b.x, b.y, b.w, b.h);
+    for (const e of L.extras) mask.addPath(new Path2D(roundRectPath(e)));
+    ctx.fill(mask);
+  }
 
   const blob = await canvas.convertToBlob({ type: 'image/png' });
   return new Promise((resolve) => {
