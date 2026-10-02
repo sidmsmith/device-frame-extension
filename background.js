@@ -322,7 +322,8 @@ async function captureDevice(tab, L) {
   // Keep only the phone body and its buttons.
   ctx.globalCompositeOperation = 'destination-in';
   ctx.setTransform(scale, 0, 0, scale, -crop.x * scale, -crop.y * scale);
-  const mask = new Path2D(roundRectPath(L.phone));
+  const mask = new Path2D();
+  for (const s of L.silhouette ?? [L.phone]) mask.addPath(new Path2D(roundRectPath(s)));
   for (const b of L.buttons) mask.rect(b.x, b.y, b.w, b.h);
   for (const e of L.extras) mask.addPath(new Path2D(roundRectPath(e)));
   ctx.fill(mask);

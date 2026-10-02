@@ -92,7 +92,7 @@ function drawFrame(L) {
 
   const phonePath = rr(L.phone);
   // The device outline: phone/lid body plus any extra parts (laptop base).
-  const devicePath = [phonePath, ...L.extras.map(rr)].join(' ');
+  const devicePath = L.silhouette ? L.silhouette.map(rr).join(' ') : [phonePath, ...L.extras.map(rr)].join(' ');
   const outside = `M0,0H${L.W}V${L.H}H0z ${devicePath}`;
   const option = (d) => `<option value="${d.key}"${d.key === L.deviceKey ? ' selected' : ''}>${d.name}</option>`;
   const group = (key, label) => {
