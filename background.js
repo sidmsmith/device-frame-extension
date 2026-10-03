@@ -49,14 +49,17 @@ chrome.action.onClicked.addListener(async (tab) => {
   const L = computeLayout(device, orientation, last);
   const current = await chrome.windows.get(tab.windowId);
 
-  const win = await chrome.windows.create({
+  const size = {
     url: tab.url,
     type: 'popup',
     width: L.W + 16, // rough guess; corrected after the first load
     height: Math.min(L.H + 40, current.height),
-    left: last.left ?? current.left + 60,
-    top: last.top ?? current.top,
-  });
+  };
+  // Last time's position, unless Chrome rejects it as off-screen (e.g. a
+  // monitor was unplugged): then next to the current window, then anywhere.
+  const win = await chrome.windows.create({ ...size, left: last.left ?? current.left + 60, top: last.top ?? current.top })
+    .catch(() => chrome.windows.create({ ...size, left: current.left + 60, top: current.top }))
+    .catch(() => chrome.windows.create(size));
   const tabId = win.tabs[0].id;
 
   await updateFramed(tabId, { windowId: win.id, device, orientation });
