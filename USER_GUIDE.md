@@ -116,7 +116,8 @@ on by default – frame window only, normal tabs are never affected):
 Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere else to close it.
 
 - **Background** – Light gray (default), White, or Dark. This is the area
-  around the device.
+  around the device. Each chip shows its color; the selected one has a blue
+  ring.
 - **Frame color** – Black, Silver, White, Blue, or Manhattan. (The Zebra
   devices and Desktop keep their own look.)
 - **Show taps** – shows a soft circle wherever you click, plus a round
@@ -128,9 +129,17 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
   starts with the toolbar hidden for a clean, demo-ready screen, no matter how
   you left it last time (see section 8 to show it). Untick it to have the
   window remember whether the toolbar was showing.
-- **3-2-1 countdown before recording** – on by default; untick to start
-  recording immediately.
+- **Recording: Device only / Entire screen** – what the record button and
+  **Alt+Shift+V** record: just the device (default), or everything on one
+  screen, including other windows you switch to (see section 7).
+- **Countdown before recording** – on by default: 3 seconds for Device only,
+  5 seconds for Entire screen (time to hide Chrome's sharing bar). Untick to
+  start recording immediately.
 - **Record microphone** – include your voice in recordings (see section 7).
+- **Include computer sound (Entire screen)** – off by default. The sound your
+  computer plays (videos, alerts), not your voice. When on, Chrome's screen
+  picker offers **Also share system audio**; tick it there to include the
+  sound.
 - **Rename titles** and **Tab icon** – friendlier names and icons for browser tabs (see section 9).
 - **Language** – the language of the toolbar, tooltips, settings and
   messages: English, Français (French) or Español (Spanish, Mexico).
@@ -157,9 +166,20 @@ All settings are remembered. With more than one frame window open:
 - Or press **Alt+Shift+S** – copies to the clipboard only (no file).
 
 Screenshots have a **transparent background** (just the device), so they paste
-cleanly into PowerPoint, Teams, or Outlook.
+cleanly into PowerPoint, Teams, or Outlook. Files are named after the device and
+the time, e.g. `ZebraTC72_20261003141530.png`.
 
 ## 7. Recording videos
+
+There are two kinds of recording; choose one under **Recording** in the
+settings panel:
+
+- **Device only** (default) – just the device, cropped from the frame window.
+- **Entire screen** – everything on one screen, so you can **Alt+Tab** between
+  windows (e.g. WM Mobile and the WMS desktop) to show before and after in one
+  video. The record button shows a screen <img src="docs/icons/recordScreen.svg" width="16"> instead of a circle.
+
+### Device only
 
 **Start:**
 - Press **Alt+Shift+V** (recommended) – starts straight away, no prompt.
@@ -169,7 +189,8 @@ A **3, 2, 1** countdown runs (unless you turned it off), then recording starts.
 The record button turns red and shows the elapsed time.
 
 **Stop:** press **Alt+Shift+V** again, or click the red <img src="docs/icons/stop.svg" width="16"> button.
-The video is saved to **Downloads** as an **MP4** (plays in PowerPoint, Teams, Outlook).
+The video is saved to **Downloads** as an **MP4** (plays in PowerPoint, Teams, Outlook),
+named after the device and the time, e.g. `ZebraTC72_20261003141530.mp4`.
 
 Tips:
 
@@ -185,11 +206,35 @@ Tips:
 - A full page reload (e.g. logging in again) ends the recording; moving
   around inside the app is fine.
 
-**Microphone:** tick **Record microphone** in the settings panel. The first
+### Entire screen
+
+1. Click <img src="docs/icons/recordScreen.svg" width="16"> or press **Alt+Shift+V**. A small **Device Frame –
+   screen recording** window opens with Chrome's **Choose what to share**
+   picker. Pick the screen and click **Share**. (Chrome asks every time; with
+   two monitors, pick the one you'll be working on.)
+2. The small window minimizes itself so it isn't in the video, and a **5**
+   second countdown runs in the frame window. Use it to click **Hide** on
+   Chrome's "sharing your screen" bar at the bottom of the screen.
+3. Recording starts. The record button in **every** frame window turns red and
+   shows the time. Switch windows, apps or pages freely – the recording keeps
+   going.
+4. **Stop:** click the red button in any frame window, press **Alt+Shift+V**
+   in any Chrome window, click **Stop sharing** on Chrome's bar, or click
+   **Stop and save** in the minimized recording window.
+
+The video is saved to **Downloads** as `FullScreen_20261003141530.mp4` (the
+date and time), and the small window closes itself. Keep that window open
+while recording (minimized is fine) – closing it stops the recording without
+saving.
+
+### Microphone
+
+Tick **Record microphone** in the settings panel. The first
 time, Chrome asks for microphone permission – choose **Allow on every visit**.
 While recording with sound, a small <img src="docs/icons/mic.svg" width="14"> appears on the red button. If the
 microphone is blocked or missing, you'll see a message and the video is
-recorded without sound.
+recorded without sound. For Entire screen recordings, the prompt appears in
+the small recording window the first time.
 
 ## 8. Hiding the toolbar
 
@@ -243,7 +288,7 @@ title bar. Under **Tab icon** in the settings panel:
 
 | Shortcut | Does |
 |---|---|
-| **Alt+Shift+V** | Start / stop recording (no share prompt) |
+| **Alt+Shift+V** | Start / stop recording (Device only: no share prompt; Entire screen: stops from any Chrome window) |
 | **Alt+Shift+S** | Copy a screenshot to the clipboard |
 | **Alt+Shift+H** | Hide / show the toolbar |
 
@@ -260,6 +305,7 @@ Reading mode.)
 | A shortcut does nothing | Check `chrome://extensions/shortcuts` – Chrome sometimes leaves a new shortcut blank; set it there. |
 | A shortcut types a letter into the page | Close the frame window and open it again (needed once after installing or updating). |
 | A tab title or icon isn't changed | Press **F5** on that tab (tabs open before installing/updating need one refresh). Check the old title in the list matches the page's title. |
+| "Screen recording stopped: its window was closed" | The small recording window was closed. Leave it open (minimized is fine) until you stop recording. |
 | Still the old version after updating | The zip was probably extracted to a new folder like `device_frame_extension (1)`. Extract into your original folder and click **Reload** on the extension card. |
 | "Recording failed: …" | Try the record button instead of the shortcut, and send the message text to whoever maintains the extension. |
 | "Clipboard copy blocked" | The PNG was still saved to Downloads. Click inside the frame window first, then try again. |
@@ -272,6 +318,7 @@ included in the version they lead up to).
 
 | Version | Date | Highlights |
 |---|---|---|
+| **0.21** | Oct 3, 2026 | **Record the entire screen** (Settings → Recording → Entire screen) to capture several windows in one video as you Alt+Tab between them. Also: each frame window keeps its own look, color chips show their actual color, and recordings and screenshots get short names like `ZebraTC72_20261003141530.mp4`. |
 | **0.20** | Oct 2, 2026 | The extension speaks **French and Spanish (Mexico)**: it follows Chrome's language, or pick one under **Settings → Language**. |
 | **0.19** | Oct 2, 2026 | New **Always open with toolbar hidden** setting (on by default), so every frame window starts with a clean screen. |
 | **0.18** | Oct 2, 2026 | Real product photos for the **Zebra MC9400, TC72, TC8300 and WT6300**; the drawn Rugged Handheld, TC52 and TC8000 were retired (saved selections move to the new devices). |
