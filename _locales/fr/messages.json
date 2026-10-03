@@ -234,7 +234,10 @@
     "message": "Enregistrement"
   },
   "optCountdown": {
-    "message": "Compte à rebours 3-2-1 avant l'enregistrement"
+    "message": "Compte à rebours avant l'enregistrement"
+  },
+  "tipCountdown": {
+    "message": "3 secondes pour Appareil seul ; 5 secondes pour Écran entier, le temps de masquer la barre de partage de Chrome"
   },
   "optMic": {
     "message": "Enregistrer le microphone"

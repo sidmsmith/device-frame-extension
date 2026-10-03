@@ -234,7 +234,10 @@
     "message": "Grabación"
   },
   "optCountdown": {
-    "message": "Cuenta regresiva 3-2-1 antes de grabar"
+    "message": "Cuenta regresiva antes de grabar"
+  },
+  "tipCountdown": {
+    "message": "3 segundos para Solo el dispositivo; 5 segundos para Toda la pantalla, para que dé tiempo de ocultar la barra para compartir de Chrome"
   },
   "optMic": {
     "message": "Grabar el micrófono"

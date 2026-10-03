@@ -234,7 +234,10 @@
     "message": "Recording"
   },
   "optCountdown": {
-    "message": "3-2-1 countdown before recording"
+    "message": "Countdown before recording"
+  },
+  "tipCountdown": {
+    "message": "3 seconds for Device only; 5 seconds for Entire screen, so there's time to hide Chrome's sharing bar"
   },
   "optMic": {
     "message": "Record microphone"

@@ -312,7 +312,7 @@ function drawFrame(L) {
         <button data-rm="device" class="${L.recordMode === 'screen' ? '' : 'sel'}" title="${E('tipModeDevice')}">${ICON.record}${E('recDevice')}</button>
         <button data-rm="screen" class="${L.recordMode === 'screen' ? 'sel' : ''}" title="${E('tipModeScreen')}">${ICON.recordScreen}${E('recScreen')}</button>
       </div>
-      <label class="chk" style="margin-top: 8px"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> ${E('optCountdown')}</label>
+      <label class="chk" style="margin-top: 8px" title="${E('tipCountdown')}"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> ${E('optCountdown')}</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> ${E('optMic')}</label>
       <label class="chk" style="margin-top: 6px" title="${E('tipSystemAudio')}"><input type="checkbox" id="systemAudio"${L.systemAudio ? ' checked' : ''}${L.recordMode === 'screen' ? '' : ' disabled'}> ${E('optSystemAudio')}</label>
       <div class="lbl">${E('lblRename')} <span class="note">${E('noteRename')}</span></div>
@@ -902,9 +902,10 @@ function drawFrame(L) {
 
   // Screen recordings: the background asks for the 3-2-1 countdown here,
   // before it starts recording.
+  // 5 seconds (not 3): time to click Hide on Chrome's sharing bar.
   const screenCountdown = () => new Promise((resolve) => {
     const count = root.getElementById('count');
-    let n = 3;
+    let n = 5;
     count.textContent = n;
     count.hidden = false;
     const timer = setInterval(() => {
