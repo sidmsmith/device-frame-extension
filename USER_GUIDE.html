@@ -34,7 +34,7 @@
 <body>
 <main>
 <div class="markdown-heading"><h1 class="heading-element">Device Frame – User Guide</h1>
-<p class="version">Guide for version 0.20</p><a id="user-content-device-frame--user-guide" class="anchor" aria-label="Permalink: Device Frame – User Guide" href="#device-frame--user-guide"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p class="version">Guide for version 0.21</p><a id="user-content-device-frame--user-guide" class="anchor" aria-label="Permalink: Device Frame – User Guide" href="#device-frame--user-guide"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>Device Frame is a Chrome extension that shows a web page inside a phone,
 handheld, laptop, or plain screen, so you can demo it, take screenshots, and
 record videos. It replaces the device frame Chrome DevTools used to have.</p>
@@ -204,7 +204,8 @@ Phrases like "INDIRECT EVENT" can still wrap between words.</li>
 <ul>
 <li>
 <strong>Background</strong> – Light gray (default), White, or Dark. This is the area
-around the device.</li>
+around the device. Each chip shows its color; the selected one has a blue
+ring.</li>
 <li>
 <strong>Frame color</strong> – Black, Silver, White, Blue, or Manhattan. (The Zebra
 devices and Desktop keep their own look.)</li>
@@ -221,10 +222,20 @@ starts with the toolbar hidden for a clean, demo-ready screen, no matter how
 you left it last time (see section 8 to show it). Untick it to have the
 window remember whether the toolbar was showing.</li>
 <li>
-<strong>3-2-1 countdown before recording</strong> – on by default; untick to start
-recording immediately.</li>
+<strong>Recording: Device only / Entire screen</strong> – what the record button and
+<strong>Alt+Shift+V</strong> record: just the device (default), or everything on one
+screen, including other windows you switch to (see section 7).</li>
+<li>
+<strong>Countdown before recording</strong> – on by default: 3 seconds for Device only,
+5 seconds for Entire screen (time to hide Chrome's sharing bar). Untick to
+start recording immediately.</li>
 <li>
 <strong>Record microphone</strong> – include your voice in recordings (see section 7).</li>
+<li>
+<strong>Include computer sound (Entire screen)</strong> – off by default. The sound your
+computer plays (videos, alerts), not your voice. When on, Chrome's screen
+picker offers <strong>Also share system audio</strong>; tick it there to include the
+sound.</li>
 <li>
 <strong>Rename titles</strong> and <strong>Tab icon</strong> – friendlier names and icons for browser tabs (see section 9).</li>
 <li>
@@ -237,7 +248,18 @@ is in English only.</li>
 <li>
 <strong>? User Guide</strong> – opens this guide in a new tab.</li>
 </ul>
-<p>All settings are remembered.</p>
+<p>All settings are remembered. With more than one frame window open:</p>
+<ul>
+<li>
+<strong>Each window keeps its own look:</strong> device, rotation, background, frame
+color, status bar, show taps, fit to screen width, and whether the toolbar
+is hidden. A new window starts with the choices you made last.</li>
+<li>
+<strong>Shared by all frame windows:</strong> the recording settings (Device only or
+Entire screen, countdown, microphone, computer sound), rename titles, tab
+icon, language, and <em>Always open with toolbar hidden</em>. Changing one of
+these in any window updates them all.</li>
+</ul>
 <div class="markdown-heading"><h2 class="heading-element">6. Screenshots</h2><a id="user-content-6-screenshots" class="anchor" aria-label="Permalink: 6. Screenshots" href="#6-screenshots"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <ul>
 <li>Click <a target="_blank" rel="noopener noreferrer" href="docs/icons/camera.svg"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDE2IDE2IiBmaWxsPSJub25lIiBzdHJva2U9IiM1ZjYzNjgiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xLjggNS4yaDIuNmwxLjMtMS45aDQuNmwxLjMgMS45aDIuNnY3LjVIMS44eiIvPjxjaXJjbGUgY3g9IjgiIGN5PSI4LjciIHI9IjIuNCIvPjwvc3ZnPgo=" width="16" style="max-width: 100%;"></a> – the device is <strong>copied to the clipboard</strong>
@@ -245,8 +267,20 @@ and <strong>saved to Downloads</strong> as a PNG.</li>
 <li>Or press <strong>Alt+Shift+S</strong> – copies to the clipboard only (no file).</li>
 </ul>
 <p>Screenshots have a <strong>transparent background</strong> (just the device), so they paste
-cleanly into PowerPoint, Teams, or Outlook.</p>
+cleanly into PowerPoint, Teams, or Outlook. Files are named after the device and
+the time, e.g. <code>ZebraTC72_20261003141530.png</code>.</p>
 <div class="markdown-heading"><h2 class="heading-element">7. Recording videos</h2><a id="user-content-7-recording-videos" class="anchor" aria-label="Permalink: 7. Recording videos" href="#7-recording-videos"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>There are two kinds of recording; choose one under <strong>Recording</strong> in the
+settings panel:</p>
+<ul>
+<li>
+<strong>Device only</strong> (default) – just the device, cropped from the frame window.</li>
+<li>
+<strong>Entire screen</strong> – everything on one screen, so you can <strong>Alt+Tab</strong> between
+windows (e.g. WM Mobile and the WMS desktop) to show before and after in one
+video. The record button shows a screen <a target="_blank" rel="noopener noreferrer" href="docs/icons/recordScreen.svg"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDE2IDE2IiBmaWxsPSJub25lIiBzdHJva2U9IiM1ZjYzNjgiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjEuMiIgeT0iMi40IiB3aWR0aD0iMTMuNiIgaGVpZ2h0PSI5LjQiIHJ4PSIxLjQiLz48cGF0aCBkPSJNNS42IDE0LjJoNC44Ii8+PGNpcmNsZSBjeD0iOCIgY3k9IjcuMSIgcj0iMi45IiBmaWxsPSIjZDkzMDI1IiBzdHJva2U9Im5vbmUiLz48L3N2Zz4K" width="16" style="max-width: 100%;"></a> instead of a circle.</li>
+</ul>
+<div class="markdown-heading"><h3 class="heading-element">Device only</h3><a id="user-content-device-only" class="anchor" aria-label="Permalink: Device only" href="#device-only"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p><strong>Start:</strong></p>
 <ul>
 <li>Press <strong>Alt+Shift+V</strong> (recommended) – starts straight away, no prompt.</li>
@@ -255,7 +289,8 @@ cleanly into PowerPoint, Teams, or Outlook.</p>
 <p>A <strong>3, 2, 1</strong> countdown runs (unless you turned it off), then recording starts.
 The record button turns red and shows the elapsed time.</p>
 <p><strong>Stop:</strong> press <strong>Alt+Shift+V</strong> again, or click the red <a target="_blank" rel="noopener noreferrer" href="docs/icons/stop.svg"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDE2IDE2IiBmaWxsPSJub25lIiBzdHJva2U9IiM1ZjYzNjgiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIHJ4PSIxLjUiIGZpbGw9IiM1ZjYzNjgiIHN0cm9rZT0ibm9uZSIvPjwvc3ZnPgo=" width="16" style="max-width: 100%;"></a> button.
-The video is saved to <strong>Downloads</strong> as an <strong>MP4</strong> (plays in PowerPoint, Teams, Outlook).</p>
+The video is saved to <strong>Downloads</strong> as an <strong>MP4</strong> (plays in PowerPoint, Teams, Outlook),
+named after the device and the time, e.g. <code>ZebraTC72_20261003141530.mp4</code>.</p>
 <p>Tips:</p>
 <ul>
 <li>Only the device is recorded – not the control bar.</li>
@@ -270,11 +305,34 @@ video can't change size.</li>
 <li>A full page reload (e.g. logging in again) ends the recording; moving
 around inside the app is fine.</li>
 </ul>
-<p><strong>Microphone:</strong> tick <strong>Record microphone</strong> in the settings panel. The first
+<div class="markdown-heading"><h3 class="heading-element">Entire screen</h3><a id="user-content-entire-screen" class="anchor" aria-label="Permalink: Entire screen" href="#entire-screen"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ol>
+<li>Click <a target="_blank" rel="noopener noreferrer" href="docs/icons/recordScreen.svg"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDE2IDE2IiBmaWxsPSJub25lIiBzdHJva2U9IiM1ZjYzNjgiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjEuMiIgeT0iMi40IiB3aWR0aD0iMTMuNiIgaGVpZ2h0PSI5LjQiIHJ4PSIxLjQiLz48cGF0aCBkPSJNNS42IDE0LjJoNC44Ii8+PGNpcmNsZSBjeD0iOCIgY3k9IjcuMSIgcj0iMi45IiBmaWxsPSIjZDkzMDI1IiBzdHJva2U9Im5vbmUiLz48L3N2Zz4K" width="16" style="max-width: 100%;"></a> or press <strong>Alt+Shift+V</strong>. A small <strong>Device Frame –
+screen recording</strong> window opens with Chrome's <strong>Choose what to share</strong>
+picker. Pick the screen and click <strong>Share</strong>. (Chrome asks every time; with
+two monitors, pick the one you'll be working on.)</li>
+<li>The small window minimizes itself so it isn't in the video, and a <strong>5</strong>
+second countdown runs in the frame window. Use it to click <strong>Hide</strong> on
+Chrome's "sharing your screen" bar at the bottom of the screen.</li>
+<li>Recording starts. The record button in <strong>every</strong> frame window turns red and
+shows the time. Switch windows, apps or pages freely – the recording keeps
+going.</li>
+<li>
+<strong>Stop:</strong> click the red button in any frame window, press <strong>Alt+Shift+V</strong>
+in any Chrome window, click <strong>Stop sharing</strong> on Chrome's bar, or click
+<strong>Stop and save</strong> in the minimized recording window.</li>
+</ol>
+<p>The video is saved to <strong>Downloads</strong> as <code>FullScreen_20261003141530.mp4</code> (the
+date and time), and the small window closes itself. Keep that window open
+while recording (minimized is fine) – closing it stops the recording without
+saving.</p>
+<div class="markdown-heading"><h3 class="heading-element">Microphone</h3><a id="user-content-microphone" class="anchor" aria-label="Permalink: Microphone" href="#microphone"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Tick <strong>Record microphone</strong> in the settings panel. The first
 time, Chrome asks for microphone permission – choose <strong>Allow on every visit</strong>.
 While recording with sound, a small <a target="_blank" rel="noopener noreferrer" href="docs/icons/mic.svg"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDE2IDE2IiBmaWxsPSJub25lIiBzdHJva2U9IiM1ZjYzNjgiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjUuOCIgeT0iMS44IiB3aWR0aD0iNC40IiBoZWlnaHQ9IjgiIHJ4PSIyLjIiLz48cGF0aCBkPSJNMy4zIDcuOGE0LjcgNC43IDAgMCAwIDkuNCAwTTggMTIuNnYxLjgiLz48L3N2Zz4K" width="14" style="max-width: 100%;"></a> appears on the red button. If the
 microphone is blocked or missing, you'll see a message and the video is
-recorded without sound.</p>
+recorded without sound. For Entire screen recordings, the prompt appears in
+the small recording window the first time.</p>
 <div class="markdown-heading"><h2 class="heading-element">8. Hiding the toolbar</h2><a id="user-content-8-hiding-the-toolbar" class="anchor" aria-label="Permalink: 8. Hiding the toolbar" href="#8-hiding-the-toolbar"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>New frame windows open with the toolbar <strong>already hidden</strong> (setting <strong>Always
 open with toolbar hidden</strong>, on by default – untick it in the settings panel to
@@ -332,7 +390,7 @@ every page, renamed or not. (Normal tabs still only get it when renamed.)</li>
 <tbody>
 <tr>
 <td><strong>Alt+Shift+V</strong></td>
-<td>Start / stop recording (no share prompt)</td>
+<td>Start / stop recording (Device only: no share prompt; Entire screen: stops from any Chrome window)</td>
 </tr>
 <tr>
 <td><strong>Alt+Shift+S</strong></td>
@@ -377,6 +435,10 @@ Reading mode.)</p>
 <td>Press <strong>F5</strong> on that tab (tabs open before installing/updating need one refresh). Check the old title in the list matches the page's title.</td>
 </tr>
 <tr>
+<td>"Screen recording stopped: its window was closed"</td>
+<td>The small recording window was closed. Leave it open (minimized is fine) until you stop recording.</td>
+</tr>
+<tr>
 <td>Still the old version after updating</td>
 <td>The zip was probably extracted to a new folder like <code>device_frame_extension (1)</code>. Extract into your original folder and click <strong>Reload</strong> on the extension card.</td>
 </tr>
@@ -406,6 +468,12 @@ included in the version they lead up to).</p>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><strong>0.21</strong></td>
+<td>Oct 3, 2026</td>
+<td>
+<strong>Record the entire screen</strong> (Settings → Recording → Entire screen) to capture several windows in one video as you Alt+Tab between them. Also: each frame window keeps its own look, color chips show their actual color, and recordings and screenshots get short names like <code>ZebraTC72_20261003141530.mp4</code>.</td>
+</tr>
 <tr>
 <td><strong>0.20</strong></td>
 <td>Oct 2, 2026</td>
