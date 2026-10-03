@@ -118,8 +118,13 @@ let finished = false;
     const stamp = (d = new Date()) => [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join('');
     const url = URL.createObjectURL(blob);
     try {
-      const id = await chrome.downloads.download({ url, filename: `FullScreen_${stamp()}.${ext}` });
-      await downloadFinished(id);
+      // A download link, not chrome.downloads.download(): Chrome ignores that
+      // call's filename for in-memory (blob) files and uses a random name.
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `FullScreen_${stamp()}.${ext}`;
+      link.click();
+      await downloadFinished(await downloadIdFor(url)); // keep the blob alive until saved
       finish({ saved: ext, error });
     } catch (e) {
       finish({ error: e.message || String(e) });
@@ -164,7 +169,18 @@ async function finish(result) {
   window.close();
 }
 
+// The download Chrome started for our link (null if it can't be found).
+async function downloadIdFor(url) {
+  for (let i = 0; i < 50; i++) {
+    const [item] = await chrome.downloads.search({ url });
+    if (item) return item.id;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return null;
+}
+
 function downloadFinished(id) {
+  if (id === null) return new Promise((resolve) => setTimeout(resolve, 5000));
   return new Promise((resolve) => {
     const done = () => {
       chrome.downloads.onChanged.removeListener(listener);
@@ -176,5 +192,9 @@ function downloadFinished(id) {
     };
     const timeout = setTimeout(done, 120000);
     chrome.downloads.onChanged.addListener(listener);
+    // It may already be finished (small files save almost at once).
+    chrome.downloads.search({ id }).then(([item]) => {
+      if (!item || ['complete', 'interrupted'].includes(item.state)) done();
+    });
   });
 }

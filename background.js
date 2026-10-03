@@ -10,7 +10,7 @@
 importScripts('devices.js', 'frame.js', 'i18n.js');
 
 // ---- state ---------------------------------------------------------------
-// session: framed[tabId] = { windowId, device, orientation, recording }
+// session: framed[tabId] = { windowId, device, orientation, toolbarHidden, recording }
 //          screenRec = { tabId, started, mic } while an "Entire screen" recording runs
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
 //                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, fitWidth, openHidden, lang, recordMode, presets: [{ id, name, width, height }] }
@@ -25,6 +25,12 @@ async function updateFramed(tabId, patch) {
   else framed[tabId] = { ...framed[tabId], ...patch };
   await chrome.storage.session.set({ framed });
   return framed[tabId];
+}
+
+// Layout for one frame window. The toolbar's shown/hidden state is per window;
+// the shared last.toolbarHidden only seeds new windows.
+function layoutFor(state, last) {
+  return computeLayout(state.device, state.orientation, { ...last, toolbarHidden: state.toolbarHidden ?? last.toolbarHidden });
 }
 
 async function getLast() {
@@ -62,7 +68,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     .catch(() => chrome.windows.create(size));
   const tabId = win.tabs[0].id;
 
-  await updateFramed(tabId, { windowId: win.id, device, orientation });
+  await updateFramed(tabId, { windowId: win.id, device, orientation, toolbarHidden: Boolean(last.toolbarHidden) });
   // Keep zoom changes to this tab only, so normal tabs on the same site are untouched.
   await chrome.tabs.setZoomSettings(tabId, { mode: 'automatic', scope: 'per-tab' }).catch(() => {});
 });
@@ -88,8 +94,10 @@ async function reframe(tabId, state, shiftY = 0) {
   const keys = await shortcuts();
   const { tabIcon } = await chrome.storage.local.get('tabIcon');
   const last = await getLast();
+  // Windows opened before the toolbar state was per window: pin it now.
+  if (state.toolbarHidden === undefined) state = await updateFramed(tabId, { toolbarHidden: Boolean(last.toolbarHidden) });
   const L = {
-    ...computeLayout(state.device, state.orientation, last),
+    ...layoutFor(state, last),
     lang: LANGS.includes(last.lang) ? last.lang : 'auto',
     recordMode: last.recordMode === 'screen' ? 'screen' : 'device',
     screenRec: await getScreenRec(),
@@ -279,10 +287,10 @@ async function handleControl(tabId, tab, msg) {
       if (!msg.recording) await reframe(tabId, state);
       break;
     case 'refit':
-      await fitWindow(tabId, computeLayout(state.device, state.orientation, await getLast()), msg.metrics);
+      await fitWindow(tabId, layoutFor(state, await getLast()), msg.metrics);
       break;
     case 'screenshot': {
-      const L = computeLayout(state.device, state.orientation, await getLast());
+      const L = layoutFor(state, await getLast());
       const dataUrl = await captureDevice(tab, L);
       await downloadScreenshot(dataUrl, L);
       return { dataUrl };
@@ -291,9 +299,10 @@ async function handleControl(tabId, tab, msg) {
 }
 
 async function toggleToolbar(tabId, state) {
-  const toolbarHidden = !(await getLast()).toolbarHidden;
-  await saveLast({ toolbarHidden });
-  await reframe(tabId, state, toolbarHidden ? BAR : -BAR);
+  const toolbarHidden = !(state.toolbarHidden ?? (await getLast()).toolbarHidden);
+  const next = await updateFramed(tabId, { toolbarHidden });
+  await saveLast({ toolbarHidden }); // new windows start the same way
+  await reframe(tabId, next, toolbarHidden ? BAR : -BAR);
 }
 
 // Keyboard shortcuts (chrome.commands works even when the app swallows keys).
@@ -328,7 +337,7 @@ async function toggleRecording(tab, state) {
 // Copy-only screenshot: capture in the background, write the clipboard in the page.
 async function copyScreenshot(tab, state) {
   const last = await getLast();
-  const dataUrl = await captureDevice(tab, computeLayout(state.device, state.orientation, last));
+  const dataUrl = await captureDevice(tab, layoutFor(state, last));
   const t = await uiText(last.lang);
   const msgs = { copied: t.msgCopied, blocked: t.msgClipBlocked };
   await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: copyImageToClipboard, args: [dataUrl, msgs] });
