@@ -758,11 +758,12 @@ function drawFrame(L) {
     window.__devframeRec = null;
     if (blob && blob.size) {
       const ext = rec.mime.startsWith('video/mp4') ? 'mp4' : 'webm';
-      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-      const name = `${L.deviceName.replace(/[^\w.-]+/g, '-')}-${L.screen.w}x${L.screen.h}`;
+      // e.g. ZebraTC72_20261003141530.mp4 (device name without spaces, local time)
+      const stamp = (d = new Date()) => [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join('');
+      const name = L.deviceName.replace(/[^A-Za-z0-9-]+/g, '') || 'Device';
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `device-frame-${name}-${stamp}.${ext}`;
+      a.download = `${name}_${stamp()}.${ext}`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 60000);
       if (rec.error) toast(T('msgRecStoppedEarly', rec.error), 8000);

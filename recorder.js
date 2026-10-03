@@ -114,10 +114,11 @@ let finished = false;
     const blob = new Blob(chunks, { type: mime.split(';')[0] });
     if (!blob.size) return finish({ error: error || t.whyUnknown });
     const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
-    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    // e.g. FullScreen_20261003141530.mp4 (local time)
+    const stamp = (d = new Date()) => [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join('');
     const url = URL.createObjectURL(blob);
     try {
-      const id = await chrome.downloads.download({ url, filename: `device-frame-screen-${stamp}.${ext}` });
+      const id = await chrome.downloads.download({ url, filename: `FullScreen_${stamp()}.${ext}` });
       await downloadFinished(id);
       finish({ saved: ext, error });
     } catch (e) {
