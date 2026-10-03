@@ -140,7 +140,15 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
   is in English only.
 - **? User Guide** – opens this guide in a new tab.
 
-All settings are remembered.
+All settings are remembered. With more than one frame window open:
+
+- **Each window keeps its own look:** device, rotation, background, frame
+  color, status bar, show taps, fit to screen width, and whether the toolbar
+  is hidden. A new window starts with the choices you made last.
+- **Shared by all frame windows:** the recording settings (Device only or
+  Entire screen, countdown, microphone, computer sound), rename titles, tab
+  icon, language, and *Always open with toolbar hidden*. Changing one of
+  these in any window updates them all.
 
 ## 6. Screenshots
 

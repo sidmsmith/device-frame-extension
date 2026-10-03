@@ -10,7 +10,8 @@
 importScripts('devices.js', 'frame.js', 'i18n.js');
 
 // ---- state ---------------------------------------------------------------
-// session: framed[tabId] = { windowId, device, orientation, toolbarHidden, recording }
+// session: framed[tabId] = { windowId, device, orientation, win, recording }
+//          (win: this window's look, see WINDOW_PREFS)
 //          screenRec = { tabId, started, mic } while an "Entire screen" recording runs
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
 //                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, fitWidth, openHidden, lang, recordMode, presets: [{ id, name, width, height }] }
@@ -27,10 +28,27 @@ async function updateFramed(tabId, patch) {
   return framed[tabId];
 }
 
-// Layout for one frame window. The toolbar's shown/hidden state is per window;
-// the shared last.toolbarHidden only seeds new windows.
+// Settings that belong to each frame window (how it looks). Every other
+// setting (recording, title renames, tab icon, language, open hidden) is
+// shared by all frames. 'last' keeps the latest choice of each, which is
+// how new windows start.
+const WINDOW_PREFS = ['background', 'frameColor', 'statusBar', 'touch', 'fitWidth', 'toolbarHidden'];
+
+// A new window's look, from the latest choices (defaults as in computeLayout).
+function windowPrefs(last) {
+  return {
+    background: BACKGROUNDS.includes(last.background) ? last.background : BACKGROUNDS[0],
+    frameColor: last.frameColor in FRAME_COLORS ? last.frameColor : 'black',
+    statusBar: Boolean(last.statusBar),
+    touch: Boolean(last.touch),
+    fitWidth: last.fitWidth !== false,
+    toolbarHidden: Boolean(last.toolbarHidden),
+  };
+}
+
+// Layout for one frame window: shared settings plus this window's own.
 function layoutFor(state, last) {
-  return computeLayout(state.device, state.orientation, { ...last, toolbarHidden: state.toolbarHidden ?? last.toolbarHidden });
+  return computeLayout(state.device, state.orientation, { ...last, ...(state.win ?? windowPrefs(last)) });
 }
 
 async function getLast() {
@@ -68,7 +86,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     .catch(() => chrome.windows.create(size));
   const tabId = win.tabs[0].id;
 
-  await updateFramed(tabId, { windowId: win.id, device, orientation, toolbarHidden: Boolean(last.toolbarHidden) });
+  await updateFramed(tabId, { windowId: win.id, device, orientation, win: windowPrefs(last) });
   // Keep zoom changes to this tab only, so normal tabs on the same site are untouched.
   await chrome.tabs.setZoomSettings(tabId, { mode: 'automatic', scope: 'per-tab' }).catch(() => {});
 });
@@ -94,8 +112,12 @@ async function reframe(tabId, state, shiftY = 0) {
   const keys = await shortcuts();
   const { tabIcon } = await chrome.storage.local.get('tabIcon');
   const last = await getLast();
-  // Windows opened before the toolbar state was per window: pin it now.
-  if (state.toolbarHidden === undefined) state = await updateFramed(tabId, { toolbarHidden: Boolean(last.toolbarHidden) });
+  // Windows opened before their look was per window: pin it now.
+  if (!state.win) {
+    const win = windowPrefs(last);
+    if (typeof state.toolbarHidden === 'boolean') win.toolbarHidden = state.toolbarHidden;
+    state = await updateFramed(tabId, { win });
+  }
   const L = {
     ...layoutFor(state, last),
     lang: LANGS.includes(last.lang) ? last.lang : 'auto',
@@ -254,7 +276,6 @@ async function handleControl(tabId, tab, msg) {
       break;
     }
     case 'set-pref': {
-      // Background and status bar are global preferences, not per window.
       const prefs = {};
       if (BACKGROUNDS.includes(msg.prefs.background)) prefs.background = msg.prefs.background;
       if (typeof msg.prefs.statusBar === 'boolean') prefs.statusBar = msg.prefs.statusBar;
@@ -269,8 +290,15 @@ async function handleControl(tabId, tab, msg) {
       if (typeof msg.prefs.openHidden === 'boolean') prefs.openHidden = msg.prefs.openHidden;
       if (msg.prefs.lang === 'auto' || LANGS.includes(msg.prefs.lang)) prefs.lang = msg.prefs.lang;
       if (msg.prefs.recordMode === 'device' || msg.prefs.recordMode === 'screen') prefs.recordMode = msg.prefs.recordMode;
+      // Everything is remembered for new windows; this window's own look
+      // changes only here, shared settings redraw every frame.
       await saveLast(prefs);
-      await reframeAll(); // settings are shared by every frame window
+      const own = Object.fromEntries(Object.entries(prefs).filter(([k]) => WINDOW_PREFS.includes(k)));
+      if (Object.keys(own).length) {
+        await updateFramed(tabId, { win: { ...(state.win ?? windowPrefs(await getLast())), ...own } });
+      }
+      if (Object.keys(prefs).some((k) => !WINDOW_PREFS.includes(k))) await reframeAll();
+      else await reframe(tabId, (await getFramed())[tabId]);
       break;
     }
     case 'toggle-toolbar':
@@ -299,8 +327,9 @@ async function handleControl(tabId, tab, msg) {
 }
 
 async function toggleToolbar(tabId, state) {
-  const toolbarHidden = !(state.toolbarHidden ?? (await getLast()).toolbarHidden);
-  const next = await updateFramed(tabId, { toolbarHidden });
+  const win = state.win ?? windowPrefs(await getLast());
+  const toolbarHidden = !win.toolbarHidden;
+  const next = await updateFramed(tabId, { win: { ...win, toolbarHidden } });
   await saveLast({ toolbarHidden }); // new windows start the same way
   await reframe(tabId, next, toolbarHidden ? BAR : -BAR);
 }
