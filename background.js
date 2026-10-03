@@ -389,9 +389,12 @@ async function captureDevice(tab, L) {
 }
 
 async function downloadScreenshot(url, L) {
-  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-  const name = `${L.deviceName.replace(/[^\w.-]+/g, '-')}-${L.screen.w}x${L.screen.h}`;
-  await chrome.downloads.download({ url, filename: `device-frame-${name}-${stamp}.png` });
+  // e.g. ZebraTC72_20261003141530.png, like the recordings (local time).
+  const d = new Date();
+  const stamp = [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()]
+    .map((n) => String(n).padStart(2, '0')).join('');
+  const name = L.deviceName.replace(/[^A-Za-z0-9-]+/g, '') || 'Device';
+  await chrome.downloads.download({ url, filename: `${name}_${stamp}.png` });
 }
 
 // ---- screen recording ----------------------------------------------------
