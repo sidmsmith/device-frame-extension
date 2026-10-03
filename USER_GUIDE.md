@@ -57,9 +57,9 @@ when you're done.
 | <img src="docs/icons/trash.svg" width="20"> | Delete | Shown when a **Saved** device is selected: click twice to delete it. |
 | <img src="docs/icons/rotate.svg" width="20"> | Rotate | Switch between portrait and landscape (phones and tablets only). |
 | <img src="docs/icons/wifi.svg" width="20"> / <img src="docs/icons/wifiOff.svg" width="20"> | Status bar | Show / hide an Android status bar (clock, signal, Wi-Fi, battery). Slashed = hidden. |
-| <img src="docs/icons/sliders.svg" width="20"> | Settings | Background, frame color, tap indicator, countdown, microphone (see section 5). |
+| <img src="docs/icons/sliders.svg" width="20"> | Settings | Background, frame color, tap indicator, recording options, language (see section 5). |
 | <img src="docs/icons/reload.svg" width="20"> | Reload | Reload the page (F5 also works). |
-| <img src="docs/icons/record.svg" width="20"> | Record | Record a video of the device (see section 7). Turns red with a timer while recording; click again to stop. |
+| <img src="docs/icons/record.svg" width="20"> / <img src="docs/icons/recordScreen.svg" width="20"> | Record | Record a video (see section 7): circle = **Device only**, screen = **Entire screen** (chosen in Settings). Turns red with a timer while recording; click again to stop. |
 | <img src="docs/icons/camera.svg" width="20"> | Screenshot | Picture of the device: copied to the clipboard **and** saved to Downloads (see section 6). |
 | <img src="docs/icons/eyeOff.svg" width="20"> | Hide toolbar | Hide this bar for a clean screen (see section 8). |
 
