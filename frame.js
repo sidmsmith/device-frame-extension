@@ -36,6 +36,7 @@ function drawFrame(L) {
     trash: svg(16, '<path d="M2.5 4.5h11M6 4.5V2.8h4v1.7M4 4.5l.7 8.7h6.6l.7-8.7"/>'),
     expand: svg(11, '<path d="M4 6l4 4 4-4"/>'),
     record: svg(16, '<circle cx="8" cy="8" r="6.2"/><circle cx="8" cy="8" r="3.6" fill="#d93025" stroke="none"/>'),
+    recordScreen: svg(16, '<rect x="1.2" y="2.4" width="13.6" height="9.4" rx="1.4"/><path d="M5.6 14.2h4.8"/><circle cx="8" cy="7.1" r="2.9" fill="#d93025" stroke="none"/>'),
     mic: svg(14, '<rect x="5.8" y="1.8" width="4.4" height="8" rx="2.2"/><path d="M3.3 7.8a4.7 4.7 0 0 0 9.4 0M8 12.6v1.8"/>'),
     stop: svg(16, '<rect x="4" y="4" width="8" height="8" rx="1.5" fill="currentColor" stroke="none"/>'),
   };
@@ -307,7 +308,11 @@ function drawFrame(L) {
       <label class="chk" style="margin-top: 6px" title="${E('tipFitWidth')}"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> ${E('optFitWidth')}</label>
       <label class="chk" style="margin-top: 6px" title="${L.shortcut ? E('tipOpenHiddenShortcut', L.shortcut) : E('tipOpenHidden')}"><input type="checkbox" id="openHidden"${L.openHidden ? ' checked' : ''}> ${E('optOpenHidden')}</label>
       <div class="lbl">${E('lblRecording')}</div>
-      <label class="chk" style="margin-top: 0"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> ${E('optCountdown')}</label>
+      <div class="seg">
+        <button data-rm="device" class="${L.recordMode === 'screen' ? '' : 'sel'}" title="${E('tipModeDevice')}">${ICON.record}${E('recDevice')}</button>
+        <button data-rm="screen" class="${L.recordMode === 'screen' ? 'sel' : ''}" title="${E('tipModeScreen')}">${ICON.recordScreen}${E('recScreen')}</button>
+      </div>
+      <label class="chk" style="margin-top: 8px"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> ${E('optCountdown')}</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> ${E('optMic')}</label>
       <div class="lbl">${E('lblRename')} <span class="note">${E('noteRename')}</span></div>
       <textarea id="titleRules" rows="4" wrap="off" spellcheck="false" placeholder="MUP = WM Mobile" title="${E('tipRename')}">${L.titleRules}</textarea>
@@ -425,6 +430,7 @@ function drawFrame(L) {
   root.getElementById('appearance').addEventListener('click', () => setPop(pop.hidden));
   pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') setPop(false); });
   pop.querySelectorAll('[data-bg]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { background: b.dataset.bg } })));
+  pop.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { recordMode: b.dataset.rm } })));
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
   root.getElementById('fitWidth').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { fitWidth: e.target.checked } }));
@@ -699,24 +705,28 @@ function drawFrame(L) {
   const lockIds = ['device', 'edit', 'delpreset', 'rotate', 'status', 'appearance', 'reload', 'hide'];
   const showRecording = () => {
     const rec = window.__devframeRec;
+    const screenRec = L.screenRec;
     for (const id of lockIds) {
       const el = root.getElementById(id);
       if (el) el.disabled = Boolean(rec) || el.dataset.fixedOff === '1';
     }
     if (rec) setPop(false);
-    recBtn.classList.toggle('rec-on', Boolean(rec?.recorder));
-    recBtn.title = rec
-      ? (L.recordShortcut ? T('tipStopShortcut', L.recordShortcut) : T('tipStop'))
-      : (L.recordShortcut ? T('tipRecordShortcut', L.recordShortcut) : T('tipRecord'));
-    if (!rec?.recorder) {
-      recBtn.innerHTML = rec ? ICON.stop : ICON.record;
+    const live = rec?.recorder ? rec : screenRec; // recording right now: show the timer
+    recBtn.classList.toggle('rec-on', Boolean(live));
+    const key = L.recordShortcut;
+    recBtn.title = screenRec ? (key ? T('tipStopScreenShortcut', key) : T('tipStopScreen'))
+      : rec ? (key ? T('tipStopShortcut', key) : T('tipStop'))
+      : L.recordMode === 'screen' ? (key ? T('tipRecScreenShortcut', key) : T('tipRecScreen'))
+      : (key ? T('tipRecordShortcut', key) : T('tipRecord'));
+    if (!live) {
+      recBtn.innerHTML = rec ? ICON.stop : L.recordMode === 'screen' ? ICON.recordScreen : ICON.record;
       return;
     }
-    const secs = Math.floor((Date.now() - rec.started) / 1000);
-    recBtn.innerHTML = `${ICON.stop}${rec.mic ? ICON.mic : ''}<span>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</span>`;
+    const secs = Math.floor((Date.now() - live.started) / 1000);
+    recBtn.innerHTML = `${ICON.stop}${live.mic ? ICON.mic : ''}<span>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</span>`;
   };
   clearInterval(window.__devframeRecTick);
-  window.__devframeRecTick = setInterval(() => { if (window.__devframeRec?.recorder) showRecording(); }, 500);
+  window.__devframeRecTick = setInterval(() => { if (window.__devframeRec?.recorder || L.screenRec) showRecording(); }, 500);
   showRecording();
 
   const stopRecording = (reason = T('whyStopped')) => {
@@ -882,18 +892,41 @@ function drawFrame(L) {
   };
 
   recBtn.addEventListener('click', () => {
-    if (window.__devframeRec) stopRecording(T('whyButton'));
+    if (L.screenRec) send({ type: 'screen-stop' });
+    else if (window.__devframeRec) stopRecording(T('whyButton'));
+    else if (L.recordMode === 'screen') send({ type: 'screen-start' });
     else startRecording();
+  });
+
+  // Screen recordings: the background asks for the 3-2-1 countdown here,
+  // before it starts recording.
+  const screenCountdown = () => new Promise((resolve) => {
+    const count = root.getElementById('count');
+    let n = 3;
+    count.textContent = n;
+    count.hidden = false;
+    const timer = setInterval(() => {
+      n -= 1;
+      if (n > 0) { count.textContent = n; return; }
+      clearInterval(timer);
+      count.hidden = true;
+      setTimeout(resolve, 150); // let the overlay disappear first
+    }, 1000);
   });
 
   // Messages from the background (record shortcut). One listener for the
   // page's lifetime, forwarding to the latest drawFrame's handlers.
-  window.__devframeOnMessage = (msg) => {
+  window.__devframeOnMessage = (msg, respond) => {
     if (msg?.type === 'df-record-start' && !window.__devframeRec) startRecording(msg.streamId);
     if (msg?.type === 'df-record-stop') stopRecording(T('whyShortcut'));
+    if (msg?.type === 'df-toast') toast(msg.text, msg.ms);
+    if (msg?.type === 'df-countdown') {
+      screenCountdown().then(() => respond({}));
+      return true; // answer after the countdown
+    }
   };
   if (!window.__devframeMessageBound) {
-    chrome.runtime.onMessage.addListener((msg) => { window.__devframeOnMessage?.(msg); });
+    chrome.runtime.onMessage.addListener((msg, sender, respond) => window.__devframeOnMessage?.(msg, respond));
     window.__devframeMessageBound = true;
   }
 

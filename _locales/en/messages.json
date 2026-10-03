@@ -182,6 +182,48 @@
   "tipOpenHiddenShortcut": {
     "message": "Every new frame window starts with this toolbar hidden (show it with a double-click on the frame, $1, or the tab at the top)"
   },
+  "recDevice": {
+    "message": "Device only"
+  },
+  "recScreen": {
+    "message": "Entire screen"
+  },
+  "tipModeDevice": {
+    "message": "Record just the device, cropped from this window"
+  },
+  "tipModeScreen": {
+    "message": "Record everything on one screen, including other windows you switch to (Chrome asks which screen each time)"
+  },
+  "tipRecScreen": {
+    "message": "Record the entire screen to MP4 (Chrome asks which screen to share)"
+  },
+  "tipRecScreenShortcut": {
+    "message": "Record the entire screen to MP4 (or $1; Chrome asks which screen to share)"
+  },
+  "tipStopScreen": {
+    "message": "Stop the screen recording and save MP4"
+  },
+  "tipStopScreenShortcut": {
+    "message": "Stop the screen recording and save MP4 (or $1, from any window)"
+  },
+  "msgMicAllow": {
+    "message": "Allow the microphone in the window that opened, then start recording again"
+  },
+  "micTitle": {
+    "message": "Microphone for screen recordings"
+  },
+  "micBody": {
+    "message": "Screen recordings run in the background, so Chrome needs your OK once before they can use the microphone."
+  },
+  "micButton": {
+    "message": "Allow microphone"
+  },
+  "micDone": {
+    "message": "Done! Start the recording again."
+  },
+  "micDenied": {
+    "message": "The microphone was blocked. Allow it with the icon in the address bar, or turn off Record microphone."
+  },
   "lblRecording": {
     "message": "Recording"
   },

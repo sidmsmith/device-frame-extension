@@ -182,6 +182,48 @@
   "tipOpenHiddenShortcut": {
     "message": "Chaque nouvelle fenêtre de cadre s'ouvre avec cette barre masquée (réaffichez-la en double-cliquant sur le cadre, avec $1 ou avec l'onglet en haut)"
   },
+  "recDevice": {
+    "message": "Appareil seul"
+  },
+  "recScreen": {
+    "message": "Écran entier"
+  },
+  "tipModeDevice": {
+    "message": "Enregistrer uniquement l'appareil, découpé dans cette fenêtre"
+  },
+  "tipModeScreen": {
+    "message": "Enregistrer tout ce qui s'affiche sur un écran, y compris les autres fenêtres (Chrome demande quel écran à chaque fois)"
+  },
+  "tipRecScreen": {
+    "message": "Enregistrer l'écran entier en MP4 (Chrome demande quel écran partager)"
+  },
+  "tipRecScreenShortcut": {
+    "message": "Enregistrer l'écran entier en MP4 (ou $1 ; Chrome demande quel écran partager)"
+  },
+  "tipStopScreen": {
+    "message": "Arrêter l'enregistrement de l'écran et sauvegarder le MP4"
+  },
+  "tipStopScreenShortcut": {
+    "message": "Arrêter l'enregistrement de l'écran et sauvegarder le MP4 (ou $1, depuis n'importe quelle fenêtre)"
+  },
+  "msgMicAllow": {
+    "message": "Autorisez le microphone dans la fenêtre qui s'est ouverte, puis relancez l'enregistrement"
+  },
+  "micTitle": {
+    "message": "Microphone pour les enregistrements d'écran"
+  },
+  "micBody": {
+    "message": "Les enregistrements d'écran s'exécutent en arrière-plan : Chrome a besoin de votre accord une seule fois pour qu'ils utilisent le microphone."
+  },
+  "micButton": {
+    "message": "Autoriser le microphone"
+  },
+  "micDone": {
+    "message": "C'est fait ! Relancez l'enregistrement."
+  },
+  "micDenied": {
+    "message": "Le microphone a été bloqué. Autorisez-le avec l'icône de la barre d'adresse, ou décochez Enregistrer le microphone."
+  },
   "lblRecording": {
     "message": "Enregistrement"
   },

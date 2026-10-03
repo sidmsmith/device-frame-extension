@@ -182,6 +182,48 @@
   "tipOpenHiddenShortcut": {
     "message": "Cada nueva ventana del marco se abre con esta barra oculta (muéstrala con doble clic en el marco, con $1 o con la pestaña de arriba)"
   },
+  "recDevice": {
+    "message": "Solo el dispositivo"
+  },
+  "recScreen": {
+    "message": "Toda la pantalla"
+  },
+  "tipModeDevice": {
+    "message": "Grabar solo el dispositivo, recortado de esta ventana"
+  },
+  "tipModeScreen": {
+    "message": "Grabar todo lo que aparece en una pantalla, incluidas otras ventanas (Chrome pregunta qué pantalla cada vez)"
+  },
+  "tipRecScreen": {
+    "message": "Grabar toda la pantalla en MP4 (Chrome pregunta qué pantalla compartir)"
+  },
+  "tipRecScreenShortcut": {
+    "message": "Grabar toda la pantalla en MP4 (o $1; Chrome pregunta qué pantalla compartir)"
+  },
+  "tipStopScreen": {
+    "message": "Detener la grabación de pantalla y guardar el MP4"
+  },
+  "tipStopScreenShortcut": {
+    "message": "Detener la grabación de pantalla y guardar el MP4 (o $1, desde cualquier ventana)"
+  },
+  "msgMicAllow": {
+    "message": "Permite el micrófono en la ventana que se abrió y vuelve a iniciar la grabación"
+  },
+  "micTitle": {
+    "message": "Micrófono para grabaciones de pantalla"
+  },
+  "micBody": {
+    "message": "Las grabaciones de pantalla se ejecutan en segundo plano, así que Chrome necesita tu permiso una sola vez para usar el micrófono."
+  },
+  "micButton": {
+    "message": "Permitir micrófono"
+  },
+  "micDone": {
+    "message": "¡Listo! Vuelve a iniciar la grabación."
+  },
+  "micDenied": {
+    "message": "Se bloqueó el micrófono. Permítelo con el ícono de la barra de direcciones o desactiva Grabar el micrófono."
+  },
   "lblRecording": {
     "message": "Grabación"
   },

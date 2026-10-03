@@ -7,12 +7,13 @@
 // and control bar, then size the window to fit and use per-tab zoom to shrink
 // it when the device is bigger than the screen.
 
-importScripts('devices.js', 'frame.js');
+importScripts('devices.js', 'frame.js', 'i18n.js');
 
 // ---- state ---------------------------------------------------------------
 // session: framed[tabId] = { windowId, device, orientation, recording }
+//          screenRec = { tabId, started, mic } while an "Entire screen" recording runs
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
-//                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, fitWidth, openHidden, lang, presets: [{ id, name, width, height }] }
+//                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, fitWidth, openHidden, lang, recordMode, presets: [{ id, name, width, height }] }
 
 async function getFramed() {
   return (await chrome.storage.session.get('framed')).framed ?? {};
@@ -32,37 +33,6 @@ async function getLast() {
 
 async function saveLast(patch) {
   await chrome.storage.local.set({ last: { ...(await getLast()), ...patch } });
-}
-
-// ---- language ------------------------------------------------------------
-// UI text comes from _locales/<lang>/messages.json. 'auto' follows Chrome's
-// language; the settings panel can override it. English fills any gaps.
-
-const LANGS = ['en', 'fr', 'es_419'];
-const messageCache = {};
-
-function resolveLang(pref) {
-  if (LANGS.includes(pref)) return pref;
-  const ui = chrome.i18n.getUILanguage().toLowerCase();
-  if (ui.startsWith('fr')) return 'fr';
-  if (ui.startsWith('es')) return 'es_419';
-  return 'en';
-}
-
-async function loadMessages(lang) {
-  if (!messageCache[lang]) {
-    const res = await fetch(chrome.runtime.getURL(`_locales/${lang}/messages.json`));
-    const json = await res.json();
-    messageCache[lang] = Object.fromEntries(Object.entries(json).map(([k, v]) => [k, v.message]));
-  }
-  return messageCache[lang];
-}
-
-// { key: text } for the chosen language, English as fallback.
-async function uiText(pref) {
-  const lang = resolveLang(pref);
-  const en = await loadMessages('en');
-  return lang === 'en' ? en : { ...en, ...(await loadMessages(lang)) };
 }
 
 // ---- open ----------------------------------------------------------------
@@ -116,6 +86,8 @@ async function reframe(tabId, state, shiftY = 0) {
   const L = {
     ...computeLayout(state.device, state.orientation, last),
     lang: LANGS.includes(last.lang) ? last.lang : 'auto',
+    recordMode: last.recordMode === 'screen' ? 'screen' : 'device',
+    screenRec: await getScreenRec(),
     t: await uiText(last.lang),
     shortcut: keys['toggle-toolbar'], copyShortcut: keys['copy-screenshot'], recordShortcut: keys.record,
     tabIcon: tabIcon ?? null,
@@ -171,6 +143,11 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
 // ---- control bar ---------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // The screen recorder (offscreen document) reporting a finished recording.
+  if (msg?.target === 'background' && msg.type === 'screen-done' && !sender.tab) {
+    screenDone(msg);
+    return;
+  }
   const tabId = sender.tab?.id;
   if (tabId === undefined) return;
   handleControl(tabId, sender.tab, msg).then(
@@ -277,12 +254,19 @@ async function handleControl(tabId, tab, msg) {
       if (typeof msg.prefs.fitWidth === 'boolean') prefs.fitWidth = msg.prefs.fitWidth;
       if (typeof msg.prefs.openHidden === 'boolean') prefs.openHidden = msg.prefs.openHidden;
       if (msg.prefs.lang === 'auto' || LANGS.includes(msg.prefs.lang)) prefs.lang = msg.prefs.lang;
+      if (msg.prefs.recordMode === 'device' || msg.prefs.recordMode === 'screen') prefs.recordMode = msg.prefs.recordMode;
       await saveLast(prefs);
       await reframe(tabId, state);
       break;
     }
     case 'toggle-toolbar':
       await toggleToolbar(tabId, state);
+      break;
+    case 'screen-start':
+      await startScreenRecording(tabId);
+      break;
+    case 'screen-stop':
+      await stopScreenRecording();
       break;
     case 'rec-state':
       await updateFramed(tabId, { recording: Boolean(msg.recording) });
@@ -310,8 +294,10 @@ async function toggleToolbar(tabId, state) {
 chrome.commands.onCommand.addListener(async (command, tab) => {
   if (!tab) return;
   const state = (await getFramed())[tab.id];
-  if (!state) return;
   try {
+    // A screen recording can be stopped from any window.
+    if (command === 'record' && (await getScreenRec())) return await stopScreenRecording();
+    if (!state) return;
     if (command === 'toggle-toolbar' && !state.recording) await toggleToolbar(tab.id, state);
     if (command === 'copy-screenshot') await copyScreenshot(tab, state);
     if (command === 'record') await toggleRecording(tab, state);
@@ -324,6 +310,7 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
 // when the extension itself is invoked (a shortcut counts, an in-page click
 // doesn't). The stream id is handed to the page, which records as usual.
 async function toggleRecording(tab, state) {
+  if (!state.recording && (await getLast()).recordMode === 'screen') return startScreenRecording(tab.id);
   if (state.recording) {
     await chrome.tabs.sendMessage(tab.id, { type: 'df-record-stop' });
     return;
@@ -399,6 +386,140 @@ async function downloadScreenshot(url, L) {
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   const name = `${L.deviceName.replace(/[^\w.-]+/g, '-')}-${L.screen.w}x${L.screen.h}`;
   await chrome.downloads.download({ url, filename: `device-frame-${name}-${stamp}.png` });
+}
+
+// ---- screen recording ----------------------------------------------------
+// "Entire screen" recordings run in an offscreen document (recorder.html), so
+// they keep going across page loads and while other windows are in front.
+// Chrome's screen picker (desktopCapture) is the only prompt; without a target
+// tab its stream id is usable by the extension's own pages.
+
+async function getScreenRec() {
+  return (await chrome.storage.session.get('screenRec')).screenRec ?? null;
+}
+
+async function setScreenRec(rec) {
+  if (rec) await chrome.storage.session.set({ screenRec: rec });
+  else await chrome.storage.session.remove('screenRec');
+}
+
+const toRecorder = (type, extra = {}) => chrome.runtime.sendMessage({ target: 'recorder', type, ...extra });
+
+async function openRecorder() {
+  if (await chrome.offscreen.hasDocument()) return;
+  await chrome.offscreen.createDocument({
+    url: 'recorder.html',
+    reasons: ['DISPLAY_MEDIA', 'USER_MEDIA'],
+    justification: 'Record the screen (and optionally the microphone) to MP4.',
+  });
+}
+
+async function closeRecorder() {
+  if (await chrome.offscreen.hasDocument()) await chrome.offscreen.closeDocument();
+}
+
+const chooseScreen = () => new Promise((resolve) => {
+  chrome.desktopCapture.chooseDesktopMedia(['screen', 'audio'], (id, options) => {
+    resolve({ id, audio: Boolean(options?.canRequestAudioTrack) });
+  });
+});
+
+function tabToast(tabId, text, ms) {
+  if (tabId !== undefined) chrome.tabs.sendMessage(tabId, { type: 'df-toast', text, ms }).catch(() => {});
+}
+
+// Redraw every frame window (the record button shows the screen recording).
+async function reframeAll() {
+  for (const [tabId, state] of Object.entries(await getFramed())) {
+    if (!state.recording) await reframe(Number(tabId), state).catch(() => {});
+  }
+}
+
+let screenStarting = false;
+
+async function startScreenRecording(tabId) {
+  if (screenStarting || (await getScreenRec())) return;
+  screenStarting = true;
+  const last = await getLast();
+  const t = await uiText(last.lang);
+  try {
+    await openRecorder();
+    // The hidden recorder can't ask for the microphone: a small window asks once.
+    if (last.mic && (await toRecorder('mic-permission')).state !== 'granted') {
+      await closeRecorder();
+      await chrome.windows.create({ url: 'mic.html', type: 'popup', width: 460, height: 300, focused: true });
+      tabToast(tabId, t.msgMicAllow, 8000);
+      return;
+    }
+    const { id, audio } = await chooseScreen();
+    if (!id) {
+      await closeRecorder();
+      tabToast(tabId, t.msgRecCanceled);
+      return;
+    }
+    const got = await toRecorder('acquire', { streamId: id, audio, mic: Boolean(last.mic) });
+    if (got.error) throw new Error(got.error);
+    if (got.micError) tabToast(tabId, t.msgMicUnavailable.replace('$1', got.micError), 6000);
+    // The 3-2-1 countdown shows in the frame window, before recording starts.
+    if (last.countdown !== false) await chrome.tabs.sendMessage(tabId, { type: 'df-countdown' }).catch(() => {});
+    const started = await toRecorder('go');
+    if (started.error) throw new Error(started.error);
+    await setScreenRec({ tabId, started: Date.now(), mic: started.mic });
+    await reframeAll();
+  } catch (e) {
+    console.warn('Device Frame: screen recording failed to start', e);
+    await toRecorder('release').catch(() => {});
+    await closeRecorder();
+    tabToast(tabId, t.msgCantRecord.replace('$1', e.message || e), 8000);
+  } finally {
+    screenStarting = false;
+  }
+}
+
+async function stopScreenRecording() {
+  // The recorder answers with 'screen-done'; if it's gone, just clear the state.
+  if (await chrome.offscreen.hasDocument()) {
+    const res = await toRecorder('stop').catch(() => null);
+    if (res?.active) return;
+  }
+  await screenDone({ url: null, error: null });
+}
+
+async function screenDone({ url, ext, error }) {
+  const rec = await getScreenRec();
+  await setScreenRec(null);
+  const t = await uiText((await getLast()).lang);
+  let message = null;
+  if (url) {
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    try {
+      const id = await chrome.downloads.download({ url, filename: `device-frame-screen-${stamp}.${ext}` });
+      await downloadFinished(id); // the blob lives in the recorder page: keep it open until then
+      message = error ? t.msgRecStoppedEarly.replace('$1', error) : ext === 'mp4' ? t.msgRecSaved : t.msgRecSavedWebm;
+    } catch (e) {
+      message = t.msgRecFailed.replace('$1', e.message || e);
+    }
+  } else if (error) {
+    message = t.msgRecFailed.replace('$1', error);
+  }
+  await closeRecorder().catch(() => {});
+  await reframeAll();
+  if (message) tabToast(rec?.tabId, message, error ? 8000 : 2500);
+}
+
+function downloadFinished(id) {
+  return new Promise((resolve) => {
+    const done = () => {
+      chrome.downloads.onChanged.removeListener(listener);
+      clearTimeout(timer);
+      resolve();
+    };
+    const listener = (delta) => {
+      if (delta.id === id && ['complete', 'interrupted'].includes(delta.state?.current)) done();
+    };
+    const timer = setTimeout(done, 120000);
+    chrome.downloads.onChanged.addListener(listener);
+  });
 }
 
 // ---- housekeeping --------------------------------------------------------
