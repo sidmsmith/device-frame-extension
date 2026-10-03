@@ -257,9 +257,6 @@
   "lblTabIcon": {
     "message": "Icône d'onglet"
   },
-  "noteTabIcon": {
-    "message": "(onglets renommés)"
-  },
   "iconPageOwn": {
     "message": "celle de la page"
   },

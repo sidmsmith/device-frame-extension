@@ -257,9 +257,6 @@
   "lblTabIcon": {
     "message": "Tab icon"
   },
-  "noteTabIcon": {
-    "message": "(for renamed tabs)"
-  },
   "iconPageOwn": {
     "message": "page's own"
   },

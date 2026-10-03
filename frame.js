@@ -20,6 +20,13 @@ function drawFrame(L) {
   const BG_LABEL = { light: E('bgLight'), white: E('bgWhite'), dark: E('bgDark') };
   const FRAME_LABEL = { black: E('fcBlack'), silver: E('fcSilver'), white: E('fcWhite'), blue: E('fcBlue'), manhattan: E('fcManhattan') };
   const FRAME_SWATCH = { black: '#202124', silver: '#c9ccd1', white: '#ffffff', blue: '#2f5597', manhattan: '#083332' };
+  // Color chips (background, frame color): the whole chip is the color, with
+  // dark or light text, whichever reads better on it.
+  const chip = (hex) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const light = 0.299 * r + 0.587 * g + 0.114 * b > 150;
+    return `background:${hex};color:${light ? '#202124' : '#ffffff'}`;
+  };
   const t = THEMES[L.background] ?? THEMES.light;
 
   // Line icons; stroke follows the control bar's text color.
@@ -203,7 +210,9 @@ function drawFrame(L) {
       .seg { display: flex; flex-wrap: wrap; gap: 4px; }
       .seg button { height: 26px; padding: 0 8px; font-size: 12px; gap: 5px; }
       .seg button.sel { border-color: #1a73e8; box-shadow: inset 0 0 0 1px #1a73e8; }
-      .sw { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .35); }
+      .seg button.chip { border-color: ${t.ctlBorder}; }
+      .seg button.chip:hover:not(:disabled) { filter: brightness(.93); }
+      .seg button.chip.sel { border-color: #1a73e8; box-shadow: 0 0 0 2px #1a73e8; }
       .pop input[type=text] { width: 100%; flex: none; height: 26px; font-size: 12px; }
       .pop textarea {
         display: block; width: 100%; box-sizing: border-box; resize: vertical; min-height: 54px;
@@ -214,7 +223,7 @@ function drawFrame(L) {
       #rulesNote { color: #d93025; opacity: 1; margin-top: 2px; }
       .iconrow { display: flex; align-items: center; gap: 6px; }
       .iconrow button { height: 26px; font-size: 12px; }
-      .iconprev { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; }
+      .iconprev { display: inline-flex; align-items: center; min-width: 26px; height: 26px; }
       .iconprev img { width: 20px; height: 20px; object-fit: contain; }
       .help { margin-top: 12px; padding-top: 8px; border-top: 1px solid ${t.barBorder}; }
       .help a { color: #1a73e8; text-decoration: none; font-weight: 600; }
@@ -298,11 +307,11 @@ function drawFrame(L) {
     <div class="pop" id="pop" hidden>
       <div class="lbl">${E('lblBackground')}</div>
       <div class="seg">
-        ${Object.keys(BG_LABEL).map((k) => `<button data-bg="${k}" class="${k === L.background ? 'sel' : ''}">${BG_LABEL[k]}</button>`).join('')}
+        ${Object.keys(BG_LABEL).map((k) => `<button data-bg="${k}" class="chip${k === L.background ? ' sel' : ''}" style="${chip(THEMES[k].page)}">${BG_LABEL[k]}</button>`).join('')}
       </div>
       <div class="lbl">${E('lblFrameColor')}${L.frameColorFixed ? ` <span class="note">${E('noteFixedColor')}</span>` : ''}</div>
       <div class="seg">
-        ${Object.keys(FRAME_LABEL).map((k) => `<button data-fc="${k}" class="${k === L.frameColor && !L.frameColorFixed ? 'sel' : ''}"${L.frameColorFixed ? ' disabled' : ''}><span class="sw" style="background:${FRAME_SWATCH[k]}"></span>${FRAME_LABEL[k]}</button>`).join('')}
+        ${Object.keys(FRAME_LABEL).map((k) => `<button data-fc="${k}" class="chip${k === L.frameColor && !L.frameColorFixed ? ' sel' : ''}" style="${chip(FRAME_SWATCH[k])}"${L.frameColorFixed ? ' disabled' : ''}>${FRAME_LABEL[k]}</button>`).join('')}
       </div>
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> ${E('optShowTaps')}</label>
       <label class="chk" style="margin-top: 6px" title="${E('tipFitWidth')}"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> ${E('optFitWidth')}</label>
@@ -318,10 +327,10 @@ function drawFrame(L) {
       <div class="lbl">${E('lblRename')} <span class="note">${E('noteRename')}</span></div>
       <textarea id="titleRules" rows="4" wrap="off" spellcheck="false" placeholder="MUP = WM Mobile" title="${E('tipRename')}">${L.titleRules}</textarea>
       <div class="note" id="rulesNote"></div>
-      <div class="lbl">${E('lblTabIcon')} <span class="note">${E('noteTabIcon')}</span></div>
+      <div class="lbl">${E('lblTabIcon')}</div>
       <div class="iconrow">
-        <span class="iconprev">${L.tabIcon ? `<img src="${L.tabIcon}" alt="">` : `<span class="note">${E('iconPageOwn')}</span>`}</span>
         <button type="button" id="iconPick" title="${E('tipIconPick')}">${E('btnChoose')}</button>
+        <span class="iconprev">${L.tabIcon ? `<img src="${L.tabIcon}" alt="">` : `<span class="note">${E('iconPageOwn')}</span>`}</span>
         ${L.tabIcon ? `<button type="button" id="iconClear" title="${E('tipIconRemove')}">${E('btnRemove')}</button>` : ''}
         <input type="file" id="iconFile" accept="image/*,.ico" hidden>
       </div>
