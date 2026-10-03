@@ -182,6 +182,24 @@
   "tipOpenHiddenShortcut": {
     "message": "Chaque nouvelle fenêtre de cadre s'ouvre avec cette barre masquée (réaffichez-la en double-cliquant sur le cadre, avec $1 ou avec l'onglet en haut)"
   },
+  "recWinTitle": {
+    "message": "Device Frame – enregistrement de l'écran"
+  },
+  "recWinPicking": {
+    "message": "Choisissez l'écran à enregistrer dans la fenêtre de Chrome."
+  },
+  "recWinRecording": {
+    "message": "Enregistrement de l'écran en cours. Gardez cette fenêtre ouverte ; elle peut rester réduite."
+  },
+  "recWinSaving": {
+    "message": "Sauvegarde de l'enregistrement…"
+  },
+  "btnStopSave": {
+    "message": "Arrêter et sauvegarder"
+  },
+  "msgRecWindowClosed": {
+    "message": "Enregistrement de l'écran arrêté : sa fenêtre a été fermée"
+  },
   "recDevice": {
     "message": "Appareil seul"
   },
@@ -205,24 +223,6 @@
   },
   "tipStopScreenShortcut": {
     "message": "Arrêter l'enregistrement de l'écran et sauvegarder le MP4 (ou $1, depuis n'importe quelle fenêtre)"
-  },
-  "msgMicAllow": {
-    "message": "Autorisez le microphone dans la fenêtre qui s'est ouverte, puis relancez l'enregistrement"
-  },
-  "micTitle": {
-    "message": "Microphone pour les enregistrements d'écran"
-  },
-  "micBody": {
-    "message": "Les enregistrements d'écran s'exécutent en arrière-plan : Chrome a besoin de votre accord une seule fois pour qu'ils utilisent le microphone."
-  },
-  "micButton": {
-    "message": "Autoriser le microphone"
-  },
-  "micDone": {
-    "message": "C'est fait ! Relancez l'enregistrement."
-  },
-  "micDenied": {
-    "message": "Le microphone a été bloqué. Autorisez-le avec l'icône de la barre d'adresse, ou décochez Enregistrer le microphone."
   },
   "lblRecording": {
     "message": "Enregistrement"

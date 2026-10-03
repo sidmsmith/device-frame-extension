@@ -1,5 +1,5 @@
 // Device Frame - UI language, shared by the service worker (importScripts)
-// and the extension's own pages (mic.html).
+// and the extension's own pages (recorder.html).
 
 // ---- language ------------------------------------------------------------
 // UI text comes from _locales/<lang>/messages.json. 'auto' follows Chrome's

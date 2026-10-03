@@ -64,7 +64,7 @@ chrome.action.onClicked.addListener(async (tab) => {
 
   await updateFramed(tabId, { windowId: win.id, device, orientation });
   // Keep zoom changes to this tab only, so normal tabs on the same site are untouched.
-  await chrome.tabs.setZoomSettings(tabId, { mode: 'automatic', scope: 'per-tab' });
+  await chrome.tabs.setZoomSettings(tabId, { mode: 'automatic', scope: 'per-tab' }).catch(() => {});
 });
 
 // ---- draw on every page load ---------------------------------------------
@@ -79,6 +79,8 @@ async function onLoaded({ tabId, frameId, url }) {
   if (!state) return;
   // A full page load ends any recording that was running in the old page.
   if (state.recording) await updateFramed(tabId, { recording: false });
+  // Keep zoom changes to this tab only (in case it couldn't be set at open).
+  await chrome.tabs.setZoomSettings(tabId, { mode: 'automatic', scope: 'per-tab' }).catch(() => {});
   await reframe(tabId, state);
 }
 
@@ -146,10 +148,10 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
 // ---- control bar ---------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  // The screen recorder (offscreen document) reporting a finished recording.
-  if (msg?.target === 'background' && msg.type === 'screen-done' && !sender.tab) {
-    screenDone(msg);
-    return;
+  // The screen recording window (recorder.html) reporting progress.
+  if (msg?.target === 'background') {
+    handleRecorder(msg).then((result) => sendResponse(result ?? {}), () => sendResponse({}));
+    return true;
   }
   const tabId = sender.tab?.id;
   if (tabId === undefined) return;
@@ -392,10 +394,10 @@ async function downloadScreenshot(url, L) {
 }
 
 // ---- screen recording ----------------------------------------------------
-// "Entire screen" recordings run in an offscreen document (recorder.html), so
-// they keep going across page loads and while other windows are in front.
-// Chrome's screen picker (desktopCapture) is the only prompt; without a target
-// tab its stream id is usable by the extension's own pages.
+// "Entire screen" recordings run in their own small window (recorder.html):
+// Chrome's screen picker must be shown by an extension page, and only that
+// page may record the chosen screen. The window minimizes itself while
+// recording and reports back here: countdown -> started -> done.
 
 async function getScreenRec() {
   return (await chrome.storage.session.get('screenRec')).screenRec ?? null;
@@ -406,29 +408,8 @@ async function setScreenRec(rec) {
   else await chrome.storage.session.remove('screenRec');
 }
 
-const toRecorder = (type, extra = {}) => chrome.runtime.sendMessage({ target: 'recorder', type, ...extra });
-
-async function openRecorder() {
-  if (await chrome.offscreen.hasDocument()) return;
-  await chrome.offscreen.createDocument({
-    url: 'recorder.html',
-    reasons: ['DISPLAY_MEDIA', 'USER_MEDIA'],
-    justification: 'Record the screen (and optionally the microphone) to MP4.',
-  });
-}
-
-async function closeRecorder() {
-  if (await chrome.offscreen.hasDocument()) await chrome.offscreen.closeDocument();
-}
-
-const chooseScreen = () => new Promise((resolve) => {
-  chrome.desktopCapture.chooseDesktopMedia(['screen', 'audio'], (id, options) => {
-    resolve({ id, audio: Boolean(options?.canRequestAudioTrack) });
-  });
-});
-
 function tabToast(tabId, text, ms) {
-  if (tabId !== undefined) chrome.tabs.sendMessage(tabId, { type: 'df-toast', text, ms }).catch(() => {});
+  if (tabId) chrome.tabs.sendMessage(tabId, { type: 'df-toast', text, ms }).catch(() => {});
 }
 
 // Redraw every frame window (the record button shows the screen recording).
@@ -438,92 +419,63 @@ async function reframeAll() {
   }
 }
 
-let screenStarting = false;
-
 async function startScreenRecording(tabId) {
-  if (screenStarting || (await getScreenRec())) return;
-  screenStarting = true;
-  const last = await getLast();
-  const t = await uiText(last.lang);
-  try {
-    await openRecorder();
-    // The hidden recorder can't ask for the microphone: a small window asks once.
-    if (last.mic && (await toRecorder('mic-permission')).state !== 'granted') {
-      await closeRecorder();
-      await chrome.windows.create({ url: 'mic.html', type: 'popup', width: 460, height: 300, focused: true });
-      tabToast(tabId, t.msgMicAllow, 8000);
-      return;
-    }
-    const { id, audio } = await chooseScreen();
-    if (!id) {
-      await closeRecorder();
-      tabToast(tabId, t.msgRecCanceled);
-      return;
-    }
-    const got = await toRecorder('acquire', { streamId: id, audio, mic: Boolean(last.mic) });
-    if (got.error) throw new Error(got.error);
-    if (got.micError) tabToast(tabId, t.msgMicUnavailable.replace('$1', got.micError), 6000);
-    // The 3-2-1 countdown shows in the frame window, before recording starts.
-    if (last.countdown !== false) await chrome.tabs.sendMessage(tabId, { type: 'df-countdown' }).catch(() => {});
-    const started = await toRecorder('go');
-    if (started.error) throw new Error(started.error);
-    await setScreenRec({ tabId, started: Date.now(), mic: started.mic });
-    await reframeAll();
-  } catch (e) {
-    console.warn('Device Frame: screen recording failed to start', e);
-    await toRecorder('release').catch(() => {});
-    await closeRecorder();
-    tabToast(tabId, t.msgCantRecord.replace('$1', e.message || e), 8000);
-  } finally {
-    screenStarting = false;
-  }
+  if (await getScreenRec()) return;
+  // Already picking a screen? Bring that window back instead of a second one.
+  const { screenPicking } = await chrome.storage.session.get('screenPicking');
+  if (screenPicking && (await chrome.windows.update(screenPicking, { focused: true, state: 'normal' }).catch(() => null))) return;
+  const win = await chrome.windows.create({ url: `recorder.html?tab=${tabId}`, type: 'popup', width: 420, height: 190, focused: true });
+  await chrome.storage.session.set({ screenPicking: win.id });
 }
 
 async function stopScreenRecording() {
-  // The recorder answers with 'screen-done'; if it's gone, just clear the state.
-  if (await chrome.offscreen.hasDocument()) {
-    const res = await toRecorder('stop').catch(() => null);
-    if (res?.active) return;
-  }
-  await screenDone({ url: null, error: null });
-}
-
-async function screenDone({ url, ext, error }) {
   const rec = await getScreenRec();
-  await setScreenRec(null);
-  const t = await uiText((await getLast()).lang);
-  let message = null;
-  if (url) {
-    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-    try {
-      const id = await chrome.downloads.download({ url, filename: `device-frame-screen-${stamp}.${ext}` });
-      await downloadFinished(id); // the blob lives in the recorder page: keep it open until then
-      message = error ? t.msgRecStoppedEarly.replace('$1', error) : ext === 'mp4' ? t.msgRecSaved : t.msgRecSavedWebm;
-    } catch (e) {
-      message = t.msgRecFailed.replace('$1', e.message || e);
-    }
-  } else if (error) {
-    message = t.msgRecFailed.replace('$1', error);
-  }
-  await closeRecorder().catch(() => {});
-  await reframeAll();
-  if (message) tabToast(rec?.tabId, message, error ? 8000 : 2500);
+  if (!rec) return;
+  // The window answers with 'screen-done'; if it's gone, just clear the state.
+  const window = await chrome.windows.get(rec.windowId).catch(() => null);
+  if (window) await chrome.runtime.sendMessage({ target: 'recorder', type: 'stop' }).catch(() => {});
+  else await screenEnded(rec, null);
 }
 
-function downloadFinished(id) {
-  return new Promise((resolve) => {
-    const done = () => {
-      chrome.downloads.onChanged.removeListener(listener);
-      clearTimeout(timer);
-      resolve();
-    };
-    const listener = (delta) => {
-      if (delta.id === id && ['complete', 'interrupted'].includes(delta.state?.current)) done();
-    };
-    const timer = setTimeout(done, 120000);
-    chrome.downloads.onChanged.addListener(listener);
-  });
+async function handleRecorder(msg) {
+  const t = await uiText((await getLast()).lang);
+  switch (msg.type) {
+    case 'screen-countdown': {
+      if (msg.micError) tabToast(msg.tabId, t.msgMicUnavailable.replace('$1', msg.micError), 6000);
+      const state = (await getFramed())[msg.tabId];
+      if (msg.countdown && state) {
+        await chrome.windows.update(state.windowId, { focused: true }).catch(() => {});
+        await chrome.tabs.sendMessage(msg.tabId, { type: 'df-countdown' }).catch(() => {});
+      }
+      return;
+    }
+    case 'screen-started':
+      await chrome.storage.session.remove('screenPicking');
+      await setScreenRec({ tabId: msg.tabId, windowId: msg.windowId, started: Date.now(), mic: Boolean(msg.mic) });
+      await reframeAll();
+      return;
+    case 'screen-done': {
+      await chrome.storage.session.remove('screenPicking');
+      const message = msg.canceled ? t.msgRecCanceled
+        : msg.saved ? (msg.error ? t.msgRecStoppedEarly.replace('$1', msg.error) : msg.saved === 'mp4' ? t.msgRecSaved : t.msgRecSavedWebm)
+        : t.msgRecFailed.replace('$1', msg.error || t.whyUnknown);
+      await screenEnded({ tabId: msg.tabId }, message, msg.error ? 8000 : 2500);
+    }
+  }
 }
+
+async function screenEnded(rec, message, ms) {
+  await setScreenRec(null);
+  await reframeAll();
+  if (message) tabToast(rec?.tabId, message, ms);
+}
+
+// The recording window was closed by hand mid-recording: nothing was saved.
+chrome.windows.onRemoved.addListener(async (windowId) => {
+  const rec = await getScreenRec();
+  if (rec?.windowId !== windowId) return;
+  await screenEnded(rec, (await uiText((await getLast()).lang)).msgRecWindowClosed, 8000);
+});
 
 // ---- housekeeping --------------------------------------------------------
 

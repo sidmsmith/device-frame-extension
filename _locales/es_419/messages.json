@@ -182,6 +182,24 @@
   "tipOpenHiddenShortcut": {
     "message": "Cada nueva ventana del marco se abre con esta barra oculta (muéstrala con doble clic en el marco, con $1 o con la pestaña de arriba)"
   },
+  "recWinTitle": {
+    "message": "Device Frame – grabación de pantalla"
+  },
+  "recWinPicking": {
+    "message": "Elige la pantalla que quieres grabar en la ventana de Chrome."
+  },
+  "recWinRecording": {
+    "message": "Grabando la pantalla. Mantén esta ventana abierta; puede quedarse minimizada."
+  },
+  "recWinSaving": {
+    "message": "Guardando la grabación…"
+  },
+  "btnStopSave": {
+    "message": "Detener y guardar"
+  },
+  "msgRecWindowClosed": {
+    "message": "Grabación de pantalla detenida: se cerró su ventana"
+  },
   "recDevice": {
     "message": "Solo el dispositivo"
   },
@@ -205,24 +223,6 @@
   },
   "tipStopScreenShortcut": {
     "message": "Detener la grabación de pantalla y guardar el MP4 (o $1, desde cualquier ventana)"
-  },
-  "msgMicAllow": {
-    "message": "Permite el micrófono en la ventana que se abrió y vuelve a iniciar la grabación"
-  },
-  "micTitle": {
-    "message": "Micrófono para grabaciones de pantalla"
-  },
-  "micBody": {
-    "message": "Las grabaciones de pantalla se ejecutan en segundo plano, así que Chrome necesita tu permiso una sola vez para usar el micrófono."
-  },
-  "micButton": {
-    "message": "Permitir micrófono"
-  },
-  "micDone": {
-    "message": "¡Listo! Vuelve a iniciar la grabación."
-  },
-  "micDenied": {
-    "message": "Se bloqueó el micrófono. Permítelo con el ícono de la barra de direcciones o desactiva Grabar el micrófono."
   },
   "lblRecording": {
     "message": "Grabación"
