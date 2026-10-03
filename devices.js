@@ -254,6 +254,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     frameColorFixed: Boolean(d.fixedColor),
     touch: Boolean(prefs.touch),
     mic: Boolean(prefs.mic),
+    systemAudio: Boolean(prefs.systemAudio),
     countdown: prefs.countdown !== false,
     iconAlways: Boolean(prefs.iconAlways),
     fitWidth: prefs.fitWidth !== false,

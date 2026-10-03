@@ -224,6 +224,12 @@
   "tipStopScreenShortcut": {
     "message": "Detener la grabación de pantalla y guardar el MP4 (o $1, desde cualquier ventana)"
   },
+  "optSystemAudio": {
+    "message": "Incluir el sonido de la computadora (toda la pantalla)"
+  },
+  "tipSystemAudio": {
+    "message": "El sonido que reproduce la computadora (videos, alertas), no tu voz. Si está activado, el selector de pantalla de Chrome ofrece \"Compartir también el audio del sistema\"; si no, esa opción se oculta."
+  },
   "lblRecording": {
     "message": "Grabación"
   },

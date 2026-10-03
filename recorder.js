@@ -30,8 +30,19 @@ let finished = false;
   $('stop').addEventListener('click', stop);
   chrome.runtime.onMessage.addListener((msg) => { if (msg?.target === 'recorder' && msg.type === 'stop') stop(); });
 
+  // Center this window on its screen, sized for Chrome's screen picker.
+  const win = await chrome.windows.getCurrent();
+  const pickW = Math.min(1000, screen.availWidth), pickH = Math.min(760, screen.availHeight);
+  await chrome.windows.update(win.id, {
+    width: pickW, height: pickH,
+    left: Math.round(screen.availLeft + (screen.availWidth - pickW) / 2),
+    top: Math.round(screen.availTop + (screen.availHeight - pickH) / 2),
+  }).catch(() => {});
+
+  // 'audio' adds Chrome's "Also share system audio" option (the computer's sound).
+  const sources = last.systemAudio ? ['screen', 'audio'] : ['screen'];
   const { id, audio } = await new Promise((resolve) => {
-    chrome.desktopCapture.chooseDesktopMedia(['screen', 'audio'], (streamId, options) => {
+    chrome.desktopCapture.chooseDesktopMedia(sources, (streamId, options) => {
       resolve({ id: streamId, audio: Boolean(options?.canRequestAudioTrack) });
     });
   });
@@ -61,8 +72,9 @@ let finished = false;
     }
   }
 
-  // Out of the way before the countdown, so this window isn't recorded.
-  const win = await chrome.windows.getCurrent();
+  // Out of the way before the countdown, so this window isn't recorded
+  // (small, so it doesn't cover the screen if you bring it back).
+  await chrome.windows.update(win.id, { width: 420, height: 190 }).catch(() => {});
   await chrome.windows.update(win.id, { state: 'minimized' });
   await toBackground('screen-countdown', { micError, countdown: last.countdown !== false });
   if (ended || finished) return finish({ error: t.whyCaptureEnded });

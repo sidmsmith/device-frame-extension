@@ -193,7 +193,7 @@ async function handleControl(tabId, tab, msg) {
     const ok = typeof msg.dataUrl === 'string' && msg.dataUrl.startsWith('data:image/png;base64,') && msg.dataUrl.length < 300_000;
     if (ok) await chrome.storage.local.set({ tabIcon: msg.dataUrl });
     else await chrome.storage.local.remove('tabIcon');
-    if (!state.recording) await reframe(tabId, state);
+    await reframeAll();
     return;
   }
 
@@ -253,6 +253,7 @@ async function handleControl(tabId, tab, msg) {
       if (msg.prefs.frameColor in FRAME_COLORS) prefs.frameColor = msg.prefs.frameColor;
       if (typeof msg.prefs.touch === 'boolean') prefs.touch = msg.prefs.touch;
       if (typeof msg.prefs.mic === 'boolean') prefs.mic = msg.prefs.mic;
+      if (typeof msg.prefs.systemAudio === 'boolean') prefs.systemAudio = msg.prefs.systemAudio;
       if (typeof msg.prefs.countdown === 'boolean') prefs.countdown = msg.prefs.countdown;
       if (typeof msg.prefs.titleRules === 'string') prefs.titleRules = msg.prefs.titleRules.slice(0, 4000);
       if (typeof msg.prefs.iconAlways === 'boolean') prefs.iconAlways = msg.prefs.iconAlways;
@@ -261,7 +262,7 @@ async function handleControl(tabId, tab, msg) {
       if (msg.prefs.lang === 'auto' || LANGS.includes(msg.prefs.lang)) prefs.lang = msg.prefs.lang;
       if (msg.prefs.recordMode === 'device' || msg.prefs.recordMode === 'screen') prefs.recordMode = msg.prefs.recordMode;
       await saveLast(prefs);
-      await reframe(tabId, state);
+      await reframeAll(); // settings are shared by every frame window
       break;
     }
     case 'toggle-toolbar':
@@ -424,7 +425,11 @@ async function startScreenRecording(tabId) {
   // Already picking a screen? Bring that window back instead of a second one.
   const { screenPicking } = await chrome.storage.session.get('screenPicking');
   if (screenPicking && (await chrome.windows.update(screenPicking, { focused: true, state: 'normal' }).catch(() => null))) return;
-  const win = await chrome.windows.create({ url: `recorder.html?tab=${tabId}`, type: 'popup', width: 420, height: 190, focused: true });
+  // Big enough for Chrome's screen picker; recorder.js centers it on its screen.
+  const size = { url: `recorder.html?tab=${tabId}`, type: 'popup', width: 1000, height: 760, focused: true };
+  const frameWin = await chrome.windows.get((await getFramed())[tabId]?.windowId ?? -1).catch(() => null);
+  const near = frameWin ? { left: frameWin.left, top: frameWin.top } : {};
+  const win = await chrome.windows.create({ ...size, ...near }).catch(() => chrome.windows.create(size));
   await chrome.storage.session.set({ screenPicking: win.id });
 }
 

@@ -224,6 +224,12 @@
   "tipStopScreenShortcut": {
     "message": "Stop the screen recording and save MP4 (or $1, from any window)"
   },
+  "optSystemAudio": {
+    "message": "Include computer sound (Entire screen)"
+  },
+  "tipSystemAudio": {
+    "message": "Sound playing on the computer (videos, alerts), not your voice. When on, Chrome's screen picker offers \"Also share system audio\"; when off, that option is hidden."
+  },
   "lblRecording": {
     "message": "Recording"
   },

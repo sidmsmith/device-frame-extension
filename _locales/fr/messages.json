@@ -224,6 +224,12 @@
   "tipStopScreenShortcut": {
     "message": "Arrêter l'enregistrement de l'écran et sauvegarder le MP4 (ou $1, depuis n'importe quelle fenêtre)"
   },
+  "optSystemAudio": {
+    "message": "Inclure le son de l'ordinateur (écran entier)"
+  },
+  "tipSystemAudio": {
+    "message": "Le son joué par l'ordinateur (vidéos, alertes), pas votre voix. Activé : le sélecteur d'écran de Chrome propose « Partager aussi l'audio du système » ; désactivé : cette option est masquée."
+  },
   "lblRecording": {
     "message": "Enregistrement"
   },

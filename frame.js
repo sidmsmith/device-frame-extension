@@ -314,6 +314,7 @@ function drawFrame(L) {
       </div>
       <label class="chk" style="margin-top: 8px"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> ${E('optCountdown')}</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> ${E('optMic')}</label>
+      <label class="chk" style="margin-top: 6px" title="${E('tipSystemAudio')}"><input type="checkbox" id="systemAudio"${L.systemAudio ? ' checked' : ''}${L.recordMode === 'screen' ? '' : ' disabled'}> ${E('optSystemAudio')}</label>
       <div class="lbl">${E('lblRename')} <span class="note">${E('noteRename')}</span></div>
       <textarea id="titleRules" rows="4" wrap="off" spellcheck="false" placeholder="MUP = WM Mobile" title="${E('tipRename')}">${L.titleRules}</textarea>
       <div class="note" id="rulesNote"></div>
@@ -436,6 +437,7 @@ function drawFrame(L) {
   root.getElementById('fitWidth').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { fitWidth: e.target.checked } }));
   root.getElementById('openHidden').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { openHidden: e.target.checked } }));
   root.getElementById('mic').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { mic: e.target.checked } }));
+  root.getElementById('systemAudio').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { systemAudio: e.target.checked } }));
   // Title renames: flag lines that can't be read (no "Old = New"); those are
   // skipped by title.js. Saved when the box loses focus.
   const rulesBox = root.getElementById('titleRules');
