@@ -76,6 +76,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   const size = {
     url: tab.url,
     type: 'popup',
+    incognito: tab.incognito, // keep the Incognito session (logins) when framing from Incognito
     width: L.W + 16, // rough guess; corrected after the first load
     height: Math.min(L.H + 40, current.height),
   };
