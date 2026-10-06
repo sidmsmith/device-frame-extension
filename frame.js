@@ -57,6 +57,10 @@ function drawFrame(L) {
   // <body> the containing block for position:fixed app shells.
   let style = document.getElementById('__devframe-style');
   if (!style) {
+    // <html> is repainted with the surround color below, so remember the page's
+    // own <html> background (before we override it) to fill the screen with.
+    const htmlBg = getComputedStyle(document.documentElement).backgroundColor;
+    window.__devframePageBg = htmlBg && htmlBg !== 'rgba(0, 0, 0, 0)' && htmlBg !== 'transparent' ? htmlBg : '#fff';
     style = document.createElement('style');
     style.id = '__devframe-style';
     document.documentElement.appendChild(style);
@@ -83,8 +87,10 @@ function drawFrame(L) {
       margin: 0 !important;
       overflow: auto !important;
       transform: translateZ(0) !important;
-      background-color: #fff;
     }
+    /* Fallback screen color only: :where() has zero specificity, so a page that
+       styles its own <body> background (e.g. a themed app) keeps it. */
+    :where(body) { background-color: ${window.__devframePageBg || '#fff'}; }
     #__devframe {
       position: fixed !important; left: 0 !important; top: 0 !important;
       width: ${L.W}px !important; height: ${L.H}px !important;
