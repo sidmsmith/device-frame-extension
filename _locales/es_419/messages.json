@@ -239,6 +239,15 @@
   "tipSkipLoadingMic": {
     "message": "Tu micrófono está activado: lo que digas mientras la aplicación carga se corta del video. Haz una pausa en tu narración durante la carga o desactiva esta opción."
   },
+  "tipDownloadLatest": {
+    "message": "Descargar la versión más reciente (zip). Para actualizar: descomprímela sobre tu carpeta de Device Frame y haz clic en Volver a cargar en chrome://extensions."
+  },
+  "tipUpdateAvailable": {
+    "message": "La versión $1 está disponible: haz clic para descargarla. Luego descomprímela sobre tu carpeta de Device Frame y haz clic en Volver a cargar en chrome://extensions."
+  },
+  "msgDownloadingUpdate": {
+    "message": "Descargando la versión más reciente: descomprímela sobre tu carpeta de Device Frame y haz clic en Volver a cargar en chrome://extensions"
+  },
   "lblRecording": {
     "message": "Grabación"
   },

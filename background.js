@@ -122,6 +122,8 @@ async function reframe(tabId, state, shiftY = 0) {
   const L = {
     ...layoutFor(state, last),
     lang: LANGS.includes(last.lang) ? last.lang : 'auto',
+    version: chrome.runtime.getManifest().version,
+    update: await availableUpdate(),
     recordMode: last.recordMode === 'screen' ? 'screen' : 'device',
     screenRec: await getScreenRec(),
     t: await uiText(last.lang),
@@ -226,6 +228,7 @@ async function handleControl(tabId, tab, msg) {
   if (!state) return;
   if (state.recording && REDRAWS.includes(msg.type)) return;
   if (msg.type === 'open-guide') return openGuide();
+  if (msg.type === 'download-update') return chrome.downloads.download({ url: LATEST_ZIP });
   if (msg.type === 'set-icon') {
     // Tab icon for renamed tabs (title.js applies it). Kept outside 'last'
     // so the image isn't re-read with every other setting.
@@ -541,6 +544,49 @@ chrome.windows.onRemoved.addListener(async (windowId) => {
   if (rec?.windowId !== windowId) return;
   await screenEnded(rec, (await uiText((await getLast()).lang)).msgRecWindowClosed, 8000);
 });
+
+// ---- updates ---------------------------------------------------------------
+// Colleagues load the extension unpacked, so Chrome can't update it. About
+// twice a day we ask GitHub for the latest release; when it's newer, the
+// settings panel's version link turns blue and downloads the zip.
+
+const LATEST_RELEASE_API = 'https://api.github.com/repos/sidmsmith/device-frame-extension/releases/latest';
+const LATEST_ZIP = 'https://github.com/sidmsmith/device-frame-extension/releases/latest/download/device_frame_extension.zip';
+const UPDATE_CHECK_EVERY = 12 * 60 * 60 * 1000;
+
+// True if version a (e.g. "0.23.0") is newer than b.
+function isNewer(a, b) {
+  const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+  }
+  return false;
+}
+
+// The newer version to offer, or null. Starts a background check when the
+// last one is old (the frames are redrawn if it finds something new).
+async function availableUpdate() {
+  const { updateCheck } = await chrome.storage.local.get('updateCheck');
+  if (!updateCheck || Date.now() - updateCheck.at > UPDATE_CHECK_EVERY) checkForUpdate(updateCheck);
+  const latest = updateCheck?.latest;
+  return latest && isNewer(latest, chrome.runtime.getManifest().version) ? latest : null;
+}
+
+let updateChecking = false;
+async function checkForUpdate(previous) {
+  if (updateChecking) return;
+  updateChecking = true;
+  let latest = previous?.latest ?? null;
+  try {
+    const res = await fetch(LATEST_RELEASE_API, { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' });
+    if (res.ok) latest = String((await res.json()).tag_name ?? '').replace(/^v/i, '') || latest;
+  } catch {
+    // Offline or blocked: keep what we knew, try again next time.
+  }
+  await chrome.storage.local.set({ updateCheck: { at: Date.now(), latest } });
+  updateChecking = false;
+  if (latest !== (previous?.latest ?? null)) await reframeAll();
+}
 
 // ---- housekeeping --------------------------------------------------------
 

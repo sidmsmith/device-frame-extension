@@ -38,6 +38,7 @@ function drawFrame(L) {
     wifiOff: svg(16, `${WIFI}<path d="M2.5 13.5l11-11"/>`),
     eyeOff: svg(16, '<path d="M1.5 8S3.9 3.5 8 3.5 14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2.2"/><path d="M2.5 13.5l11-11"/>'),
     camera: svg(16, '<path d="M1.8 5.2h2.6l1.3-1.9h4.6l1.3 1.9h2.6v7.5H1.8z"/><circle cx="8" cy="8.7" r="2.4"/>'),
+    download: svg(14, '<path d="M8 2v8M4.6 6.8L8 10.2l3.4-3.4M2.5 12.2v1.6h11v-1.6"/>'),
     rotate: svg(16, '<rect x="6.1" y="4.1" width="3.8" height="7.8" rx="0.9" transform="rotate(45 8 8)"/><path d="M1.6 8.6A6.4 6.4 0 0 1 7.4 1.6M7.4 1.6l-1.5 1.3M7.4 1.6l-1.4-1.2"/><path d="M14.4 7.4A6.4 6.4 0 0 1 8.6 14.4M8.6 14.4l1.5-1.3M8.6 14.4l1.4 1.2"/>'),
     sliders: svg(16, '<path d="M2 4.5h7M12.2 4.5H14M2 11.5h1.8M7.2 11.5H14"/><circle cx="10.6" cy="4.5" r="1.6"/><circle cx="5.5" cy="11.5" r="1.6"/>'),
     trash: svg(16, '<path d="M2.5 4.5h11M6 4.5V2.8h4v1.7M4 4.5l.7 8.7h6.6l.7-8.7"/>'),
@@ -234,7 +235,14 @@ function drawFrame(L) {
       .iconrow button { height: 26px; font-size: 12px; }
       .iconprev { display: inline-flex; align-items: center; min-width: 26px; height: 26px; }
       .iconprev img { width: 20px; height: 20px; object-fit: contain; }
-      .help { margin-top: 12px; padding-top: 8px; border-top: 1px solid ${t.barBorder}; }
+      .help {
+        margin-top: 12px; padding-top: 8px; border-top: 1px solid ${t.barBorder};
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      .help a.ver { display: inline-flex; align-items: center; gap: 4px; color: inherit; opacity: .65; font-weight: 400; }
+      .help a.ver:hover { opacity: 1; text-decoration: none; }
+      .help a.ver.new { color: #1a73e8; opacity: 1; font-weight: 600; }
+      .help .dot { width: 7px; height: 7px; border-radius: 50%; background: #1a73e8; }
       .help a { color: #1a73e8; text-decoration: none; font-weight: 600; }
       .help a:hover { text-decoration: underline; }
       .pop select.langsel { flex: none; width: 100%; height: 26px; font-size: 12px; }
@@ -361,7 +369,10 @@ function drawFrame(L) {
         ${[['auto', E('langAuto')], ['en', 'English'], ['fr', 'Fran&#xE7;ais'], ['es_419', 'Espa&#xF1;ol']]
           .map(([v, name]) => `<option value="${v}"${v === L.lang ? ' selected' : ''}>${name}</option>`).join('')}
       </select>
-      <div class="help"><a href="#" id="guide">${E('linkGuide')}</a></div>
+      <div class="help">
+        <a href="#" id="guide">${E('linkGuide')}</a>
+        <a href="#" id="update" class="ver${L.update ? ' new' : ''}" title="${L.update ? E('tipUpdateAvailable', L.update) : E('tipDownloadLatest')}">v${L.version}${ICON.download}${L.update ? '<span class="dot"></span>' : ''}</a>
+      </div>
     </div>
     <div class="count" id="count" hidden></div>
     <div class="toast" id="toast"></div>
@@ -529,6 +540,13 @@ function drawFrame(L) {
     e.preventDefault();
     setPop(false);
     send({ type: 'open-guide' });
+  });
+  // Download the latest release's zip (an unpacked extension can't update
+  // itself, so the message says what to do with it).
+  root.getElementById('update').addEventListener('click', (e) => {
+    e.preventDefault();
+    send({ type: 'download-update' });
+    toast(T('msgDownloadingUpdate'), 9000);
   });
   root.getElementById('lang').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { lang: e.target.value } }));
   root.getElementById('countdown').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { countdown: e.target.checked } }));

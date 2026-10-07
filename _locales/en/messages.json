@@ -239,6 +239,15 @@
   "tipSkipLoadingMic": {
     "message": "Your microphone is on: anything you say while the app is loading is cut from the video. Pause your narration during loading, or turn this off."
   },
+  "tipDownloadLatest": {
+    "message": "Download the latest version (zip). To update: unzip it over your Device Frame folder, then click Reload on chrome://extensions."
+  },
+  "tipUpdateAvailable": {
+    "message": "Version $1 is available: click to download. Then unzip it over your Device Frame folder and click Reload on chrome://extensions."
+  },
+  "msgDownloadingUpdate": {
+    "message": "Downloading the latest version: unzip it over your Device Frame folder, then click Reload on chrome://extensions"
+  },
   "lblRecording": {
     "message": "Recording"
   },
