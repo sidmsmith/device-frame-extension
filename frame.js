@@ -273,10 +273,20 @@ function drawFrame(L) {
           <stop offset="0" stop-color="#e6e8eb"/><stop offset="1" stop-color="#9aa0a6"/>
         </linearGradient>
         <clipPath id="phoneclip"><path d="${phonePath}"/></clipPath>
+        <linearGradient id="aluH" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#b6bac0"/><stop offset=".5" stop-color="#e6e8eb"/><stop offset="1" stop-color="#a6abb1"/>
+        </linearGradient>
+        <linearGradient id="aluV" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#dcdfe3"/><stop offset="1" stop-color="#9ea3a9"/>
+        </linearGradient>
       </defs>
       ${statusBar}
       <path fill="${t.page}" fill-rule="evenodd" d="${outside}"/>
       ${L.frameless || L.skin ? '' : `<path fill="#000" d="${devicePath}" filter="url(#shadow)" clip-path="url(#outside)"/>`}
+      ${L.stand ? `
+        <ellipse cx="${L.stand.cx}" cy="${L.stand.fy + L.stand.ry}" rx="${L.stand.rx * 1.06}" ry="${Math.max(6, L.stand.ry * 0.45)}" fill="rgba(0,0,0,${t.shadow * 0.45})"/>
+        <path fill="url(#aluH)" d="${L.stand.neck}"/>
+        <path fill="url(#aluV)" stroke="#9aa0a6" stroke-width="1" d="${L.stand.foot}"/>` : ''}
       ${art || `<path fill="url(#body)" fill-rule="evenodd" d="${phonePath} ${rr(L.screen)}"/>`}
       ${L.extras.map((e) => `
         <path fill="url(#base)" stroke="#8a8f96" stroke-width="1" d="${rr(e)}"/>

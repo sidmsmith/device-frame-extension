@@ -46,6 +46,22 @@ const DEVICES = {
     fixedOrientation: true, noStatusBar: true,
     base: { overhang: 64, height: 18 },
   },
+  // Screens on a desk stand: a neck (top/bottom width, height below the body)
+  // and a foot, a round disc or a flat bar, both in aluminum.
+  tabletStand: {
+    name: 'Tablet Stand', width: 1280, height: 800,
+    bezel: { side: 30, top: 30, bottom: 30 }, radius: 40, screenRadius: 6,
+    colors: ['#3c3d42', '#111214'], style: 'stand', group: 'full',
+    fixedOrientation: true, noStatusBar: true,
+    stand: { neck: { top: 84, bottom: 100, h: 230 }, foot: { shape: 'disc', w: 480, h: 56 } },
+  },
+  monitor: {
+    name: 'Monitor', width: 1920, height: 1080,
+    bezel: { side: 12, top: 12, bottom: 34 }, radius: 12, screenRadius: 0,
+    colors: ['#26272b', '#111214'], style: 'stand', group: 'full',
+    fixedOrientation: true, noStatusBar: true, camera: false,
+    stand: { neck: { top: 180, bottom: 300, h: 330 }, foot: { shape: 'bar', w: 860, h: 50 } },
+  },
   desktop: {
     name: 'Desktop (no frame)', width: 1920, height: 1080,
     bezel: { side: 0, top: 0, bottom: 0 }, radius: 0, screenRadius: 0,
@@ -171,6 +187,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
   const margin = d.margin ?? MARGIN;
   const over = d.base?.overhang ?? 0; // laptop base sticks out past the lid
   const baseH = d.base?.height ?? 0;
+  const standH = d.stand ? d.stand.neck.h + d.stand.foot.h / 2 : 0; // stand below the body
   const phone = { x: margin + over, y: bar + margin, w: sw + bez.left + bez.right, h: sh + bez.top + bez.bottom, r: d.radius };
   const screen = { x: phone.x + bez.left, y: phone.y + bez.top, w: sw, h: sh, r: d.screenRadius };
 
@@ -192,7 +209,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     const x = edge === 'right' ? phone.x + phone.w : phone.x - t;
     return { x, y: phone.y + pos, w: t, h: len, color };
   };
-  const phoneLike = d.style !== 'laptop' && d.style !== 'bare';
+  const phoneLike = !['laptop', 'bare', 'stand'].includes(d.style);
   // Devices with their own artwork (photos) are drawn in portrait device
   // coordinates; any parts sticking out (e.g. side triggers) are passed on as
   // invisible "buttons" so screenshots and bounds include them.
@@ -208,7 +225,23 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     ? { cx: phone.x + bez.left / 2, cy: phone.y + phone.h / 2, r: 6 }
     : { cx: phone.x + phone.w / 2, cy: phone.y + bez.top / 2, r: 6 };
   if (d.style === 'laptop') camera = { ...camera, r: 3 };
-  if (d.style === 'bare') camera = null;
+  if (d.style === 'bare' || d.camera === false) camera = null;
+  if (d.style === 'stand' && camera) camera = { ...camera, r: 4 };
+  // Desk stand (window coords): the neck starts behind the body, the foot is
+  // centered on the neck's lower end.
+  let stand = null;
+  if (d.stand) {
+    const cx = phone.x + phone.w / 2, y0 = phone.y + phone.h, fy = y0 + d.stand.neck.h;
+    const { top, bottom } = d.stand.neck;
+    const rx = d.stand.foot.w / 2, ry = d.stand.foot.h / 2;
+    stand = {
+      neck: `M${cx - top / 2},${y0 - 20}L${cx + top / 2},${y0 - 20}L${cx + bottom / 2},${fy}L${cx - bottom / 2},${fy}Z`,
+      foot: d.stand.foot.shape === 'disc'
+        ? `M${cx - rx},${fy}a${rx},${ry} 0 1 0 ${2 * rx},0a${rx},${ry} 0 1 0 ${-2 * rx},0Z`
+        : roundRectPath({ x: cx - rx, y: fy - ry, w: 2 * rx, h: 2 * ry, r: ry }),
+      cx, fy, rx, ry,
+    };
+  }
 
   return {
     deviceKey: key,
@@ -227,7 +260,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     presetNameMax: PRESET_NAME_MAX,
     custom: { ...custom, min: CUSTOM_MIN, max: CUSTOM_MAX },
     W: phone.w + over * 2 + margin * 2,
-    H: bar + phone.h + baseH + margin * 2,
+    H: bar + phone.h + baseH + standH + (d.stand ? 14 : 0) + margin * 2, // + room for the stand's floor shadow
     bar,
     toolbarHidden: Boolean(prefs.toolbarHidden),
     phone,
@@ -238,13 +271,14 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     camera,
     buttons,
     extras,
+    stand,
     // Device outline as rounded rects (window coords), for non-rectangular
     // artwork such as a grip below the body; null = the phone rect.
     silhouette: art?.silhouette ? art.silhouette.map((s) => ({ ...toWindow(s), r: s.r })) : null,
     // Photo devices: the skin image is the device outline (screenshot mask).
     skin: art?.skin ? { ...art.skin, x: phone.x, y: phone.y, landscape } : null,
     // Area to keep in screenshots/recordings, and extra room around it for buttons.
-    bounds: { x: phone.x - over, y: phone.y, w: phone.w + over * 2, h: phone.h + baseH },
+    bounds: { x: phone.x - over, y: phone.y, w: phone.w + over * 2, h: phone.h + baseH + standH },
     cropPad: d.cropPad ?? 8,
     frameless: d.style === 'bare',
     canRotate: !d.fixedOrientation,

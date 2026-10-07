@@ -417,6 +417,7 @@ async function captureDevice(tab, L) {
     for (const s of L.silhouette ?? [L.phone]) mask.addPath(new Path2D(roundRectPath(s)));
     for (const b of L.buttons) mask.rect(b.x, b.y, b.w, b.h);
     for (const e of L.extras) mask.addPath(new Path2D(roundRectPath(e)));
+    for (const part of L.stand ? [L.stand.neck, L.stand.foot] : []) mask.addPath(new Path2D(part));
     ctx.fill(mask);
   }
 
