@@ -55,12 +55,19 @@ const DEVICES = {
     fixedOrientation: true, noStatusBar: true,
     stand: { neck: { top: 84, bottom: 100, h: 230 }, foot: { shape: 'disc', w: 480, h: 56 } },
   },
+  kiosk: {
+    name: 'Kiosk', width: 1920, height: 1080,
+    bezel: { side: 12, top: 12, bottom: 34 }, radius: 12, screenRadius: 0,
+    colors: ['#26272b', '#111214'], style: 'stand', group: 'full',
+    fixedOrientation: true, noStatusBar: true, camera: false,
+    stand: { neck: { top: 150, bottom: 220, h: 140 }, foot: { shape: 'bar', w: 760, h: 40 } },
+  },
+  // A monitor's thin bezel without a stand, to fill as much of the screen as possible.
   monitor: {
     name: 'Monitor', width: 1920, height: 1080,
     bezel: { side: 12, top: 12, bottom: 34 }, radius: 12, screenRadius: 0,
     colors: ['#26272b', '#111214'], style: 'stand', group: 'full',
     fixedOrientation: true, noStatusBar: true, camera: false,
-    stand: { neck: { top: 180, bottom: 300, h: 330 }, foot: { shape: 'bar', w: 860, h: 50 } },
   },
   desktop: {
     name: 'Desktop (no frame)', width: 1920, height: 1080,
