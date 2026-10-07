@@ -77,9 +77,13 @@ The device dropdown has three sections:
   - **Zebra TC8300** (320×533) – touch computer with a pistol grip.
   - **Zebra WT6300** (512×320) – wrist-worn, landscape only.
 - **Full Screen** – for laptop/PC/fixed-station screens:
-  - **Laptop (1366×768)** – the page inside a laptop frame.
   - **Desktop (no frame, 1920×1080)** – just the screen, no frame at all.
     Use this to record or screenshot normal desktop WMS screens.
+  - **Kiosk (1920×1080)** – a thin-bezel display on a short aluminum stand.
+  - **Laptop (1366×768)** – the page inside a laptop frame.
+  - **Monitor (1920×1080)** – a thin-bezel display without a stand, the
+    biggest framed view.
+  - **Tablet Stand (1280×800)** – a tablet on a round desk stand.
 - **Saved** – your own named sizes (only shown once you've saved one).
 
 **Custom…** (at the bottom) lets you type any width × height (240–2560).
@@ -91,8 +95,16 @@ Good to know:
 - The numbers are the screen size the page sees (like DevTools), not physical pixels.
 - If a device is bigger than your monitor, the window automatically zooms
   out to fit. The page still lays out at the full size.
-- Laptop and Desktop are always landscape and have no status bar, so those
+- Full Screen devices are always landscape and have no status bar, so those
   buttons are grayed out.
+
+**Maximize for the biggest view:** maximize the frame window (or press **F11**
+for full screen; F11 or Esc to exit). Full Screen devices then fill the
+window edge to edge on any screen: the device screen grows wider or taller
+to match the window's shape (the page sees that size, like a real display of
+that shape). Phones and handhelds keep their real size and are centered.
+Restore the window to go back to the normal size. F11 gives the most room,
+since it also hides the window's title bar and the taskbar.
 
 **Fitting pages to the device screen** (setting **Fit page to screen width**,
 on by default – frame window only, normal tabs are never affected):
@@ -136,6 +148,11 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
   5 seconds for Entire screen (time to hide Chrome's sharing bar). Untick to
   start recording immediately.
 - **Record microphone** – include your voice in recordings (see section 7).
+- **Skip loading screens (Device only)** – on by default. Pauses the
+  recording while the app shows its loading message (WM Mobile's
+  "Loading...."), so the wait is cut from the video (see section 7). If
+  **Record microphone** is also on, this setting turns **bold red** as a
+  reminder that anything you say during a loading screen is cut too.
 - **Include computer sound (Entire screen)** – off by default. The sound your
   computer plays (videos, alerts), not your voice. When on, Chrome's screen
   picker offers **Also share system audio**; tick it there to include the
@@ -191,6 +208,14 @@ The record button turns red and shows the elapsed time.
 **Stop:** press **Alt+Shift+V** again, or click the red <img src="docs/icons/stop.svg" width="16"> button.
 The video is saved to **Downloads** as an **MP4** (plays in PowerPoint, Teams, Outlook),
 named after the device and the time, e.g. `ZebraTC72_20261003141530.mp4`.
+
+**Skipping loading screens** (setting **Skip loading screens**, on by
+default): while WM Mobile shows its "Loading...." message, the recording
+pauses and the red button shows ⏸; it continues a moment after the screen
+appears. The saved video jumps straight from the screen before the wait to the
+screen after it, and the timer counts recorded time only. Your narration
+during the wait is cut too, so pause talking while it loads (or turn the
+setting off).
 
 Tips:
 
@@ -306,6 +331,7 @@ Reading mode.)
 | A shortcut types a letter into the page | Close the frame window and open it again (needed once after installing or updating). |
 | A tab title or icon isn't changed | Press **F5** on that tab (tabs open before installing/updating need one refresh). Check the old title in the list matches the page's title. |
 | "Screen recording stopped: its window was closed" | The small recording window was closed. Leave it open (minimized is fine) until you stop recording. |
+| The extension isn't shown in an Incognito window | `chrome://extensions` → **Details** on Device Frame → turn on **Allow in Incognito**. Frame windows opened from Incognito stay in Incognito (same sign-in). |
 | Still the old version after updating | The zip was probably extracted to a new folder like `device_frame_extension (1)`. Extract into your original folder and click **Reload** on the extension card. |
 | "Recording failed: …" | Try the record button instead of the shortcut, and send the message text to whoever maintains the extension. |
 | "Clipboard copy blocked" | The PNG was still saved to Downloads. Click inside the frame window first, then try again. |
@@ -318,6 +344,7 @@ included in the version they lead up to).
 
 | Version | Date | Highlights |
 |---|---|---|
+| **0.22** | Oct 7, 2026 | **Skip loading screens** in device recordings (cuts WM Mobile's "Loading...." waits, with a warning when the microphone is also on), three new Full Screen devices (**Tablet Stand**, **Kiosk** and a bezel-only **Monitor**), and Full Screen devices that **fill a maximized or F11 window** edge to edge on any screen. |
 | **0.21** | Oct 3, 2026 | **Record the entire screen** (Settings → Recording → Entire screen) to capture several windows in one video as you Alt+Tab between them. Also: each frame window keeps its own look, color chips show their actual color, and recordings and screenshots get short names like `ZebraTC72_20261003141530.mp4`. |
 | **0.20** | Oct 2, 2026 | The extension speaks **French and Spanish (Mexico)**: it follows Chrome's language, or pick one under **Settings → Language**. |
 | **0.19** | Oct 2, 2026 | New **Always open with toolbar hidden** setting (on by default), so every frame window starts with a clean screen. |
