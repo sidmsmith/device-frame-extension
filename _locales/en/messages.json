@@ -236,6 +236,9 @@
   "tipSkipLoading": {
     "message": "Pauses the recording while the app shows its Loading message, so the wait is cut from the video (narration during the wait is cut too)"
   },
+  "tipSkipLoadingMic": {
+    "message": "Your microphone is on: anything you say while the app is loading is cut from the video. Pause your narration during loading, or turn this off."
+  },
   "lblRecording": {
     "message": "Recording"
   },

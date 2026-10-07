@@ -236,6 +236,9 @@
   "tipSkipLoading": {
     "message": "Met l'enregistrement en pause pendant que l'application affiche son message de chargement : l'attente est coupée de la vidéo (la narration pendant l'attente aussi)"
   },
+  "tipSkipLoadingMic": {
+    "message": "Votre microphone est activé : ce que vous dites pendant le chargement de l'application est coupé de la vidéo. Faites une pause dans votre narration pendant le chargement, ou désactivez cette option."
+  },
   "lblRecording": {
     "message": "Enregistrement"
   },

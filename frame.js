@@ -124,6 +124,8 @@ function drawFrame(L) {
     group('saved', E('groupSaved')),
     ...L.devices.filter((d) => d.group === 'custom').map(option),
   ].join('');
+  // Skipping loading screens also cuts narration: warn when both are on (Device only).
+  const skipWarn = L.skipLoading && L.mic && L.recordMode !== 'screen';
   const rotateTip = L.orientation === 'portrait' ? E('tipRotateLandscape') : E('tipRotatePortrait');
 
   // Android-style status bar: clock on the left; signal, wifi, battery on the right.
@@ -238,6 +240,7 @@ function drawFrame(L) {
       .pop select.langsel { flex: none; width: 100%; height: 26px; font-size: 12px; }
       .chk { display: flex; align-items: center; gap: 6px; margin-top: 10px; cursor: pointer; }
       .chk { white-space: normal; } /* long translations wrap */
+      .chk.warn { color: ${L.background === 'dark' ? '#ff7b72' : '#d93025'}; font-weight: 700; }
       .chk input { flex: none; }
       .ripple {
         position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
@@ -331,7 +334,7 @@ function drawFrame(L) {
       <label class="chk" style="margin-top: 8px" title="${E('tipCountdown')}"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> ${E('optCountdown')}</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> ${E('optMic')}</label>
       <label class="chk" style="margin-top: 6px" title="${E('tipSystemAudio')}"><input type="checkbox" id="systemAudio"${L.systemAudio ? ' checked' : ''}${L.recordMode === 'screen' ? '' : ' disabled'}> ${E('optSystemAudio')}</label>
-      <label class="chk" style="margin-top: 6px" title="${E('tipSkipLoading')}"><input type="checkbox" id="skipLoading"${L.skipLoading ? ' checked' : ''}${L.recordMode === 'screen' ? ' disabled' : ''}> ${E('optSkipLoading')}</label>
+      <label class="chk${skipWarn ? ' warn' : ''}" style="margin-top: 6px" title="${E(skipWarn ? 'tipSkipLoadingMic' : 'tipSkipLoading')}"><input type="checkbox" id="skipLoading"${L.skipLoading ? ' checked' : ''}${L.recordMode === 'screen' ? ' disabled' : ''}> ${E('optSkipLoading')}</label>
       <div class="lbl">${E('lblRename')} <span class="note">${E('noteRename')}</span></div>
       <textarea id="titleRules" rows="4" wrap="off" spellcheck="false" placeholder="MUP = WM Mobile" title="${E('tipRename')}">${L.titleRules}</textarea>
       <div class="note" id="rulesNote"></div>
