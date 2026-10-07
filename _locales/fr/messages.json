@@ -230,6 +230,12 @@
   "tipSystemAudio": {
     "message": "Le son joué par l'ordinateur (vidéos, alertes), pas votre voix. Activé : le sélecteur d'écran de Chrome propose « Partager aussi l'audio du système » ; désactivé : cette option est masquée."
   },
+  "optSkipLoading": {
+    "message": "Ignorer les écrans de chargement (appareil seul)"
+  },
+  "tipSkipLoading": {
+    "message": "Met l'enregistrement en pause pendant que l'application affiche son message de chargement : l'attente est coupée de la vidéo (la narration pendant l'attente aussi)"
+  },
   "lblRecording": {
     "message": "Enregistrement"
   },

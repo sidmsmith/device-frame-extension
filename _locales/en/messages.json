@@ -230,6 +230,12 @@
   "tipSystemAudio": {
     "message": "Sound playing on the computer (videos, alerts), not your voice. When on, Chrome's screen picker offers \"Also share system audio\"; when off, that option is hidden."
   },
+  "optSkipLoading": {
+    "message": "Skip loading screens (Device only)"
+  },
+  "tipSkipLoading": {
+    "message": "Pauses the recording while the app shows its Loading message, so the wait is cut from the video (narration during the wait is cut too)"
+  },
   "lblRecording": {
     "message": "Recording"
   },

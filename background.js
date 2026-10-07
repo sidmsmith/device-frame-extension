@@ -284,6 +284,7 @@ async function handleControl(tabId, tab, msg) {
       if (typeof msg.prefs.touch === 'boolean') prefs.touch = msg.prefs.touch;
       if (typeof msg.prefs.mic === 'boolean') prefs.mic = msg.prefs.mic;
       if (typeof msg.prefs.systemAudio === 'boolean') prefs.systemAudio = msg.prefs.systemAudio;
+      if (typeof msg.prefs.skipLoading === 'boolean') prefs.skipLoading = msg.prefs.skipLoading;
       if (typeof msg.prefs.countdown === 'boolean') prefs.countdown = msg.prefs.countdown;
       if (typeof msg.prefs.titleRules === 'string') prefs.titleRules = msg.prefs.titleRules.slice(0, 4000);
       if (typeof msg.prefs.iconAlways === 'boolean') prefs.iconAlways = msg.prefs.iconAlways;

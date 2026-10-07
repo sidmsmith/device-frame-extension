@@ -255,6 +255,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     touch: Boolean(prefs.touch),
     mic: Boolean(prefs.mic),
     systemAudio: Boolean(prefs.systemAudio),
+    skipLoading: prefs.skipLoading !== false,
     countdown: prefs.countdown !== false,
     iconAlways: Boolean(prefs.iconAlways),
     fitWidth: prefs.fitWidth !== false,

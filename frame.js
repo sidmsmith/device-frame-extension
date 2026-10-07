@@ -46,6 +46,7 @@ function drawFrame(L) {
     recordScreen: svg(16, '<rect x="1.2" y="2.4" width="13.6" height="9.4" rx="1.4"/><path d="M5.6 14.2h4.8"/><circle cx="8" cy="7.1" r="2.9" fill="#d93025" stroke="none"/>'),
     mic: svg(14, '<rect x="5.8" y="1.8" width="4.4" height="8" rx="2.2"/><path d="M3.3 7.8a4.7 4.7 0 0 0 9.4 0M8 12.6v1.8"/>'),
     stop: svg(16, '<rect x="4" y="4" width="8" height="8" rx="1.5" fill="currentColor" stroke="none"/>'),
+    pause: svg(14, '<path d="M5.5 3.5v9M10.5 3.5v9"/>'),
   };
   const c = L.content;
 
@@ -330,6 +331,7 @@ function drawFrame(L) {
       <label class="chk" style="margin-top: 8px" title="${E('tipCountdown')}"><input type="checkbox" id="countdown"${L.countdown ? ' checked' : ''}> ${E('optCountdown')}</label>
       <label class="chk" style="margin-top: 6px"><input type="checkbox" id="mic"${L.mic ? ' checked' : ''}> ${E('optMic')}</label>
       <label class="chk" style="margin-top: 6px" title="${E('tipSystemAudio')}"><input type="checkbox" id="systemAudio"${L.systemAudio ? ' checked' : ''}${L.recordMode === 'screen' ? '' : ' disabled'}> ${E('optSystemAudio')}</label>
+      <label class="chk" style="margin-top: 6px" title="${E('tipSkipLoading')}"><input type="checkbox" id="skipLoading"${L.skipLoading ? ' checked' : ''}${L.recordMode === 'screen' ? ' disabled' : ''}> ${E('optSkipLoading')}</label>
       <div class="lbl">${E('lblRename')} <span class="note">${E('noteRename')}</span></div>
       <textarea id="titleRules" rows="4" wrap="off" spellcheck="false" placeholder="MUP = WM Mobile" title="${E('tipRename')}">${L.titleRules}</textarea>
       <div class="note" id="rulesNote"></div>
@@ -469,6 +471,7 @@ function drawFrame(L) {
   root.getElementById('fitWidth').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { fitWidth: e.target.checked } }));
   root.getElementById('openHidden').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { openHidden: e.target.checked } }));
   root.getElementById('mic').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { mic: e.target.checked } }));
+  root.getElementById('skipLoading').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { skipLoading: e.target.checked } }));
   root.getElementById('systemAudio').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { systemAudio: e.target.checked } }));
   // Title renames: flag lines that can't be read (no "Old = New"); those are
   // skipped by title.js. Saved when the box loses focus.
@@ -756,8 +759,10 @@ function drawFrame(L) {
       recBtn.innerHTML = rec ? ICON.stop : L.recordMode === 'screen' ? ICON.recordScreen : ICON.record;
       return;
     }
-    const secs = Math.floor((Date.now() - live.started) / 1000);
-    recBtn.innerHTML = `${ICON.stop}${live.mic ? ICON.mic : ''}<span>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</span>`;
+    const paused = live.recorder?.state === 'paused';
+    const skipped = (live.pausedMs || 0) + (paused ? Date.now() - live.pausedAt : 0);
+    const secs = Math.floor((Date.now() - live.started - skipped) / 1000);
+    recBtn.innerHTML = `${ICON.stop}${paused ? ICON.pause : live.mic ? ICON.mic : ''}<span>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</span>`;
   };
   clearInterval(window.__devframeRecTick);
   window.__devframeRecTick = setInterval(() => { if (window.__devframeRec?.recorder || L.screenRec) showRecording(); }, 500);
@@ -775,6 +780,7 @@ function drawFrame(L) {
 
   const finishRecording = (rec, blob) => {
     clearInterval(rec.drawTimer);
+    clearInterval(rec.loadingTimer);
     rec.stream.getTracks().forEach((track) => track.stop());
     rec.mic?.getTracks().forEach((track) => track.stop());
     root.getElementById('count').hidden = true;
@@ -924,6 +930,35 @@ function drawFrame(L) {
     }
     rec.started = Date.now();
     showRecording();
+    // Skip loading screens: pause while the app's loading overlay (Ionic's
+    // ion-loading, which WM Mobile uses for "Loading....") is showing, and
+    // resume shortly after it goes, once the new screen has drawn. Chrome
+    // joins the parts, so the wait is simply cut from the video.
+    if (L.skipLoading) rec.loadingTimer = setInterval(() => skipLoading(rec), 50);
+  };
+
+  const loadingShown = () => [...document.querySelectorAll('ion-loading')]
+    .some((el) => !el.classList.contains('overlay-hidden') && el.getClientRects().length > 0);
+  const skipLoading = (rec) => {
+    const recorder = rec.recorder;
+    if (!recorder || rec.stopping || recorder.state === 'inactive') return;
+    const now = Date.now();
+    if (loadingShown()) {
+      rec.clearSince = 0;
+      if (recorder.state === 'recording') {
+        recorder.pause();
+        rec.pausedAt = now;
+        showRecording();
+      }
+    } else if (recorder.state === 'paused') {
+      rec.clearSince = rec.clearSince || now;
+      if (now - rec.clearSince >= 300) {
+        recorder.resume();
+        rec.pausedMs = (rec.pausedMs || 0) + (now - rec.pausedAt);
+        rec.clearSince = 0;
+        showRecording();
+      }
+    }
   };
 
   recBtn.addEventListener('click', () => {

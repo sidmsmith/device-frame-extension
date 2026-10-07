@@ -230,6 +230,12 @@
   "tipSystemAudio": {
     "message": "El sonido que reproduce la computadora (videos, alertas), no tu voz. Si está activado, el selector de pantalla de Chrome ofrece \"Compartir también el audio del sistema\"; si no, esa opción se oculta."
   },
+  "optSkipLoading": {
+    "message": "Omitir pantallas de carga (solo el dispositivo)"
+  },
+  "tipSkipLoading": {
+    "message": "Pausa la grabación mientras la aplicación muestra su mensaje de carga, así la espera se corta del video (también la narración durante la espera)"
+  },
   "lblRecording": {
     "message": "Grabación"
   },
