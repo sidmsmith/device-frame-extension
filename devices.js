@@ -183,20 +183,31 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     bottom: art ? art.H - d.bezel.top - d.height : d.bezel.bottom,
   };
 
-  const sw = landscape ? d.height : d.width;
-  const sh = landscape ? d.width : d.height;
+  let sw = landscape ? d.height : d.width;
+  let sh = landscape ? d.width : d.height;
   // Landscape = the device rotated anticlockwise.
   const bez = landscape
     ? { left: pb.top, right: pb.bottom, top: pb.right, bottom: pb.left }
     : pb;
 
   const bar = prefs.toolbarHidden ? 0 : BAR;
-  const margin = d.margin ?? MARGIN;
+  // Full Screen devices in a maximized (or full-screen) window take the
+  // window's shape, with a thin margin: the screen grows wider or taller
+  // (never smaller) until the whole device matches the window. Phones keep
+  // their real size and are centered instead (see below).
+  const fillScreen = prefs.fill > 0 && d.group === 'full';
+  const margin = fillScreen ? Math.min(d.margin ?? MARGIN, 4) : d.margin ?? MARGIN;
   const over = d.base?.overhang ?? 0; // laptop base sticks out past the lid
   const baseH = d.base?.height ?? 0;
   const standH = d.stand ? d.stand.neck.h + d.stand.foot.h / 2 : 0; // stand below the body
-  const phoneW = sw + bez.left + bez.right, phoneH = sh + bez.top + bez.bottom;
   const standPad = d.stand ? 14 : 0; // room for the stand's floor shadow
+  if (fillScreen) {
+    const aroundW = bez.left + bez.right + over * 2 + margin * 2;
+    const aroundH = bar + bez.top + bez.bottom + baseH + standH + standPad + margin * 2;
+    if ((sw + aroundW) / (sh + aroundH) < prefs.fill) sw = Math.round(prefs.fill * (sh + aroundH) - aroundW);
+    else sh = Math.round((sw + aroundW) / prefs.fill - aroundH);
+  }
+  const phoneW = sw + bez.left + bez.right, phoneH = sh + bez.top + bez.bottom;
   // A maximized window has a fixed shape (prefs.fill = its width / height):
   // add room on both sides, or below the toolbar, to center the device in it.
   const fitW = phoneW + over * 2 + margin * 2, fitH = bar + phoneH + baseH + standH + standPad + margin * 2;
