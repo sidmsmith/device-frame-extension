@@ -362,6 +362,23 @@ function drawFrame(L) {
   }
 
   const send = (msg) => chrome.runtime.sendMessage(msg);
+
+  // A double-click counts as one click. Most controls redraw the frame, so
+  // the second click would land on the new control and undo the first (or
+  // stop a recording that just started). The time is kept on window so it
+  // survives the redraw.
+  root.addEventListener('click', (e) => {
+    const el = e.target.closest?.('button, input[type=checkbox]');
+    if (!el) return;
+    const key = el.id || Object.entries(el.dataset).join();
+    const prev = window.__devframeLastClick;
+    if (prev && prev.key === key && Date.now() - prev.t < 500) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+    window.__devframeLastClick = { key, t: Date.now() };
+  }, true);
   const toastEl = root.getElementById('toast');
   const toast = (text, ms = 2500) => {
     window.__devframePendingToast = { text, until: Date.now() + ms };
