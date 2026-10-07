@@ -322,6 +322,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     iconAlways: Boolean(prefs.iconAlways),
     fitWidth: prefs.fitWidth !== false,
     openHidden: prefs.openHidden !== false,
+    openIn: prefs.openIn === 'tab' ? 'tab' : 'window',
     titleRules: escapeHtml(typeof prefs.titleRules === 'string' ? prefs.titleRules : 'MUP = WM Mobile'),
     decor: art ? {
       svg: art.svg,

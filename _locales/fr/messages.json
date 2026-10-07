@@ -364,5 +364,17 @@
   },
   "whyStopped": {
     "message": "arrêté"
+  },
+  "lblOpenIn": {
+    "message": "Ouvrir le cadre dans"
+  },
+  "openInWindow": {
+    "message": "Nouvelle fenêtre"
+  },
+  "openInTab": {
+    "message": "Cet onglet"
+  },
+  "tipOpenIn": {
+    "message": "Cet onglet : l'icône encadre la page sur place, sans ouvrir de nouvelle fenêtre (l'appareil est zoomé pour tenir dans la fenêtre ; cliquez à nouveau sur l'icône pour retirer le cadre). Utile quand un autre outil pilote l'onglet."
   }
 }

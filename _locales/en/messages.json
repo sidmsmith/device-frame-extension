@@ -364,5 +364,17 @@
   },
   "whyStopped": {
     "message": "stopped"
+  },
+  "lblOpenIn": {
+    "message": "Open the frame in"
+  },
+  "openInWindow": {
+    "message": "New window"
+  },
+  "openInTab": {
+    "message": "This tab"
+  },
+  "tipOpenIn": {
+    "message": "This tab: the toolbar icon frames the page where it is, without opening a new window (the device is zoomed to fit the window; click the icon again to remove the frame). Useful when another tool drives the tab."
   }
 }

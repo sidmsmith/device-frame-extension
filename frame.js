@@ -344,6 +344,11 @@ function drawFrame(L) {
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> ${E('optShowTaps')}</label>
       <label class="chk" style="margin-top: 6px" title="${E('tipFitWidth')}"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> ${E('optFitWidth')}</label>
       <label class="chk" style="margin-top: 6px" title="${L.shortcut ? E('tipOpenHiddenShortcut', L.shortcut) : E('tipOpenHidden')}"><input type="checkbox" id="openHidden"${L.openHidden ? ' checked' : ''}> ${E('optOpenHidden')}</label>
+      <div class="lbl" title="${E('tipOpenIn')}">${E('lblOpenIn')}</div>
+      <div class="seg" title="${E('tipOpenIn')}">
+        <button data-oi="window" class="${L.openIn === 'tab' ? '' : 'sel'}">${E('openInWindow')}</button>
+        <button data-oi="tab" class="${L.openIn === 'tab' ? 'sel' : ''}">${E('openInTab')}</button>
+      </div>
       <div class="lbl">${E('lblRecording')}</div>
       <div class="seg">
         <button data-rm="device" class="${L.recordMode === 'screen' ? '' : 'sel'}" title="${E('tipModeDevice')}">${ICON.record}${E('recDevice')}</button>
@@ -489,6 +494,7 @@ function drawFrame(L) {
   root.getElementById('appearance').addEventListener('click', () => setPop(pop.hidden));
   pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') setPop(false); });
   pop.querySelectorAll('[data-bg]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { background: b.dataset.bg } })));
+  pop.querySelectorAll('[data-oi]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { openIn: b.dataset.oi } })));
   pop.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { recordMode: b.dataset.rm } })));
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
@@ -960,6 +966,7 @@ function drawFrame(L) {
       return finishRecording(rec, null);
     }
     rec.started = Date.now();
+    if (rec.hold) { rec.recorder.pause(); rec.pausedAt = rec.started; }
     showRecording();
     // Skip loading screens: pause while the app's loading overlay (Ionic's
     // ion-loading, which WM Mobile uses for "Loading....") is showing, and
@@ -981,7 +988,7 @@ function drawFrame(L) {
         rec.pausedAt = now;
         showRecording();
       }
-    } else if (recorder.state === 'paused') {
+    } else if (recorder.state === 'paused' && !rec.hold) {
       rec.clearSince = rec.clearSince || now;
       if (now - rec.clearSince >= 300) {
         recorder.resume();
@@ -991,6 +998,33 @@ function drawFrame(L) {
       }
     }
   };
+
+  // Pause / resume / stop from the page: another tool driving the tab (e.g.
+  // Claude, while it stops to ask a question) dispatches
+  //   window.dispatchEvent(new Event('device-frame-pause'))   // or -resume, -stop
+  // A pause holds until resumed; skipped loading screens still apply.
+  // Starting stays with you (Chrome only allows it from the icon or shortcut).
+  const hold = (on) => {
+    const rec = window.__devframeRec;
+    if (!rec || rec.stopping) return;
+    rec.hold = on;
+    const recorder = rec.recorder;
+    if (!recorder || recorder.state === 'inactive') return; // applied once recording starts
+    const now = Date.now();
+    if (on && recorder.state === 'recording') {
+      recorder.pause();
+      rec.pausedAt = now;
+    } else if (!on && recorder.state === 'paused' && !(L.skipLoading && loadingShown())) {
+      recorder.resume();
+      rec.pausedMs = (rec.pausedMs || 0) + (now - rec.pausedAt);
+      rec.clearSince = 0;
+    }
+    showRecording();
+  };
+  const SIGNALS = { 'device-frame-pause': () => hold(true), 'device-frame-resume': () => hold(false), 'device-frame-stop': () => stopRecording(T('whyStopped')) };
+  for (const [type, fn] of Object.entries(window.__devframeSignals ?? {})) window.removeEventListener(type, fn);
+  window.__devframeSignals = SIGNALS;
+  for (const [type, fn] of Object.entries(SIGNALS)) window.addEventListener(type, fn);
 
   recBtn.addEventListener('click', () => {
     if (L.screenRec) send({ type: 'screen-stop' });

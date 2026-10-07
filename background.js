@@ -10,7 +10,8 @@
 importScripts('devices.js', 'frame.js', 'i18n.js');
 
 // ---- state ---------------------------------------------------------------
-// session: framed[tabId] = { windowId, device, orientation, win, recording }
+// session: framed[tabId] = { windowId, device, orientation, win, recording, inPlace }
+//          (inPlace: framed in its own tab and window, see "This tab" below)
 //          (win: this window's look, see WINDOW_PREFS)
 //          screenRec = { tabId, started, mic } while an "Entire screen" recording runs
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
@@ -48,7 +49,10 @@ function windowPrefs(last) {
 
 // Layout for one frame window: shared settings plus this window's own.
 function layoutFor(state, last) {
-  return computeLayout(state.device, state.orientation, { ...last, ...(state.win ?? windowPrefs(last)), fill: state.fill ?? null });
+  return {
+    ...computeLayout(state.device, state.orientation, { ...last, ...(state.win ?? windowPrefs(last)), fill: state.fill ?? null }),
+    inPlace: Boolean(state.inPlace),
+  };
 }
 
 async function getLast() {
@@ -66,8 +70,10 @@ chrome.action.onClicked.addListener(async (tab) => {
 
   // "Open with toolbar hidden" (default on): start every frame window with the
   // toolbar hidden, whatever it was last time.
+  if ((await getFramed())[tab.id]?.inPlace) return unframeInPlace(tab.id);
   if ((await getLast()).openHidden !== false) await saveLast({ toolbarHidden: true });
   const last = await getLast();
+  if (last.openIn === 'tab') return frameInPlace(tab, last);
   const device = isDeviceKey(last.device, last) ? last.device : DEFAULT_DEVICE;
   const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
   const L = computeLayout(device, orientation, last);
@@ -91,6 +97,28 @@ chrome.action.onClicked.addListener(async (tab) => {
   // Keep zoom changes to this tab only, so normal tabs on the same site are untouched.
   await chrome.tabs.setZoomSettings(tabId, { mode: 'automatic', scope: 'per-tab' }).catch(() => {});
 });
+
+// "Open the frame in: This tab": frame the tab where it is, in its own window,
+// instead of reopening it in a popup. Used when another tool drives the tab
+// (e.g. Claude in Chrome, which can only reach tabs in its own tab group).
+// The window keeps its size; the device is zoomed to fit it, as in a
+// maximized frame window. Clicking the icon again removes the frame.
+async function frameInPlace(tab, last) {
+  const device = isDeviceKey(last.device, last) ? last.device : DEFAULT_DEVICE;
+  const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
+  await chrome.tabs.setZoomSettings(tab.id, { mode: 'automatic', scope: 'per-tab' }).catch(() => {});
+  const fill = tab.width > 0 && tab.height > 0 ? tab.width / tab.height : null; // corrected by 'refit'
+  const state = await updateFramed(tab.id, { windowId: tab.windowId, device, orientation, win: windowPrefs(last), inPlace: true, fill });
+  await reframe(tab.id, state);
+}
+
+async function unframeInPlace(tabId) {
+  const state = (await getFramed())[tabId];
+  if (state?.recording) return; // stop the recording first
+  await updateFramed(tabId, null);
+  await chrome.tabs.setZoom(tabId, 0).catch(() => {}); // back to the default zoom
+  await chrome.tabs.reload(tabId); // the simplest way to undo everything drawn in the page
+}
 
 // ---- draw on every page load ---------------------------------------------
 
@@ -165,7 +193,7 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
   const target = Math.max(0.25, Math.floor(fit * 100) / 100);
 
   const win0 = await chrome.windows.get(tab.windowId);
-  if (win0.state === 'maximized' || win0.state === 'fullscreen') {
+  if (L.inPlace || win0.state === 'maximized' || win0.state === 'fullscreen') {
     // Leave the window as it is; zoom so the layout fills it (it was laid out
     // with the window's shape, see 'refit').
     const big = Math.min(3, (m.innerWidth * zoom) / L.W, (m.innerHeight * zoom) / L.H);
@@ -303,6 +331,7 @@ async function handleControl(tabId, tab, msg) {
       if (typeof msg.prefs.openHidden === 'boolean') prefs.openHidden = msg.prefs.openHidden;
       if (msg.prefs.lang === 'auto' || LANGS.includes(msg.prefs.lang)) prefs.lang = msg.prefs.lang;
       if (msg.prefs.recordMode === 'device' || msg.prefs.recordMode === 'screen') prefs.recordMode = msg.prefs.recordMode;
+      if (msg.prefs.openIn === 'window' || msg.prefs.openIn === 'tab') prefs.openIn = msg.prefs.openIn;
       // Everything is remembered for new windows; this window's own look
       // changes only here, shared settings redraw every frame.
       await saveLast(prefs);
@@ -331,7 +360,7 @@ async function handleControl(tabId, tab, msg) {
       // Maximized (or full screen): keep the window's size and fit the device
       // into it, centered. Back to normal: size the window to the device again.
       const win = await chrome.windows.get(tab.windowId);
-      const big = win.state === 'maximized' || win.state === 'fullscreen';
+      const big = state.inPlace || win.state === 'maximized' || win.state === 'fullscreen';
       const fill = big ? msg.metrics.innerWidth / msg.metrics.innerHeight : null;
       const changed = big ? !(Math.abs((state.fill ?? 0) - fill) < 0.003) : Boolean(state.fill);
       if (changed && !state.recording) await reframe(tabId, await updateFramed(tabId, { fill }));
@@ -592,7 +621,7 @@ async function checkForUpdate(previous) {
 
 chrome.windows.onBoundsChanged.addListener(async (win) => {
   const framed = Object.values(await getFramed());
-  if (framed.some((s) => s.windowId === win.id)) await saveLast({ left: win.left, top: win.top });
+  if (framed.some((s) => s.windowId === win.id && !s.inPlace)) await saveLast({ left: win.left, top: win.top });
 });
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {

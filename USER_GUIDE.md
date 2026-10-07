@@ -48,6 +48,13 @@ the normal page: same login, same data.
 The window remembers its position, device, and settings. Close the window
 when you're done.
 
+**Frame in this tab instead:** with **Open the frame in: This tab** (settings
+panel), the icon frames the page right where it is, in its own tab and
+window, instead of opening a new window. The window keeps its size and the
+device is zoomed to fit it. Click the icon again to remove the frame (the page
+reloads). This is for when another tool drives the tab – for example Claude
+in Chrome, which can only work in its own tab group, not in a new window.
+
 ## 3. The control bar
 
 | Icon | Name | What it does |
@@ -141,6 +148,9 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
   starts with the toolbar hidden for a clean, demo-ready screen, no matter how
   you left it last time (see section 8 to show it). Untick it to have the
   window remember whether the toolbar was showing.
+- **Open the frame in: New window / This tab** – New window (default) opens
+  a separate frame window; This tab frames the current tab in place (see
+  section 2).
 - **Recording: Device only / Entire screen** – what the record button and
   **Alt+Shift+V** record: just the device (default), or everything on one
   screen, including other windows you switch to (see section 7).
@@ -216,6 +226,14 @@ appears. The saved video jumps straight from the screen before the wait to the
 screen after it, and the timer counts recorded time only. Your narration
 during the wait is cut too, so pause talking while it loads (or turn the
 setting off).
+
+**Pausing from the page:** another tool driving the tab can pause and resume
+the recording by sending events to the page – for example Claude, while it
+stops to ask you a question:
+`window.dispatchEvent(new Event('device-frame-pause'))`, then
+`device-frame-resume` (or `device-frame-stop` to stop and save). A pause
+lasts until the resume, and the button shows ⏸ meanwhile. Starting a
+recording always stays with you (the button or the shortcut).
 
 Tips:
 
@@ -344,6 +362,7 @@ included in the version they lead up to).
 
 | Version | Date | Highlights |
 |---|---|---|
+| **0.23** | Oct 7, 2026 | **Open the frame in: This tab** frames a page in place (for tools such as Claude in Chrome that drive a tab), and device recordings can be **paused and resumed from the page** (e.g. while Claude asks a question). |
 | **0.22** | Oct 7, 2026 | **Skip loading screens** in device recordings (cuts WM Mobile's "Loading...." waits, with a warning when the microphone is also on), three new Full Screen devices (**Tablet Stand**, **Kiosk** and a bezel-only **Monitor**), and Full Screen devices that **fill a maximized or F11 window** edge to edge on any screen. |
 | **0.21** | Oct 3, 2026 | **Record the entire screen** (Settings → Recording → Entire screen) to capture several windows in one video as you Alt+Tab between them. Also: each frame window keeps its own look, color chips show their actual color, and recordings and screenshots get short names like `ZebraTC72_20261003141530.mp4`. |
 | **0.20** | Oct 2, 2026 | The extension speaks **French and Spanish (Mexico)**: it follows Chrome's language, or pick one under **Settings → Language**. |
