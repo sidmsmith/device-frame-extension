@@ -48,7 +48,7 @@ function windowPrefs(last) {
 
 // Layout for one frame window: shared settings plus this window's own.
 function layoutFor(state, last) {
-  return computeLayout(state.device, state.orientation, { ...last, ...(state.win ?? windowPrefs(last)) });
+  return computeLayout(state.device, state.orientation, { ...last, ...(state.win ?? windowPrefs(last)), fill: state.fill ?? null });
 }
 
 async function getLast() {
@@ -162,6 +162,14 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
   const fit = Math.min(1, (m.availHeight - chromeH) / L.H, (m.availWidth - chromeW) / L.W);
   const target = Math.max(0.25, Math.floor(fit * 100) / 100);
 
+  const win0 = await chrome.windows.get(tab.windowId);
+  if (win0.state === 'maximized' || win0.state === 'fullscreen') {
+    // Leave the window as it is; zoom so the layout fills it (it was laid out
+    // with the window's shape, see 'refit').
+    const big = Math.min(3, (m.innerWidth * zoom) / L.W, (m.innerHeight * zoom) / L.H);
+    if (Math.abs(big - zoom) > 0.002) await chrome.tabs.setZoom(tabId, big);
+    return;
+  }
   if (Math.abs(target - zoom) > 0.005) await chrome.tabs.setZoom(tabId, target);
 
   const width = Math.round(L.W * target + chromeW);
@@ -316,9 +324,17 @@ async function handleControl(tabId, tab, msg) {
       await updateFramed(tabId, { recording: Boolean(msg.recording) });
       if (!msg.recording) await reframe(tabId, state);
       break;
-    case 'refit':
-      await fitWindow(tabId, layoutFor(state, await getLast()), msg.metrics);
+    case 'refit': {
+      // Maximized (or full screen): keep the window's size and fit the device
+      // into it, centered. Back to normal: size the window to the device again.
+      const win = await chrome.windows.get(tab.windowId);
+      const big = win.state === 'maximized' || win.state === 'fullscreen';
+      const fill = big ? msg.metrics.innerWidth / msg.metrics.innerHeight : null;
+      const changed = big ? !(Math.abs((state.fill ?? 0) - fill) < 0.003) : Boolean(state.fill);
+      if (changed && !state.recording) await reframe(tabId, await updateFramed(tabId, { fill }));
+      else await fitWindow(tabId, layoutFor(state, await getLast()), msg.metrics);
       break;
+    }
     case 'screenshot': {
       const L = layoutFor(state, await getLast());
       const dataUrl = await captureDevice(tab, L);

@@ -60,12 +60,12 @@ const DEVICES = {
     bezel: { side: 12, top: 12, bottom: 34 }, radius: 12, screenRadius: 0,
     colors: ['#26272b', '#111214'], style: 'stand', group: 'full',
     fixedOrientation: true, noStatusBar: true, camera: false,
-    stand: { neck: { top: 150, bottom: 220, h: 140 }, foot: { shape: 'bar', w: 760, h: 40 } },
+    stand: { neck: { top: 150, bottom: 200, h: 70 }, foot: { shape: 'bar', w: 760, h: 34 } },
   },
   // A monitor's thin bezel without a stand, to fill as much of the screen as possible.
   monitor: {
-    name: 'Monitor', width: 1920, height: 1080,
-    bezel: { side: 12, top: 12, bottom: 34 }, radius: 12, screenRadius: 0,
+    name: 'Monitor', width: 1920, height: 1080, margin: 8,
+    bezel: { side: 12, top: 12, bottom: 22 }, radius: 12, screenRadius: 0,
     colors: ['#26272b', '#111214'], style: 'stand', group: 'full',
     fixedOrientation: true, noStatusBar: true, camera: false,
   },
@@ -195,7 +195,17 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
   const over = d.base?.overhang ?? 0; // laptop base sticks out past the lid
   const baseH = d.base?.height ?? 0;
   const standH = d.stand ? d.stand.neck.h + d.stand.foot.h / 2 : 0; // stand below the body
-  const phone = { x: margin + over, y: bar + margin, w: sw + bez.left + bez.right, h: sh + bez.top + bez.bottom, r: d.radius };
+  const phoneW = sw + bez.left + bez.right, phoneH = sh + bez.top + bez.bottom;
+  const standPad = d.stand ? 14 : 0; // room for the stand's floor shadow
+  // A maximized window has a fixed shape (prefs.fill = its width / height):
+  // add room on both sides, or below the toolbar, to center the device in it.
+  const fitW = phoneW + over * 2 + margin * 2, fitH = bar + phoneH + baseH + standH + standPad + margin * 2;
+  let ox = 0, oy = 0;
+  if (prefs.fill > 0) {
+    if (fitW / fitH < prefs.fill) ox = (prefs.fill * fitH - fitW) / 2;
+    else oy = (fitW / prefs.fill - fitH) / 2;
+  }
+  const phone = { x: margin + over + ox, y: bar + margin + oy, w: phoneW, h: phoneH, r: d.radius };
   const screen = { x: phone.x + bez.left, y: phone.y + bez.top, w: sw, h: sh, r: d.screenRadius };
 
   const statusBar = prefs.statusBar && !d.noStatusBar ? { x: screen.x, y: screen.y, w: screen.w, h: STATUS_BAR } : null;
@@ -266,8 +276,8 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     preset: findPreset(prefs, key) ? { id: findPreset(prefs, key).id, name: escapeHtml(findPreset(prefs, key).name) } : null,
     presetNameMax: PRESET_NAME_MAX,
     custom: { ...custom, min: CUSTOM_MIN, max: CUSTOM_MAX },
-    W: phone.w + over * 2 + margin * 2,
-    H: bar + phone.h + baseH + standH + (d.stand ? 14 : 0) + margin * 2, // + room for the stand's floor shadow
+    W: fitW + ox * 2,
+    H: fitH + oy * 2,
     bar,
     toolbarHidden: Boolean(prefs.toolbarHidden),
     phone,
