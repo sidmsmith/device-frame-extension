@@ -34,7 +34,7 @@
 <body>
 <main>
 <div class="markdown-heading"><h1 class="heading-element">Device Frame – User Guide</h1>
-<p class="version">Guide for version 0.21</p><a id="user-content-device-frame--user-guide" class="anchor" aria-label="Permalink: Device Frame – User Guide" href="#device-frame--user-guide"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p class="version">Guide for version 0.22</p><a id="user-content-device-frame--user-guide" class="anchor" aria-label="Permalink: Device Frame – User Guide" href="#device-frame--user-guide"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>Device Frame is a Chrome extension that shows a web page inside a phone,
 handheld, laptop, or plain screen, so you can demo it, take screenshots, and
 record videos. It replaces the device frame Chrome DevTools used to have.</p>
@@ -166,10 +166,17 @@ devices shown with real product photos:
 <strong>Full Screen</strong> – for laptop/PC/fixed-station screens:
 <ul>
 <li>
-<strong>Laptop (1366×768)</strong> – the page inside a laptop frame.</li>
-<li>
 <strong>Desktop (no frame, 1920×1080)</strong> – just the screen, no frame at all.
 Use this to record or screenshot normal desktop WMS screens.</li>
+<li>
+<strong>Kiosk (1920×1080)</strong> – a thin-bezel display on a short aluminum stand.</li>
+<li>
+<strong>Laptop (1366×768)</strong> – the page inside a laptop frame.</li>
+<li>
+<strong>Monitor (1920×1080)</strong> – a thin-bezel display without a stand, the
+biggest framed view.</li>
+<li>
+<strong>Tablet Stand (1280×800)</strong> – a tablet on a round desk stand.</li>
 </ul>
 </li>
 <li>
@@ -183,9 +190,16 @@ type a name (e.g. <em>Zebra TC21</em>), and press Enter – it appears under <st
 <li>The numbers are the screen size the page sees (like DevTools), not physical pixels.</li>
 <li>If a device is bigger than your monitor, the window automatically zooms
 out to fit. The page still lays out at the full size.</li>
-<li>Laptop and Desktop are always landscape and have no status bar, so those
+<li>Full Screen devices are always landscape and have no status bar, so those
 buttons are grayed out.</li>
 </ul>
+<p><strong>Maximize for the biggest view:</strong> maximize the frame window (or press <strong>F11</strong>
+for full screen; F11 or Esc to exit). Full Screen devices then fill the
+window edge to edge on any screen: the device screen grows wider or taller
+to match the window's shape (the page sees that size, like a real display of
+that shape). Phones and handhelds keep their real size and are centered.
+Restore the window to go back to the normal size. F11 gives the most room,
+since it also hides the window's title bar and the taskbar.</p>
 <p><strong>Fitting pages to the device screen</strong> (setting <strong>Fit page to screen width</strong>,
 on by default – frame window only, normal tabs are never affected):</p>
 <ul>
@@ -233,6 +247,12 @@ screen, including other windows you switch to (see section 7).</li>
 start recording immediately.</li>
 <li>
 <strong>Record microphone</strong> – include your voice in recordings (see section 7).</li>
+<li>
+<strong>Skip loading screens (Device only)</strong> – on by default. Pauses the
+recording while the app shows its loading message (WM Mobile's
+"Loading...."), so the wait is cut from the video (see section 7). If
+<strong>Record microphone</strong> is also on, this setting turns <strong>bold red</strong> as a
+reminder that anything you say during a loading screen is cut too.</li>
 <li>
 <strong>Include computer sound (Entire screen)</strong> – off by default. The sound your
 computer plays (videos, alerts), not your voice. When on, Chrome's screen
@@ -293,6 +313,13 @@ The record button turns red and shows the elapsed time.</p>
 <p><strong>Stop:</strong> press <strong>Alt+Shift+V</strong> again, or click the red <a target="_blank" rel="noopener noreferrer" href="docs/icons/stop.svg"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDE2IDE2IiBmaWxsPSJub25lIiBzdHJva2U9IiM1ZjYzNjgiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIHJ4PSIxLjUiIGZpbGw9IiM1ZjYzNjgiIHN0cm9rZT0ibm9uZSIvPjwvc3ZnPgo=" width="16" style="max-width: 100%;"></a> button.
 The video is saved to <strong>Downloads</strong> as an <strong>MP4</strong> (plays in PowerPoint, Teams, Outlook),
 named after the device and the time, e.g. <code>ZebraTC72_20261003141530.mp4</code>.</p>
+<p><strong>Skipping loading screens</strong> (setting <strong>Skip loading screens</strong>, on by
+default): while WM Mobile shows its "Loading...." message, the recording
+pauses and the red button shows ⏸; it continues a moment after the screen
+appears. The saved video jumps straight from the screen before the wait to the
+screen after it, and the timer counts recorded time only. Your narration
+during the wait is cut too, so pause talking while it loads (or turn the
+setting off).</p>
 <p>Tips:</p>
 <ul>
 <li>Only the device is recorded – not the control bar.</li>
@@ -441,6 +468,11 @@ Reading mode.)</p>
 <td>The small recording window was closed. Leave it open (minimized is fine) until you stop recording.</td>
 </tr>
 <tr>
+<td>The extension isn't shown in an Incognito window</td>
+<td>
+<code>chrome://extensions</code> → <strong>Details</strong> on Device Frame → turn on <strong>Allow in Incognito</strong>. Frame windows opened from Incognito stay in Incognito (same sign-in).</td>
+</tr>
+<tr>
 <td>Still the old version after updating</td>
 <td>The zip was probably extracted to a new folder like <code>device_frame_extension (1)</code>. Extract into your original folder and click <strong>Reload</strong> on the extension card.</td>
 </tr>
@@ -470,6 +502,12 @@ included in the version they lead up to).</p>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><strong>0.22</strong></td>
+<td>Oct 7, 2026</td>
+<td>
+<strong>Skip loading screens</strong> in device recordings (cuts WM Mobile's "Loading...." waits, with a warning when the microphone is also on), three new Full Screen devices (<strong>Tablet Stand</strong>, <strong>Kiosk</strong> and a bezel-only <strong>Monitor</strong>), and Full Screen devices that <strong>fill a maximized or F11 window</strong> edge to edge on any screen.</td>
+</tr>
 <tr>
 <td><strong>0.21</strong></td>
 <td>Oct 3, 2026</td>
