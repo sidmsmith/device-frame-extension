@@ -34,7 +34,7 @@
 <body>
 <main>
 <div class="markdown-heading"><h1 class="heading-element">Device Frame – User Guide</h1>
-<p class="version">Guide for version 0.22</p><a id="user-content-device-frame--user-guide" class="anchor" aria-label="Permalink: Device Frame – User Guide" href="#device-frame--user-guide"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p class="version">Guide for version 0.25</p><a id="user-content-device-frame--user-guide" class="anchor" aria-label="Permalink: Device Frame – User Guide" href="#device-frame--user-guide"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>Device Frame is a Chrome extension that shows a web page inside a phone,
 handheld, laptop, or plain screen, so you can demo it, take screenshots, and
 record videos. It replaces the device frame Chrome DevTools used to have.</p>
@@ -72,11 +72,20 @@ up the new version.</li>
 </ol>
 <div class="markdown-heading"><h2 class="heading-element">2. Open a page in a frame</h2><a id="user-content-2-open-a-page-in-a-frame" class="anchor" aria-label="Permalink: 2. Open a page in a frame" href="#2-open-a-page-in-a-frame"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <p>Go to the page you want to show (for WM Mobile: open <strong>WM Mobile</strong> from the
-WMS menu), then click the <strong>Device Frame</strong> icon in the Chrome toolbar. A
+WMS menu), then click the <strong>Device Frame</strong> icon in the Chrome toolbar (or press
+<strong>Alt+Shift+F</strong>). A
 separate window opens with the page inside the device. It works exactly like
 the normal page: same login, same data.</p>
 <p>The window remembers its position, device, and settings. Close the window
 when you're done.</p>
+<p><strong>Frame in this tab instead (advanced):</strong> with <strong>Open the frame in: This
+tab</strong> (right-click the Device Frame icon → <strong>Options</strong>), the icon frames the
+page right where it is, in its own tab and window, instead of opening a new
+window. The window is resized to the device
+just like a frame window (a normal window can't be quite as narrow, so a
+narrow phone is centered with a little room on each side). Click the icon
+again to remove the frame (the page reloads). This is for when another tool drives the tab – for example Claude
+in Chrome, which can only work in its own tab group, not in a new window.</p>
 <div class="markdown-heading"><h2 class="heading-element">3. The control bar</h2><a id="user-content-3-the-control-bar" class="anchor" aria-label="Permalink: 3. The control bar" href="#3-the-control-bar"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
 <table>
 <thead>
@@ -248,11 +257,11 @@ start recording immediately.</li>
 <li>
 <strong>Record microphone</strong> – include your voice in recordings (see section 7).</li>
 <li>
-<strong>Skip loading screens (Device only)</strong> – on by default. Pauses the
-recording while the app shows its loading message (WM Mobile's
-"Loading...."), so the wait is cut from the video (see section 7). If
-<strong>Record microphone</strong> is also on, this setting turns <strong>bold red</strong> as a
-reminder that anything you say during a loading screen is cut too.</li>
+<strong>Pause during delays (Device only)</strong> – on by default. Cuts waiting time
+from the video: it pauses while the app shows its loading message (WM
+Mobile's "Loading....") and when nothing happens for 2 seconds, and
+continues with your next action (see section 7). It never pauses while
+you're speaking, so narration isn't cut.</li>
 <li>
 <strong>Include computer sound (Entire screen)</strong> – off by default. The sound your
 computer plays (videos, alerts), not your voice. When on, Chrome's screen
@@ -313,13 +322,28 @@ The record button turns red and shows the elapsed time.</p>
 <p><strong>Stop:</strong> press <strong>Alt+Shift+V</strong> again, or click the red <a target="_blank" rel="noopener noreferrer" href="docs/icons/stop.svg"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDE2IDE2IiBmaWxsPSJub25lIiBzdHJva2U9IiM1ZjYzNjgiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIHJ4PSIxLjUiIGZpbGw9IiM1ZjYzNjgiIHN0cm9rZT0ibm9uZSIvPjwvc3ZnPgo=" width="16" style="max-width: 100%;"></a> button.
 The video is saved to <strong>Downloads</strong> as an <strong>MP4</strong> (plays in PowerPoint, Teams, Outlook),
 named after the device and the time, e.g. <code>ZebraTC72_20261003141530.mp4</code>.</p>
-<p><strong>Skipping loading screens</strong> (setting <strong>Skip loading screens</strong>, on by
-default): while WM Mobile shows its "Loading...." message, the recording
-pauses and the red button shows ⏸; it continues a moment after the screen
-appears. The saved video jumps straight from the screen before the wait to the
-screen after it, and the timer counts recorded time only. Your narration
-during the wait is cut too, so pause talking while it loads (or turn the
-setting off).</p>
+<p><strong>Pausing during delays</strong> (setting <strong>Pause during delays</strong>, on by default):
+the recording pauses, and the red button shows ⏸, when</p>
+<ul>
+<li>WM Mobile shows its "Loading...." message (it continues a moment after the
+new screen appears), or</li>
+<li>nothing happens for <strong>2 seconds</strong>: no click, key press, typing, scrolling
+or change on the screen. Your next click or key press continues it, so the
+video jumps from one action to the next without the thinking time in
+between. Moving the mouse alone doesn't count, and neither does anything
+you do in other windows (e.g. copying text from a document: the paste
+continues the recording).</li>
+</ul>
+<p>With <strong>Record microphone</strong> on, the recording never pauses while you're
+speaking, so your narration is kept whole; silences are still cut. The timer
+counts recorded time only. Untick the setting to record everything.</p>
+<p><strong>Pausing from the page:</strong> another tool driving the tab can pause and resume
+the recording by sending events to the page – for example Claude, while it
+stops to ask you a question:
+<code>window.dispatchEvent(new Event('device-frame-pause'))</code>, then
+<code>device-frame-resume</code> (or <code>device-frame-stop</code> to stop and save). A pause
+lasts until the resume, and the button shows ⏸ meanwhile. Starting a
+recording always stays with you (the button or the shortcut).</p>
 <p>Tips:</p>
 <ul>
 <li>Only the device is recorded – not the control bar.</li>
@@ -418,6 +442,10 @@ every page, renamed or not. (Normal tabs still only get it when renamed.)</li>
 </thead>
 <tbody>
 <tr>
+<td><strong>Alt+Shift+F</strong></td>
+<td>Frame the page, like clicking the Device Frame icon (in a frame window opened in its own tab: removes the frame)</td>
+</tr>
+<tr>
 <td><strong>Alt+Shift+V</strong></td>
 <td>Start / stop recording (Device only: no share prompt; Entire screen: stops from any Chrome window)</td>
 </tr>
@@ -431,7 +459,7 @@ every page, renamed or not. (Normal tabs still only get it when renamed.)</li>
 </tr>
 </tbody>
 </table>
-<p>Shortcuts only act in the frame window. To change them, go to
+<p>Alt+Shift+F works on any page; the others only act in the frame window. To change them, go to
 <code>chrome://extensions/shortcuts</code>. (Avoid <strong>Alt+Shift+R</strong> – Chrome uses it for
 Reading mode.)</p>
 <div class="markdown-heading"><h2 class="heading-element">11. Troubleshooting</h2><a id="user-content-11-troubleshooting" class="anchor" aria-label="Permalink: 11. Troubleshooting" href="#11-troubleshooting"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
@@ -502,6 +530,16 @@ included in the version they lead up to).</p>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><strong>0.25</strong></td>
+<td>Oct 8, 2026</td>
+<td>New shortcut <strong>Alt+Shift+F</strong> frames the page, like clicking the icon. <strong>Skip loading screens</strong> becomes <strong>Pause during delays</strong>: device recordings also pause after 2 seconds with nothing happening and continue with your next action, cutting the thinking time from videos; while you're speaking (microphone on) they never pause, so narration is kept.</td>
+</tr>
+<tr>
+<td><strong>0.24</strong></td>
+<td>Oct 8, 2026</td>
+<td>Behind the scenes, for other tools: an advanced <strong>Options</strong> page (right-click the icon) with <strong>Open the frame in: This tab</strong> and a link that lets the separate API Recorder extension start and stop device videos; device recordings can be paused and resumed from the page. Nothing changes in everyday use.</td>
+</tr>
 <tr>
 <td><strong>0.22</strong></td>
 <td>Oct 7, 2026</td>
