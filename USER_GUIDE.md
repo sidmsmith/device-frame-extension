@@ -41,7 +41,8 @@ replace the files and reload:
 ## 2. Open a page in a frame
 
 Go to the page you want to show (for WM Mobile: open **WM Mobile** from the
-WMS menu), then click the **Device Frame** icon in the Chrome toolbar. A
+WMS menu), then click the **Device Frame** icon in the Chrome toolbar (or press
+**Alt+Shift+F**). A
 separate window opens with the page inside the device. It works exactly like
 the normal page: same login, same data.
 
@@ -338,11 +339,12 @@ title bar. Under **Tab icon** in the settings panel:
 
 | Shortcut | Does |
 |---|---|
+| **Alt+Shift+F** | Frame the page, like clicking the Device Frame icon (in a frame window opened in its own tab: removes the frame) |
 | **Alt+Shift+V** | Start / stop recording (Device only: no share prompt; Entire screen: stops from any Chrome window) |
 | **Alt+Shift+S** | Copy a screenshot to the clipboard |
 | **Alt+Shift+H** | Hide / show the toolbar |
 
-Shortcuts only act in the frame window. To change them, go to
+Alt+Shift+F works on any page; the others only act in the frame window. To change them, go to
 `chrome://extensions/shortcuts`. (Avoid **Alt+Shift+R** – Chrome uses it for
 Reading mode.)
 
@@ -369,7 +371,7 @@ included in the version they lead up to).
 
 | Version | Date | Highlights |
 |---|---|---|
-| **0.25** | Oct 8, 2026 | **Skip loading screens** becomes **Pause during delays**: device recordings also pause after 2 seconds with nothing happening and continue with your next action, cutting the thinking time from videos; while you're speaking (microphone on) they never pause, so narration is kept. |
+| **0.25** | Oct 8, 2026 | New shortcut **Alt+Shift+F** frames the page, like clicking the icon. **Skip loading screens** becomes **Pause during delays**: device recordings also pause after 2 seconds with nothing happening and continue with your next action, cutting the thinking time from videos; while you're speaking (microphone on) they never pause, so narration is kept. |
 | **0.24** | Oct 8, 2026 | Behind the scenes, for other tools: an advanced **Options** page (right-click the icon) with **Open the frame in: This tab** and a link that lets the separate API Recorder extension start and stop device videos; device recordings can be paused and resumed from the page. Nothing changes in everyday use. |
 | **0.22** | Oct 7, 2026 | **Skip loading screens** in device recordings (cuts WM Mobile's "Loading...." waits, with a warning when the microphone is also on), three new Full Screen devices (**Tablet Stand**, **Kiosk** and a bezel-only **Monitor**), and Full Screen devices that **fill a maximized or F11 window** edge to edge on any screen. |
 | **0.21** | Oct 3, 2026 | **Record the entire screen** (Settings → Recording → Entire screen) to capture several windows in one video as you Alt+Tab between them. Also: each frame window keeps its own look, color chips show their actual color, and recordings and screenshots get short names like `ZebraTC72_20261003141530.mp4`. |

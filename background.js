@@ -229,6 +229,11 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
 // ---- control bar ---------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // The key guard (any page) asks for the open-the-frame shortcut (Alt+Shift+F).
+  if (msg?.type === 'keyguard-open') {
+    chrome.commands.getAll().then((cmds) => sendResponse({ shortcut: cmds.find((c) => c.name === '_execute_action')?.shortcut || '' }), () => sendResponse({}));
+    return true;
+  }
   // The screen recording window (recorder.html) reporting progress.
   if (msg?.target === 'background') {
     handleRecorder(msg).then((result) => sendResponse(result ?? {}), () => sendResponse({}));

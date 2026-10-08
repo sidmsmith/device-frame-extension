@@ -4,11 +4,12 @@
 // press to the page, so in the frame window e.g. Alt+Shift+V would type "V"
 // into the app (MUP routes key presses into its scan/search field). Loading
 // at document_start means this listener is registered before the app's own,
-// so it can stop those exact combinations first. It does nothing until the
-// background script says this tab is framed (and which shortcuts are set).
+// so it can stop those exact combinations first. On every page it blocks the
+// "open the frame" shortcut (Alt+Shift+F by default, pressed before a page is
+// framed); the other shortcuts only once the background says the tab is framed.
 
 (() => {
-  let combos = []; // empty = not a framed tab
+  let combos = []; // the shortcuts to block (all of ours once the tab is framed)
   const swallowed = new Set(); // keys whose keydown was blocked; block their keyup too
 
   const parse = (text) => {
@@ -42,4 +43,8 @@
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'keyguard') combos = (msg.shortcuts ?? []).filter(Boolean).map(parse);
   });
+  // The open-the-frame shortcut, on every page.
+  chrome.runtime.sendMessage({ type: 'keyguard-open' })
+    .then((res) => { if (res?.shortcut && !combos.length) combos = [parse(res.shortcut)]; })
+    .catch(() => { /* extension reloaded: the page's next load picks it up */ });
 })();
