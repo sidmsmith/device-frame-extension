@@ -99,6 +99,10 @@ function drawFrame(L) {
       pointer-events: none !important; z-index: 2147483647 !important;
       display: block !important;
     }
+    /* Claude in Chrome adds its glow border and cursor inside <body>, which is
+       pinned into the screen here, so they'd be drawn around the screen and
+       offset (and the cursor can make the screen scroll): hide them. */
+    body > #claude-agent-glow-border, body > #claude-phantom-cursor { display: none !important; }
     ${L.touch ? `body, body * { cursor: url("data:image/svg+xml,${fingertip}") 14 14, pointer !important; }` : ''}`;
 
   document.getElementById('__devframe')?.remove();
@@ -109,6 +113,17 @@ function drawFrame(L) {
   // shadow DOM keeps the page's CSS off our controls.
   document.documentElement.appendChild(host);
   const root = host.attachShadow({ mode: 'open' });
+  // Where the device and its screen are (CSS px, from the window's top left),
+  // for tools that take their own screenshots (API Recorder crops to these).
+  // mask: the device outline as an SVG path (photo devices: their rounded body).
+  const box = (b) => `M${b.x},${b.y}h${b.w}v${b.h}h-${b.w}z`;
+  host.dataset.capture = JSON.stringify({
+    bounds: L.bounds,
+    pad: Math.min(6, L.cropPad),
+    mask: [...(L.silhouette ?? [{ ...L.phone, r: L.phone.r ?? 0 }]).map(rr), ...L.buttons.map(box), ...L.extras.map(rr),
+      ...(L.stand ? [L.stand.neck, L.stand.foot] : [])].join(' '),
+    screen: { x: L.screen.x, y: L.screen.y, w: L.screen.w, h: L.screen.h, r: L.screen.r ?? 0 },
+  });
 
   const phonePath = rr(L.phone);
   // The device outline: phone/lid body plus any extra parts (laptop base).
