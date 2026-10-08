@@ -157,11 +157,11 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
   5 seconds for Entire screen (time to hide Chrome's sharing bar). Untick to
   start recording immediately.
 - **Record microphone** – include your voice in recordings (see section 7).
-- **Skip loading screens (Device only)** – on by default. Pauses the
-  recording while the app shows its loading message (WM Mobile's
-  "Loading...."), so the wait is cut from the video (see section 7). If
-  **Record microphone** is also on, this setting turns **bold red** as a
-  reminder that anything you say during a loading screen is cut too.
+- **Pause during delays (Device only)** – on by default. Cuts waiting time
+  from the video: it pauses while the app shows its loading message (WM
+  Mobile's "Loading....") and when nothing happens for 2 seconds, and
+  continues with your next action (see section 7). It never pauses while
+  you're speaking, so narration isn't cut.
 - **Include computer sound (Entire screen)** – off by default. The sound your
   computer plays (videos, alerts), not your voice. When on, Chrome's screen
   picker offers **Also share system audio**; tick it there to include the
@@ -218,13 +218,21 @@ The record button turns red and shows the elapsed time.
 The video is saved to **Downloads** as an **MP4** (plays in PowerPoint, Teams, Outlook),
 named after the device and the time, e.g. `ZebraTC72_20261003141530.mp4`.
 
-**Skipping loading screens** (setting **Skip loading screens**, on by
-default): while WM Mobile shows its "Loading...." message, the recording
-pauses and the red button shows ⏸; it continues a moment after the screen
-appears. The saved video jumps straight from the screen before the wait to the
-screen after it, and the timer counts recorded time only. Your narration
-during the wait is cut too, so pause talking while it loads (or turn the
-setting off).
+**Pausing during delays** (setting **Pause during delays**, on by default):
+the recording pauses, and the red button shows ⏸, when
+
+- WM Mobile shows its "Loading...." message (it continues a moment after the
+  new screen appears), or
+- nothing happens for **2 seconds**: no click, key press, typing, scrolling
+  or change on the screen. Your next click or key press continues it, so the
+  video jumps from one action to the next without the thinking time in
+  between. Moving the mouse alone doesn't count, and neither does anything
+  you do in other windows (e.g. copying text from a document: the paste
+  continues the recording).
+
+With **Record microphone** on, the recording never pauses while you're
+speaking, so your narration is kept whole; silences are still cut. The timer
+counts recorded time only. Untick the setting to record everything.
 
 **Pausing from the page:** another tool driving the tab can pause and resume
 the recording by sending events to the page – for example Claude, while it
@@ -361,6 +369,7 @@ included in the version they lead up to).
 
 | Version | Date | Highlights |
 |---|---|---|
+| **0.25** | Oct 8, 2026 | **Skip loading screens** becomes **Pause during delays**: device recordings also pause after 2 seconds with nothing happening and continue with your next action, cutting the thinking time from videos; while you're speaking (microphone on) they never pause, so narration is kept. |
 | **0.24** | Oct 8, 2026 | Behind the scenes, for other tools: an advanced **Options** page (right-click the icon) with **Open the frame in: This tab** and a link that lets the separate API Recorder extension start and stop device videos; device recordings can be paused and resumed from the page. Nothing changes in everyday use. |
 | **0.22** | Oct 7, 2026 | **Skip loading screens** in device recordings (cuts WM Mobile's "Loading...." waits, with a warning when the microphone is also on), three new Full Screen devices (**Tablet Stand**, **Kiosk** and a bezel-only **Monitor**), and Full Screen devices that **fill a maximized or F11 window** edge to edge on any screen. |
 | **0.21** | Oct 3, 2026 | **Record the entire screen** (Settings → Recording → Entire screen) to capture several windows in one video as you Alt+Tab between them. Also: each frame window keeps its own look, color chips show their actual color, and recordings and screenshots get short names like `ZebraTC72_20261003141530.mp4`. |

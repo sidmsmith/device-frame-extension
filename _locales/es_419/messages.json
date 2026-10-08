@@ -231,13 +231,13 @@
     "message": "El sonido que reproduce la computadora (videos, alertas), no tu voz. Si está activado, el selector de pantalla de Chrome ofrece \"Compartir también el audio del sistema\"; si no, esa opción se oculta."
   },
   "optSkipLoading": {
-    "message": "Omitir pantallas de carga (solo el dispositivo)"
+    "message": "Pausar durante las esperas (solo el dispositivo)"
   },
   "tipSkipLoading": {
-    "message": "Pausa la grabación mientras la aplicación muestra su mensaje de carga, así la espera se corta del video (también la narración durante la espera)"
+    "message": "Corta los tiempos de espera del video: pausa mientras la aplicación muestra su mensaje de carga y cuando no pasa nada durante 2 segundos (sin clic, tecla, escritura ni cambio de pantalla); continúa con tu siguiente acción. Nunca pausa mientras hablas (micrófono activado)."
   },
   "tipSkipLoadingMic": {
-    "message": "Tu micrófono está activado: lo que digas mientras la aplicación carga se corta del video. Haz una pausa en tu narración durante la carga o desactiva esta opción."
+    "message": "Corta los tiempos de espera del video: pausa mientras la aplicación muestra su mensaje de carga y cuando no pasa nada durante 2 segundos (sin clic, tecla, escritura ni cambio de pantalla); continúa con tu siguiente acción. Nunca pausa mientras hablas (micrófono activado)."
   },
   "tipDownloadLatest": {
     "message": "Descargar la versión más reciente (zip). Para actualizar: descomprímela sobre tu carpeta de Device Frame y haz clic en Volver a cargar en chrome://extensions."

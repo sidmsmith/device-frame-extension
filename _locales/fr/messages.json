@@ -231,13 +231,13 @@
     "message": "Le son joué par l'ordinateur (vidéos, alertes), pas votre voix. Activé : le sélecteur d'écran de Chrome propose « Partager aussi l'audio du système » ; désactivé : cette option est masquée."
   },
   "optSkipLoading": {
-    "message": "Ignorer les écrans de chargement (appareil seul)"
+    "message": "Pause pendant les attentes (appareil seul)"
   },
   "tipSkipLoading": {
-    "message": "Met l'enregistrement en pause pendant que l'application affiche son message de chargement : l'attente est coupée de la vidéo (la narration pendant l'attente aussi)"
+    "message": "Coupe les temps d'attente de la vidéo : pause pendant le message de chargement de l'application, et quand rien ne se passe pendant 2 secondes (aucun clic, touche, saisie ni changement d'écran) ; reprend à votre action suivante. Jamais de pause pendant que vous parlez (microphone activé)."
   },
   "tipSkipLoadingMic": {
-    "message": "Votre microphone est activé : ce que vous dites pendant le chargement de l'application est coupé de la vidéo. Faites une pause dans votre narration pendant le chargement, ou désactivez cette option."
+    "message": "Coupe les temps d'attente de la vidéo : pause pendant le message de chargement de l'application, et quand rien ne se passe pendant 2 secondes (aucun clic, touche, saisie ni changement d'écran) ; reprend à votre action suivante. Jamais de pause pendant que vous parlez (microphone activé)."
   },
   "tipDownloadLatest": {
     "message": "Télécharger la dernière version (zip). Pour mettre à jour : décompressez-la dans votre dossier Device Frame, puis cliquez sur Actualiser dans chrome://extensions."

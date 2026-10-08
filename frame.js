@@ -141,7 +141,7 @@ function drawFrame(L) {
     ...L.devices.filter((d) => d.group === 'custom').map(option),
   ].join('');
   // Skipping loading screens also cuts narration: warn when both are on (Device only).
-  const skipWarn = L.skipLoading && L.mic && L.recordMode !== 'screen';
+  const skipWarn = false; // speaking keeps the video running, so narration isn't cut
   const rotateTip = L.orientation === 'portrait' ? E('tipRotateLandscape') : E('tipRotatePortrait');
 
   // Android-style status bar: clock on the left; signal, wifi, battery on the right.
@@ -912,7 +912,9 @@ function drawFrame(L) {
       ? ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=vp9,opus', 'video/webm']
       : ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'])
       .find((type) => MediaRecorder.isTypeSupported(type));
-    const rec = { stream, mime, mic, companion, idleMs: Number(companion?.idleMs) || 0 };
+    // Idle time is skipped by "Pause during delays" (2 s), or as API Recorder asks.
+    const idleMs = companion ? Number(companion.idleMs) || 0 : L.skipLoading ? 2000 : 0;
+    const rec = { stream, mime, mic, companion, idleMs };
     window.__devframeRec = rec;
     send({ type: 'rec-state', recording: true });
     showRecording();
@@ -990,6 +992,7 @@ function drawFrame(L) {
     rec.started = Date.now();
     rec.lastActivity = rec.started;
     if (rec.idleMs) watchActivity(rec);
+    if (mic && (rec.idleMs || L.skipLoading)) listenForSpeech(rec);
     updatePause(rec);
     showRecording();
     rec.pauseTimer = setInterval(() => updatePause(rec), 50);
@@ -999,11 +1002,13 @@ function drawFrame(L) {
     .some((el) => !el.classList.contains('overlay-hidden') && el.getClientRects().length > 0);
   // The video pauses while any of these applies (Chrome joins the parts, so
   // the time is simply cut):
-  // - a loading screen (setting "Skip loading screens"): Ionic's ion-loading,
-  //   WM Mobile's "Loading....", until 0.3 s after it goes (the new screen draws);
-  // - a pause signal from the page (hold, e.g. Claude asking a question);
-  // - only for videos API Recorder started: idle time, nothing happening on
-  //   the screen (no click, key, typing or change) for rec.idleMs.
+  // - "Pause during delays" (setting, on by default):
+  //   - a loading screen: Ionic's ion-loading, WM Mobile's "Loading....",
+  //     until 0.3 s after it goes (the new screen draws);
+  //   - idle time: nothing happening on the screen (no click, key, typing,
+  //     scrolling or screen change) for 2 s (API Recorder's videos: its value);
+  //   ...but never while you're speaking (microphone on), so narration isn't cut;
+  // - a pause signal from the page (hold, e.g. Claude asking a question).
   const updatePause = (rec) => {
     const recorder = rec.recorder;
     if (!recorder || rec.stopping || recorder.state === 'inactive') return;
@@ -1015,7 +1020,8 @@ function drawFrame(L) {
       if (now - rec.clearSince >= 300) rec.afterLoading = false;
     }
     const idle = rec.idleMs > 0 && now - rec.lastActivity >= rec.idleMs;
-    const pause = Boolean(rec.hold || loading || rec.afterLoading || idle);
+    const speaking = now < (rec.speakingUntil || 0);
+    const pause = Boolean(rec.hold || (!speaking && (loading || rec.afterLoading || idle)));
     if (pause && recorder.state === 'recording') {
       recorder.pause();
       rec.pausedAt = now;
@@ -1030,6 +1036,47 @@ function drawFrame(L) {
   // Activity, for the idle skip: input, and changes to the app's screen
   // (not Claude in Chrome's own overlay, which sits in <body> while it works).
   const OVERLAYS = ['claude-agent-glow-border', 'claude-phantom-cursor'];
+  // Speech (microphone on): the mic's level, read from a copy of its track.
+  // Above the room's background noise = speaking; that counts as activity and
+  // keeps the video running for 0.7 s after each sound, so sentences aren't cut.
+  const listenForSpeech = (rec) => {
+    const track = rec.mic?.getAudioTracks()[0]?.clone();
+    if (!track || typeof MediaStreamTrackProcessor === 'undefined') return;
+    const reader = new MediaStreamTrackProcessor({ track }).readable.getReader();
+    let noise = 0;
+    let stopped = false;
+    (async () => {
+      while (!stopped) {
+        const { value: frame, done } = await reader.read().catch(() => ({ done: true }));
+        if (done) break;
+        try {
+          const samples = new Float32Array(frame.numberOfFrames);
+          frame.copyTo(samples, { planeIndex: 0, format: 'f32-planar' });
+          let sum = 0;
+          for (const v of samples) sum += v * v;
+          const rms = Math.sqrt(sum / samples.length);
+          // Background noise: follows quiet levels quickly, loud ones very slowly.
+          noise = !noise ? rms : rms < noise ? noise * 0.9 + rms * 0.1 : noise + (rms - noise) * 0.002;
+          if (rms > Math.max(0.01, noise * 4)) {
+            const now = Date.now();
+            rec.speakingUntil = now + 700;
+            rec.lastActivity = now;
+            updatePause(rec);
+          }
+        } finally {
+          frame.close();
+        }
+      }
+    })();
+    const previous = rec.cleanup;
+    rec.cleanup = () => {
+      previous?.();
+      stopped = true;
+      reader.cancel().catch(() => {});
+      track.stop();
+    };
+  };
+
   const watchActivity = (rec) => {
     const active = () => { rec.lastActivity = Date.now(); updatePause(rec); };
     const types = ['keydown', 'pointerdown', 'input', 'wheel'];
@@ -1044,7 +1091,9 @@ function drawFrame(L) {
       if (real) active();
     });
     if (document.body) observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+    const previous = rec.cleanup;
     rec.cleanup = () => {
+      previous?.();
       for (const t of types) window.removeEventListener(t, active, true);
       observer.disconnect();
     };

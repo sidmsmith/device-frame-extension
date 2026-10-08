@@ -231,13 +231,13 @@
     "message": "Sound playing on the computer (videos, alerts), not your voice. When on, Chrome's screen picker offers \"Also share system audio\"; when off, that option is hidden."
   },
   "optSkipLoading": {
-    "message": "Skip loading screens (Device only)"
+    "message": "Pause during delays (Device only)"
   },
   "tipSkipLoading": {
-    "message": "Pauses the recording while the app shows its Loading message, so the wait is cut from the video (narration during the wait is cut too)"
+    "message": "Cuts waiting time from the video: pauses while the app shows its Loading message, and when nothing happens for 2 seconds (no click, key, typing or screen change); continues with your next action. Never pauses while you're speaking (microphone on)."
   },
   "tipSkipLoadingMic": {
-    "message": "Your microphone is on: anything you say while the app is loading is cut from the video. Pause your narration during loading, or turn this off."
+    "message": "Cuts waiting time from the video: pauses while the app shows its Loading message, and when nothing happens for 2 seconds (no click, key, typing or screen change); continues with your next action. Never pauses while you're speaking (microphone on)."
   },
   "tipDownloadLatest": {
     "message": "Download the latest version (zip). To update: unzip it over your Device Frame folder, then click Reload on chrome://extensions."
