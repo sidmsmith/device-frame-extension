@@ -966,7 +966,9 @@ function drawFrame(L) {
     // mapped to video pixels (video width / viewport width covers zoom + DPR).
     const pad = L.cropPad;
     const crop = { x: L.bounds.x - pad, y: L.bounds.y - pad, w: L.bounds.w + pad * 2, h: L.bounds.h + pad * 2 };
-    const scale0 = video.videoWidth / window.innerWidth;
+    // API Recorder's scenario videos have a fixed size (1.75 px per CSS px), so
+    // they all match whatever the window's zoom; other videos use the screen's own.
+    const scale0 = rec.companion ? 1.75 : video.videoWidth / window.innerWidth;
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(crop.w * scale0 / 2) * 2; // even sizes for H.264
     canvas.height = Math.round(crop.h * scale0 / 2) * 2;

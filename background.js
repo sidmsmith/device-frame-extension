@@ -184,10 +184,11 @@ function isExpectedRaceError(e) {
     .test(String(e?.message ?? e));
 }
 
-// Framed in its own tab: spare height below the device (CSS px), so Chrome's
-// info bars appearing and disappearing don't cut the device off (the window
-// isn't re-fitted for them - see the frame's resize handler).
-const IN_PLACE_SPARE = 64;
+// Framed in its own tab: spare height below the device (CSS px). 0 = none, so
+// the device stays at 100% on a screen-height window; a Chrome info bar that
+// appears later may briefly cover the bottom of the bezel, but the window isn't
+// re-fitted for it (see the frame's resize handler), so nothing jumps.
+const IN_PLACE_SPARE = 0;
 
 // Size the window so the viewport is exactly L.W × L.H CSS px (plus the spare
 // height in this-tab mode), zooming out when that is bigger than the screen.
