@@ -197,9 +197,14 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
   const tab = await chrome.tabs.get(tabId);
   const zoom = await chrome.tabs.getZoom(tabId);
 
-  // outer* are screen pixels; inner* are CSS pixels at the current zoom.
-  const chromeW = m.outerWidth - m.innerWidth * zoom;
-  const chromeH = m.outerHeight - m.innerHeight * zoom;
+  // outer* are screen pixels; inner* are CSS pixels at the current zoom. Some
+  // windows report outerWidth/Height as 0 to the page (e.g. ones Claude in
+  // Chrome opens): then ask Chrome for the window's size.
+  const winSize = m.outerWidth > 0 && m.outerHeight > 0 ? null : await chrome.windows.get(tab.windowId);
+  const outerW = winSize ? winSize.width : m.outerWidth;
+  const outerH = winSize ? winSize.height : m.outerHeight;
+  const chromeW = outerW - m.innerWidth * zoom;
+  const chromeH = outerH - m.innerHeight * zoom;
   const spare = L.inPlace ? IN_PLACE_SPARE : 0;
   const fit = Math.min(1, (m.availHeight - chromeH) / (L.H + spare), (m.availWidth - chromeW) / L.W);
   const target = Math.max(0.25, Math.floor(fit * 100) / 100);
