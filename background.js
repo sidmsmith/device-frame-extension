@@ -50,7 +50,7 @@ function windowPrefs(last) {
 // Layout for one frame window: shared settings plus this window's own.
 function layoutFor(state, last) {
   return {
-    ...computeLayout(state.device, state.orientation, { ...last, ...(state.win ?? windowPrefs(last)), fill: state.fill ?? null }),
+    ...computeLayout(state.device, state.orientation, { ...last, ...(state.win ?? windowPrefs(last)), fill: state.fill ?? null, fillMin: state.fillMin ?? null }),
     inPlace: Boolean(state.inPlace),
   };
 }
@@ -109,7 +109,12 @@ async function frameInPlace(tab, last) {
   const device = isDeviceKey(last.device, last) ? last.device : DEFAULT_DEVICE;
   const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
   await chrome.tabs.setZoomSettings(tab.id, { mode: 'automatic', scope: 'per-tab' }).catch(() => {});
-  const state = await updateFramed(tab.id, { windowId: tab.windowId, device, orientation, win: windowPrefs(last), inPlace: true, fill: null });
+  // Maximized: the device stays at its real size, centered in the window ('refit' keeps this up to date).
+  const win = await chrome.windows.get(tab.windowId);
+  const big = (win.state === 'maximized' || win.state === 'fullscreen') && tab.width > 0 && tab.height > 0;
+  const fill = big ? tab.width / tab.height : null;
+  const fillMin = big ? { w: tab.width, h: tab.height } : null; // tab size at 100% zoom
+  const state = await updateFramed(tab.id, { windowId: tab.windowId, device, orientation, win: windowPrefs(last), inPlace: true, fill, fillMin });
   await reframe(tab.id, state);
 }
 
@@ -260,7 +265,7 @@ async function handleControl(tabId, tab, msg) {
   // width kept for a narrow phone is measured anew by 'refit').
   if (state.inPlace && state.fill && ['set-device', 'set-custom', 'save-preset', 'delete-preset', 'rotate'].includes(msg.type)) {
     const win = await chrome.windows.get(tab.windowId);
-    if (win.state === 'normal') await updateFramed(tabId, { fill: null });
+    if (win.state === 'normal') await updateFramed(tabId, { fill: null, fillMin: null });
   }
   if (msg.type === 'open-guide') return openGuide();
   if (msg.type === 'download-update') return chrome.downloads.download({ url: LATEST_ZIP });
@@ -372,11 +377,18 @@ async function handleControl(tabId, tab, msg) {
         // In place: the window can't get as narrow as the device (a normal
         // window's minimum width), so lay out to the window's shape, centered.
         const fill = msg.metrics.innerWidth / msg.metrics.innerHeight;
-        if (!(Math.abs((state.fill ?? 0) - fill) < 0.003) && !state.recording) return reframe(tabId, await updateFramed(tabId, { fill }));
+        if (!(Math.abs((state.fill ?? 0) - fill) < 0.003) && !state.recording) return reframe(tabId, await updateFramed(tabId, { fill, fillMin: null }));
       }
       const fill = big ? msg.metrics.innerWidth / msg.metrics.innerHeight : null;
-      const changed = big ? !(Math.abs((state.fill ?? 0) - fill) < 0.003) : Boolean(state.fill);
-      if (changed && !state.recording) await reframe(tabId, await updateFramed(tabId, { fill }));
+      // In place and maximized: the device keeps its real size (see fillMin in computeLayout).
+      let fillMin = null;
+      if (big && state.inPlace) {
+        const zoom = await chrome.tabs.getZoom(tabId);
+        fillMin = { w: Math.round(msg.metrics.innerWidth * zoom), h: Math.round(msg.metrics.innerHeight * zoom) };
+      }
+      const sameMin = (a, b) => (!a && !b) || (a && b && Math.abs(a.w - b.w) <= 2 && Math.abs(a.h - b.h) <= 2);
+      const changed = big ? !(Math.abs((state.fill ?? 0) - fill) < 0.003) || !sameMin(state.fillMin, fillMin) : Boolean(state.fill);
+      if (changed && !state.recording) await reframe(tabId, await updateFramed(tabId, { fill, fillMin }));
       else await fitWindow(tabId, layoutFor(state, await getLast()), msg.metrics);
       break;
     }

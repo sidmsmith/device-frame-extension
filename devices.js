@@ -216,6 +216,13 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     if (fitW / fitH < prefs.fill) ox = (prefs.fill * fitH - fitW) / 2;
     else oy = (fitW / prefs.fill - fitH) / 2;
   }
+  // Framed in place in a maximized window (prefs.fillMin = the window's size
+  // at 100% zoom): keep the device at its real size, centered in the window,
+  // instead of zooming it up to fill the window.
+  if (prefs.fill > 0 && prefs.fillMin && !fillScreen) {
+    ox += Math.max(0, (prefs.fillMin.w - (fitW + ox * 2)) / 2);
+    oy += Math.max(0, (prefs.fillMin.h - (fitH + oy * 2)) / 2);
+  }
   const phone = { x: margin + over + ox, y: bar + margin + oy, w: phoneW, h: phoneH, r: d.radius };
   const screen = { x: phone.x + bez.left, y: phone.y + bez.top, w: sw, h: sh, r: d.screenRadius };
 
