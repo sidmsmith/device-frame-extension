@@ -375,6 +375,6 @@
     "message": "Cet onglet"
   },
   "tipOpenIn": {
-    "message": "Cet onglet : l'icône encadre la page sur place, sans ouvrir de nouvelle fenêtre (l'appareil est zoomé pour tenir dans la fenêtre ; cliquez à nouveau sur l'icône pour retirer le cadre). Utile quand un autre outil pilote l'onglet."
+    "message": "Cet onglet : l'icône encadre la page sur place, sans ouvrir de nouvelle fenêtre (la fenêtre prend la taille de l'appareil ; cliquez à nouveau sur l'icône pour retirer le cadre). Utile quand un autre outil pilote l'onglet."
   }
 }

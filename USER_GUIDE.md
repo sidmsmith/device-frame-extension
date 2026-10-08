@@ -50,9 +50,10 @@ when you're done.
 
 **Frame in this tab instead:** with **Open the frame in: This tab** (settings
 panel), the icon frames the page right where it is, in its own tab and
-window, instead of opening a new window. The window keeps its size and the
-device is zoomed to fit it. Click the icon again to remove the frame (the page
-reloads). This is for when another tool drives the tab – for example Claude
+window, instead of opening a new window. The window is resized to the device
+just like a frame window (a normal window can't be quite as narrow, so a
+narrow phone is centered with a little room on each side). Click the icon
+again to remove the frame (the page reloads). This is for when another tool drives the tab – for example Claude
 in Chrome, which can only work in its own tab group, not in a new window.
 
 ## 3. The control bar

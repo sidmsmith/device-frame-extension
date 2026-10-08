@@ -375,6 +375,6 @@
     "message": "Esta pestaña"
   },
   "tipOpenIn": {
-    "message": "Esta pestaña: el ícono enmarca la página donde está, sin abrir una ventana nueva (el dispositivo se ajusta a la ventana; haga clic en el ícono otra vez para quitar el marco). Útil cuando otra herramienta controla la pestaña."
+    "message": "Esta pestaña: el ícono enmarca la página donde está, sin abrir una ventana nueva (la ventana toma el tamaño del dispositivo; haga clic en el ícono otra vez para quitar el marco). Útil cuando otra herramienta controla la pestaña."
   }
 }
