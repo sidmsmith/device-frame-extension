@@ -99,10 +99,11 @@ function drawFrame(L) {
       pointer-events: none !important; z-index: 2147483647 !important;
       display: block !important;
     }
-    /* Claude in Chrome adds its glow border and cursor inside <body>, which is
-       pinned into the screen here, so they'd be drawn around the screen and
-       offset (and the cursor can make the screen scroll): hide them. */
-    body > #claude-agent-glow-border, body > #claude-phantom-cursor { display: none !important; }
+    /* Claude in Chrome adds its overlays (glow border, cursor, "Claude is active
+       in this tab group" banner…, all with ids starting "claude-") inside <body>,
+       which is pinned into the screen here, so they'd be drawn in the middle of
+       the device (and the cursor can make the screen scroll): hide them all. */
+    body > [id^="claude-"] { display: none !important; }
     ${L.touch ? `body, body * { cursor: url("data:image/svg+xml,${fingertip}") 14 14, pointer !important; }` : ''}`;
 
   document.getElementById('__devframe')?.remove();
@@ -1035,7 +1036,7 @@ function drawFrame(L) {
 
   // Activity, for the idle skip: input, and changes to the app's screen
   // (not Claude in Chrome's own overlay, which sits in <body> while it works).
-  const OVERLAYS = ['claude-agent-glow-border', 'claude-phantom-cursor'];
+  const isOverlay = (node) => node?.nodeType === 1 && /^claude-/.test(node.id); // Claude in Chrome's
   // Speech (microphone on): the mic's level, read from a copy of its track.
   // Above the room's background noise = speaking; that counts as activity and
   // keeps the video running for 0.7 s after each sound, so sentences aren't cut.
@@ -1084,8 +1085,8 @@ function drawFrame(L) {
     const observer = new MutationObserver((records) => {
       const real = records.some((r) => {
         const el = r.target.nodeType === 1 ? r.target : r.target.parentElement;
-        if (el && OVERLAYS.some((id) => el.id === id || el.closest?.(`#${id}`))) return false;
-        if (r.type === 'childList') return [...r.addedNodes, ...r.removedNodes].some((n) => !OVERLAYS.includes(n.id));
+        if (el?.closest?.('[id^="claude-"]')) return false;
+        if (r.type === 'childList') return [...r.addedNodes, ...r.removedNodes].some((n) => !isOverlay(n));
         return true;
       });
       if (real) active();
