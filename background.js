@@ -184,8 +184,13 @@ function isExpectedRaceError(e) {
     .test(String(e?.message ?? e));
 }
 
-// Size the window so the viewport is exactly L.W × L.H CSS px, zooming out
-// when that is bigger than the screen.
+// Framed in its own tab: spare height below the device (CSS px), so Chrome's
+// info bars appearing and disappearing don't cut the device off (the window
+// isn't re-fitted for them - see the frame's resize handler).
+const IN_PLACE_SPARE = 64;
+
+// Size the window so the viewport is exactly L.W × L.H CSS px (plus the spare
+// height in this-tab mode), zooming out when that is bigger than the screen.
 // shiftY (CSS px) moves the window down/up, e.g. to keep the device in place
 // when the toolbar is hidden or shown.
 async function fitWindow(tabId, L, m, shiftY = 0) {
@@ -195,7 +200,8 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
   // outer* are screen pixels; inner* are CSS pixels at the current zoom.
   const chromeW = m.outerWidth - m.innerWidth * zoom;
   const chromeH = m.outerHeight - m.innerHeight * zoom;
-  const fit = Math.min(1, (m.availHeight - chromeH) / L.H, (m.availWidth - chromeW) / L.W);
+  const spare = L.inPlace ? IN_PLACE_SPARE : 0;
+  const fit = Math.min(1, (m.availHeight - chromeH) / (L.H + spare), (m.availWidth - chromeW) / L.W);
   const target = Math.max(0.25, Math.floor(fit * 100) / 100);
 
   const win0 = await chrome.windows.get(tab.windowId);
@@ -209,7 +215,7 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
   if (Math.abs(target - zoom) > 0.005) await chrome.tabs.setZoom(tabId, target);
 
   const width = Math.round(L.W * target + chromeW);
-  const height = Math.round(L.H * target + chromeH);
+  const height = Math.round((L.H + spare) * target + chromeH);
   const win = await chrome.windows.get(tab.windowId);
   // Keep the window on screen when it grows (e.g. rotating a tablet).
   const left = Math.max(m.availLeft, Math.min(win.left, m.availLeft + m.availWidth - width));
@@ -376,7 +382,7 @@ async function handleControl(tabId, tab, msg) {
       if (state.inPlace && !big && msg.metrics.innerWidth > layoutFor(state, await getLast()).W + 2) {
         // In place: the window can't get as narrow as the device (a normal
         // window's minimum width), so lay out to the window's shape, centered.
-        const fill = msg.metrics.innerWidth / msg.metrics.innerHeight;
+        const fill = msg.metrics.innerWidth / Math.max(1, msg.metrics.innerHeight - IN_PLACE_SPARE); // the spare height isn't part of the layout
         if (!(Math.abs((state.fill ?? 0) - fill) < 0.003) && !state.recording) return reframe(tabId, await updateFramed(tabId, { fill, fillMin: null }));
       }
       const fill = big ? msg.metrics.innerWidth / msg.metrics.innerHeight : null;

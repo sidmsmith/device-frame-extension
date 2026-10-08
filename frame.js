@@ -763,6 +763,12 @@ function drawFrame(L) {
   window.__devframeResize = () => {
     clearTimeout(window.__devframeResizeTimer);
     window.__devframeResizeTimer = setTimeout(() => {
+      // Never while a video is recording: re-fitting would make it jump.
+      if (window.__devframeRec?.recorder) return;
+      // Framed in this tab: the window was sized once (with spare height for
+      // Chrome's info bars, which come and go); only a width change (e.g.
+      // maximize / restore) re-fits it, not those height changes.
+      if (L.inPlace && Math.abs(window.innerWidth - L.W) <= 2) return;
       if (Math.abs(window.innerWidth - L.W) <= 2 && Math.abs(window.innerHeight - L.H) <= 2) return;
       send({
         type: 'refit',
