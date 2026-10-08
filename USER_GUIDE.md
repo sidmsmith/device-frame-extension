@@ -48,9 +48,10 @@ the normal page: same login, same data.
 The window remembers its position, device, and settings. Close the window
 when you're done.
 
-**Frame in this tab instead:** with **Open the frame in: This tab** (settings
-panel), the icon frames the page right where it is, in its own tab and
-window, instead of opening a new window. The window is resized to the device
+**Frame in this tab instead (advanced):** with **Open the frame in: This
+tab** (right-click the Device Frame icon → **Options**), the icon frames the
+page right where it is, in its own tab and window, instead of opening a new
+window. The window is resized to the device
 just like a frame window (a normal window can't be quite as narrow, so a
 narrow phone is centered with a little room on each side). Click the icon
 again to remove the frame (the page reloads). This is for when another tool drives the tab – for example Claude
@@ -149,9 +150,6 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
   starts with the toolbar hidden for a clean, demo-ready screen, no matter how
   you left it last time (see section 8 to show it). Untick it to have the
   window remember whether the toolbar was showing.
-- **Open the frame in: New window / This tab** – New window (default) opens
-  a separate frame window; This tab frames the current tab in place (see
-  section 2).
 - **Recording: Device only / Entire screen** – what the record button and
   **Alt+Shift+V** record: just the device (default), or everything on one
   screen, including other windows you switch to (see section 7).
@@ -363,7 +361,7 @@ included in the version they lead up to).
 
 | Version | Date | Highlights |
 |---|---|---|
-| **0.23** | Oct 7, 2026 | **Open the frame in: This tab** frames a page in place (for tools such as Claude in Chrome that drive a tab), and device recordings can be **paused and resumed from the page** (e.g. while Claude asks a question). |
+| **0.24** | Oct 8, 2026 | Behind the scenes, for other tools: an advanced **Options** page (right-click the icon) with **Open the frame in: This tab** and a link that lets the separate API Recorder extension start and stop device videos; device recordings can be paused and resumed from the page. Nothing changes in everyday use. |
 | **0.22** | Oct 7, 2026 | **Skip loading screens** in device recordings (cuts WM Mobile's "Loading...." waits, with a warning when the microphone is also on), three new Full Screen devices (**Tablet Stand**, **Kiosk** and a bezel-only **Monitor**), and Full Screen devices that **fill a maximized or F11 window** edge to edge on any screen. |
 | **0.21** | Oct 3, 2026 | **Record the entire screen** (Settings → Recording → Entire screen) to capture several windows in one video as you Alt+Tab between them. Also: each frame window keeps its own look, color chips show their actual color, and recordings and screenshots get short names like `ZebraTC72_20261003141530.mp4`. |
 | **0.20** | Oct 2, 2026 | The extension speaks **French and Spanish (Mexico)**: it follows Chrome's language, or pick one under **Settings → Language**. |

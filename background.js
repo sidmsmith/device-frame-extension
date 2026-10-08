@@ -392,6 +392,9 @@ async function handleControl(tabId, tab, msg) {
       else await fitWindow(tabId, layoutFor(state, await getLast()), msg.metrics);
       break;
     }
+    case 'save-video':
+      if (typeof msg.url === 'string' && msg.url.startsWith('blob:')) await saveScenarioVideo(msg.url, msg.ext);
+      break;
     case 'screenshot': {
       const L = layoutFor(state, await getLast());
       const dataUrl = await captureDevice(tab, L);
@@ -409,17 +412,55 @@ async function toggleToolbar(tabId, state) {
   await reframe(tabId, next, toolbarHidden ? BAR : -BAR);
 }
 
-// ---- API Recorder link (feasibility test) ------------------------------------
+// ---- API Recorder link ----------------------------------------------------------
 // API Recorder (a separate, private extension) can start and stop the device
-// video of a framed tab, so one shortcut records both. Chrome lets us record a
-// tab without a prompt only after the user invoked Device Frame on that tab
-// (e.g. clicked the icon to frame it); if that's gone, we say so and the user
-// presses the record shortcut instead.
-const COMPANIONS = ['kmjjiddnpagkgplmlbkojmnccdbeekae']; // API Recorder (unpacked, Work\api_recorder_extension)
+// video of a framed tab, so one shortcut records both; it passes the scenario's
+// name and folder (the video is saved there) and an idle time to skip. Chrome
+// lets us record a tab without a prompt only after the user invoked Device
+// Frame on that tab (e.g. clicked the icon to frame it); if that's gone, we say
+// so and the user presses the record shortcut instead. Off with the hidden
+// option (options.html); nobody else can send these messages.
+const COMPANIONS = ['ccmkbiglnhkemogcajbmadphdfffgolm']; // API Recorder (its manifest key fixes this id)
+
+// The scenario video waiting to be saved: { file, folder } (see onDeterminingFilename below).
+let pendingVideo; // undefined until read from session storage
+chrome.storage.session.get('pendingVideo').then((r) => { if (pendingVideo === undefined) pendingVideo = r.pendingVideo ?? null; });
+async function setPendingVideo(value) {
+  pendingVideo = value;
+  if (value) await chrome.storage.session.set({ pendingVideo: value });
+  else await chrome.storage.session.remove('pendingVideo');
+}
+
+// File-name safe, e.g. "SKU Level ASN – Different UOMs".
+const safeFile = (name) => String(name || '').replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 80);
+
+// Our own downloads get exactly the name we give them (Chrome sometimes
+// renames downloads of blob/data URLs, e.g. to a random id).
+const nextFilenames = new Map(); // download url -> file name (relative to Downloads)
+chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
+  if (item.byExtensionId !== chrome.runtime.id || !nextFilenames.has(item.url)) return;
+  suggest({ filename: nextFilenames.get(item.url), conflictAction: 'uniquify' });
+  nextFilenames.delete(item.url);
+});
+
+// API Recorder's scenario video (the page hands over its blob URL): into the
+// scenario's folder as "<scenario name>.mp4", else Downloads as "<name>_<time>.mp4".
+async function saveScenarioVideo(url, ext) {
+  if (pendingVideo === undefined) pendingVideo = (await chrome.storage.session.get('pendingVideo')).pendingVideo ?? null;
+  const p = pendingVideo ?? { file: 'Scenario', folder: '' };
+  await setPendingVideo(null);
+  const d = new Date();
+  const stamp = [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join('');
+  const kind = ext === 'webm' ? 'webm' : 'mp4';
+  const filename = p.folder ? `${p.folder}/${p.file}.${kind}` : `${p.file}_${stamp}.${kind}`;
+  nextFilenames.set(url, filename);
+  await chrome.downloads.download({ url, filename, conflictAction: 'uniquify' });
+}
 
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   if (!COMPANIONS.includes(sender.id) || msg?.type !== 'video') return;
   (async () => {
+    if ((await getLast()).companionLink === false) return { ok: false, error: 'link-off' };
     const tabId = Number(msg.tabId);
     const state = (await getFramed())[tabId];
     if (!state) return { ok: false, error: 'not-framed' };
@@ -432,7 +473,11 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       if (state.recording) return { ok: true, already: true };
       try {
         const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId, consumerTabId: tabId });
-        await chrome.tabs.sendMessage(tabId, { type: 'df-record-start', streamId });
+        const file = safeFile(msg.name) || 'Scenario';
+        const folder = typeof msg.folder === 'string' ? msg.folder.replace(/[\\:*?"<>|]+/g, '_').replace(/^\/+|\/+$/g, '') : '';
+        await setPendingVideo({ file, folder });
+        const idleMs = Math.max(0, Math.min(60000, Number(msg.idleMs) || 0));
+        await chrome.tabs.sendMessage(tabId, { type: 'df-record-start', streamId, companion: { file, idleMs } });
         return { ok: true };
       } catch (e) {
         return { ok: false, error: String(e?.message ?? e) };

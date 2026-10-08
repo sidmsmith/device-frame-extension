@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Device Frame - advanced options</title>
+<style>
+  :root { color-scheme: light dark; --muted: #5f6368; --line: #dadce0; --accent: #1a73e8; }
+  body { font: 14px/1.5 system-ui, sans-serif; max-width: 640px; margin: 28px auto; padding: 0 16px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin-bottom: 20px; }
+  section { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  label { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; cursor: pointer; }
+  .hint { color: var(--muted); font-size: 12.5px; margin: 2px 0 0; }
+  .saved { color: #188038; font-size: 12.5px; min-height: 18px; }
+</style>
+</head>
+<body>
+  <h1>Device Frame – advanced options</h1>
+  <div class="sub">Settings for working with other tools. Everyday settings are in the frame's toolbar (⚙).</div>
+
+  <section>
+    <h2>Open the frame in</h2>
+    <label><input type="radio" name="openIn" value="window"> <span><b>New window</b> (default)<p class="hint">The icon reopens the page in a separate frame window.</p></span></label>
+    <label><input type="radio" name="openIn" value="tab"> <span><b>This tab</b><p class="hint">The icon frames the page where it is, in its own tab and window (sized to the device). Click the icon again to remove the frame. For tools that drive a tab, such as Claude in Chrome, which can only work in its own tab group.</p></span></label>
+  </section>
+
+  <section>
+    <h2>API Recorder</h2>
+    <label><input type="checkbox" id="companionLink"> <span><b>Let API Recorder start and stop the device video</b><p class="hint">When API Recorder (a separate extension) starts a scenario recording in a framed tab, the video starts with it (after the countdown, if on), named after the scenario and saved in the scenario's folder, and stops with it. API Recorder can also skip idle time in that video. Videos you start yourself (record button / shortcut) are unchanged.</p></span></label>
+  </section>
+  <div class="saved" id="saved"></div>
+<script src="options.js"></script>
+</body>
+</html>

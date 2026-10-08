@@ -359,11 +359,6 @@ function drawFrame(L) {
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> ${E('optShowTaps')}</label>
       <label class="chk" style="margin-top: 6px" title="${E('tipFitWidth')}"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> ${E('optFitWidth')}</label>
       <label class="chk" style="margin-top: 6px" title="${L.shortcut ? E('tipOpenHiddenShortcut', L.shortcut) : E('tipOpenHidden')}"><input type="checkbox" id="openHidden"${L.openHidden ? ' checked' : ''}> ${E('optOpenHidden')}</label>
-      <div class="lbl" title="${E('tipOpenIn')}">${E('lblOpenIn')}</div>
-      <div class="seg" title="${E('tipOpenIn')}">
-        <button data-oi="window" class="${L.openIn === 'tab' ? '' : 'sel'}">${E('openInWindow')}</button>
-        <button data-oi="tab" class="${L.openIn === 'tab' ? 'sel' : ''}">${E('openInTab')}</button>
-      </div>
       <div class="lbl">${E('lblRecording')}</div>
       <div class="seg">
         <button data-rm="device" class="${L.recordMode === 'screen' ? '' : 'sel'}" title="${E('tipModeDevice')}">${ICON.record}${E('recDevice')}</button>
@@ -509,7 +504,6 @@ function drawFrame(L) {
   root.getElementById('appearance').addEventListener('click', () => setPop(pop.hidden));
   pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') setPop(false); });
   pop.querySelectorAll('[data-bg]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { background: b.dataset.bg } })));
-  pop.querySelectorAll('[data-oi]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { openIn: b.dataset.oi } })));
   pop.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { recordMode: b.dataset.rm } })));
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
@@ -832,21 +826,30 @@ function drawFrame(L) {
 
   const finishRecording = (rec, blob) => {
     clearInterval(rec.drawTimer);
-    clearInterval(rec.loadingTimer);
+    clearInterval(rec.pauseTimer);
+    rec.cleanup?.();
     rec.stream.getTracks().forEach((track) => track.stop());
     rec.mic?.getTracks().forEach((track) => track.stop());
     root.getElementById('count').hidden = true;
     window.__devframeRec = null;
     if (blob && blob.size) {
       const ext = rec.mime.startsWith('video/mp4') ? 'mp4' : 'webm';
-      // e.g. ZebraTC72_20261003141530.mp4 (device name without spaces, local time)
+      // e.g. ZebraTC72_20261003141530.mp4 (device name without spaces, local time),
+      // or the scenario's name when API Recorder started the video (the
+      // background then moves it into the scenario's folder).
       const stamp = (d = new Date()) => [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join('');
-      const name = L.deviceName.replace(/[^A-Za-z0-9-]+/g, '') || 'Device';
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${name}_${stamp()}.${ext}`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+      const name = rec.companion?.file || L.deviceName.replace(/[^A-Za-z0-9-]+/g, '') || 'Device';
+      const url = URL.createObjectURL(blob);
+      if (rec.companion) {
+        // API Recorder's scenario video: the background saves it (into the scenario's folder).
+        send({ type: 'save-video', url, ext });
+      } else {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${name}_${stamp()}.${ext}`;
+        a.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 120000);
       if (rec.error) toast(T('msgRecStoppedEarly', rec.error), 8000);
       else toast(ext === 'mp4' ? T('msgRecSaved') : T('msgRecSavedWebm'));
     } else if (rec.recorder) {
@@ -860,7 +863,8 @@ function drawFrame(L) {
 
   // streamId comes from chrome.tabCapture (the keyboard shortcut), which needs
   // no prompt; without it we ask Chrome via its "Share this tab" prompt.
-  const startRecording = async (streamId) => {
+  // companion: { file, idleMs } when API Recorder started the video (see background.js).
+  const startRecording = async (streamId, companion = null) => {
     let stream;
     try {
       stream = streamId
@@ -907,7 +911,7 @@ function drawFrame(L) {
       ? ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=vp9,opus', 'video/webm']
       : ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'])
       .find((type) => MediaRecorder.isTypeSupported(type));
-    const rec = { stream, mime, mic };
+    const rec = { stream, mime, mic, companion, idleMs: Number(companion?.idleMs) || 0 };
     window.__devframeRec = rec;
     send({ type: 'rec-state', recording: true });
     showRecording();
@@ -981,37 +985,66 @@ function drawFrame(L) {
       return finishRecording(rec, null);
     }
     rec.started = Date.now();
-    if (rec.hold) { rec.recorder.pause(); rec.pausedAt = rec.started; }
+    rec.lastActivity = rec.started;
+    if (rec.idleMs) watchActivity(rec);
+    updatePause(rec);
     showRecording();
-    // Skip loading screens: pause while the app's loading overlay (Ionic's
-    // ion-loading, which WM Mobile uses for "Loading....") is showing, and
-    // resume shortly after it goes, once the new screen has drawn. Chrome
-    // joins the parts, so the wait is simply cut from the video.
-    if (L.skipLoading) rec.loadingTimer = setInterval(() => skipLoading(rec), 50);
+    rec.pauseTimer = setInterval(() => updatePause(rec), 50);
   };
 
   const loadingShown = () => [...document.querySelectorAll('ion-loading')]
     .some((el) => !el.classList.contains('overlay-hidden') && el.getClientRects().length > 0);
-  const skipLoading = (rec) => {
+  // The video pauses while any of these applies (Chrome joins the parts, so
+  // the time is simply cut):
+  // - a loading screen (setting "Skip loading screens"): Ionic's ion-loading,
+  //   WM Mobile's "Loading....", until 0.3 s after it goes (the new screen draws);
+  // - a pause signal from the page (hold, e.g. Claude asking a question);
+  // - only for videos API Recorder started: idle time, nothing happening on
+  //   the screen (no click, key, typing or change) for rec.idleMs.
+  const updatePause = (rec) => {
     const recorder = rec.recorder;
     if (!recorder || rec.stopping || recorder.state === 'inactive') return;
     const now = Date.now();
-    if (loadingShown()) {
-      rec.clearSince = 0;
-      if (recorder.state === 'recording') {
-        recorder.pause();
-        rec.pausedAt = now;
-        showRecording();
-      }
-    } else if (recorder.state === 'paused' && !rec.hold) {
+    const loading = L.skipLoading && loadingShown();
+    if (loading) { rec.afterLoading = true; rec.clearSince = 0; }
+    else if (rec.afterLoading) {
       rec.clearSince = rec.clearSince || now;
-      if (now - rec.clearSince >= 300) {
-        recorder.resume();
-        rec.pausedMs = (rec.pausedMs || 0) + (now - rec.pausedAt);
-        rec.clearSince = 0;
-        showRecording();
-      }
+      if (now - rec.clearSince >= 300) rec.afterLoading = false;
     }
+    const idle = rec.idleMs > 0 && now - rec.lastActivity >= rec.idleMs;
+    const pause = Boolean(rec.hold || loading || rec.afterLoading || idle);
+    if (pause && recorder.state === 'recording') {
+      recorder.pause();
+      rec.pausedAt = now;
+      showRecording();
+    } else if (!pause && recorder.state === 'paused') {
+      recorder.resume();
+      rec.pausedMs = (rec.pausedMs || 0) + (now - rec.pausedAt);
+      showRecording();
+    }
+  };
+
+  // Activity, for the idle skip: input, and changes to the app's screen
+  // (not Claude in Chrome's own overlay, which sits in <body> while it works).
+  const OVERLAYS = ['claude-agent-glow-border', 'claude-phantom-cursor'];
+  const watchActivity = (rec) => {
+    const active = () => { rec.lastActivity = Date.now(); updatePause(rec); };
+    const types = ['keydown', 'pointerdown', 'input', 'wheel'];
+    for (const t of types) window.addEventListener(t, active, true);
+    const observer = new MutationObserver((records) => {
+      const real = records.some((r) => {
+        const el = r.target.nodeType === 1 ? r.target : r.target.parentElement;
+        if (el && OVERLAYS.some((id) => el.id === id || el.closest?.(`#${id}`))) return false;
+        if (r.type === 'childList') return [...r.addedNodes, ...r.removedNodes].some((n) => !OVERLAYS.includes(n.id));
+        return true;
+      });
+      if (real) active();
+    });
+    if (document.body) observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+    rec.cleanup = () => {
+      for (const t of types) window.removeEventListener(t, active, true);
+      observer.disconnect();
+    };
   };
 
   // Pause / resume / stop from the page: another tool driving the tab (e.g.
@@ -1023,18 +1056,8 @@ function drawFrame(L) {
     const rec = window.__devframeRec;
     if (!rec || rec.stopping) return;
     rec.hold = on;
-    const recorder = rec.recorder;
-    if (!recorder || recorder.state === 'inactive') return; // applied once recording starts
-    const now = Date.now();
-    if (on && recorder.state === 'recording') {
-      recorder.pause();
-      rec.pausedAt = now;
-    } else if (!on && recorder.state === 'paused' && !(L.skipLoading && loadingShown())) {
-      recorder.resume();
-      rec.pausedMs = (rec.pausedMs || 0) + (now - rec.pausedAt);
-      rec.clearSince = 0;
-    }
-    showRecording();
+    if (!on) rec.lastActivity = Date.now(); // resuming is activity (the idle skip shouldn't pause straight away)
+    updatePause(rec); // applied once recording starts, if it hasn't yet
   };
   const SIGNALS = { 'device-frame-pause': () => hold(true), 'device-frame-resume': () => hold(false), 'device-frame-stop': () => stopRecording(T('whyStopped')) };
   for (const [type, fn] of Object.entries(window.__devframeSignals ?? {})) window.removeEventListener(type, fn);
@@ -1068,7 +1091,7 @@ function drawFrame(L) {
   // Messages from the background (record shortcut). One listener for the
   // page's lifetime, forwarding to the latest drawFrame's handlers.
   window.__devframeOnMessage = (msg, respond) => {
-    if (msg?.type === 'df-record-start' && !window.__devframeRec) startRecording(msg.streamId);
+    if (msg?.type === 'df-record-start' && !window.__devframeRec) startRecording(msg.streamId, msg.companion ?? null);
     if (msg?.type === 'df-record-stop') stopRecording(T('whyShortcut'));
     if (msg?.type === 'df-toast') toast(msg.text, msg.ms);
     if (msg?.type === 'df-countdown') {
