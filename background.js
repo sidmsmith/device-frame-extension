@@ -409,6 +409,40 @@ async function toggleToolbar(tabId, state) {
   await reframe(tabId, next, toolbarHidden ? BAR : -BAR);
 }
 
+// ---- API Recorder link (feasibility test) ------------------------------------
+// API Recorder (a separate, private extension) can start and stop the device
+// video of a framed tab, so one shortcut records both. Chrome lets us record a
+// tab without a prompt only after the user invoked Device Frame on that tab
+// (e.g. clicked the icon to frame it); if that's gone, we say so and the user
+// presses the record shortcut instead.
+const COMPANIONS = ['kmjjiddnpagkgplmlbkojmnccdbeekae']; // API Recorder (unpacked, Work\api_recorder_extension)
+
+chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
+  if (!COMPANIONS.includes(sender.id) || msg?.type !== 'video') return;
+  (async () => {
+    const tabId = Number(msg.tabId);
+    const state = (await getFramed())[tabId];
+    if (!state) return { ok: false, error: 'not-framed' };
+    if (msg.action === 'status') return { ok: true, recording: Boolean(state.recording) };
+    if (msg.action === 'stop') {
+      if (state.recording) await chrome.tabs.sendMessage(tabId, { type: 'df-record-stop' }).catch(() => {});
+      return { ok: true };
+    }
+    if (msg.action === 'start') {
+      if (state.recording) return { ok: true, already: true };
+      try {
+        const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId, consumerTabId: tabId });
+        await chrome.tabs.sendMessage(tabId, { type: 'df-record-start', streamId });
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, error: String(e?.message ?? e) };
+      }
+    }
+    return { ok: false, error: 'unknown action' };
+  })().then(sendResponse, (e) => sendResponse({ ok: false, error: String(e?.message ?? e) }));
+  return true;
+});
+
 // Keyboard shortcuts (chrome.commands works even when the app swallows keys).
 chrome.commands.onCommand.addListener(async (command, tab) => {
   if (!tab) return;
