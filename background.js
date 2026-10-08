@@ -431,8 +431,9 @@ async function setPendingVideo(value) {
   else await chrome.storage.session.remove('pendingVideo');
 }
 
-// File-name safe, e.g. "SKU Level ASN – Different UOMs".
-const safeFile = (name) => String(name || '').replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 80);
+// File-name safe, no spaces (the video's file name).
+const safeFile = (name) => String(name || '').replace(/[\/:*?"<>|]+/g, '_').trim()
+  .replace(/\s*[-–—]\s*/g, '-').replace(/\s+/g, '_').slice(0, 80); // "SKU Level ASN – Different UOMs" -> "SKU_Level_ASN-Different_UOMs"
 
 // Download names. Chrome lets only the most recently installed extension with
 // a downloads.onDeterminingFilename listener name downloads, and one that
