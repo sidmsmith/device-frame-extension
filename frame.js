@@ -831,6 +831,7 @@ function drawFrame(L) {
     rec.stream.getTracks().forEach((track) => track.stop());
     rec.mic?.getTracks().forEach((track) => track.stop());
     root.getElementById('count').hidden = true;
+    delete host.dataset.countdown;
     window.__devframeRec = null;
     if (blob && blob.size) {
       const ext = rec.mime.startsWith('video/mp4') ? 'mp4' : 'webm';
@@ -937,12 +938,14 @@ function drawFrame(L) {
       let n = 3;
       count.textContent = n;
       count.hidden = false;
+      host.dataset.countdown = '1'; // API Recorder's screenshots wait for it
       await new Promise((resolve) => {
         rec.countdown = setInterval(() => {
           n -= 1;
           if (n > 0) { count.textContent = n; return; }
           clearInterval(rec.countdown);
           count.hidden = true;
+          delete host.dataset.countdown;
           resolve();
         }, 1000);
       });
@@ -1079,11 +1082,13 @@ function drawFrame(L) {
     let n = 5;
     count.textContent = n;
     count.hidden = false;
+    host.dataset.countdown = '1';
     const timer = setInterval(() => {
       n -= 1;
       if (n > 0) { count.textContent = n; return; }
       clearInterval(timer);
       count.hidden = true;
+      delete host.dataset.countdown;
       setTimeout(resolve, 150); // let the overlay disappear first
     }, 1000);
   });

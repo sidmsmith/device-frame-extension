@@ -422,7 +422,7 @@ async function toggleToolbar(tabId, state) {
 // option (options.html); nobody else can send these messages.
 const COMPANIONS = ['ccmkbiglnhkemogcajbmadphdfffgolm']; // API Recorder (its manifest key fixes this id)
 
-// The scenario video waiting to be saved: { file, folder } (see onDeterminingFilename below).
+// The scenario video waiting to be saved: { file, folder } (see saveScenarioVideo below).
 let pendingVideo; // undefined until read from session storage
 chrome.storage.session.get('pendingVideo').then((r) => { if (pendingVideo === undefined) pendingVideo = r.pendingVideo ?? null; });
 async function setPendingVideo(value) {
@@ -434,14 +434,15 @@ async function setPendingVideo(value) {
 // File-name safe, e.g. "SKU Level ASN – Different UOMs".
 const safeFile = (name) => String(name || '').replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 80);
 
-// Our own downloads get exactly the name we give them (Chrome sometimes
-// renames downloads of blob/data URLs, e.g. to a random id).
-const nextFilenames = new Map(); // download url -> file name (relative to Downloads)
-chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
-  if (item.byExtensionId !== chrome.runtime.id || !nextFilenames.has(item.url)) return;
-  suggest({ filename: nextFilenames.get(item.url), conflictAction: 'uniquify' });
-  nextFilenames.delete(item.url);
-});
+// Download names. Chrome lets only the most recently installed extension with
+// a downloads.onDeterminingFilename listener name downloads, and one that
+// doesn't name a download loses its name (e.g. "download (1)"). So Device Frame
+// has no such listener (it would take names away from API Recorder's files);
+// when API Recorder is installed, we tell it the name of each download we
+// start, and its listener names it. Without API Recorder nothing changes.
+async function announceDownload(url, filename) {
+  await chrome.runtime.sendMessage(COMPANIONS[0], { type: 'name-download', url, filename }).catch(() => {});
+}
 
 // API Recorder's scenario video (the page hands over its blob URL): into the
 // scenario's folder as "<scenario name>.mp4", else Downloads as "<name>_<time>.mp4".
@@ -453,7 +454,7 @@ async function saveScenarioVideo(url, ext) {
   const stamp = [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join('');
   const kind = ext === 'webm' ? 'webm' : 'mp4';
   const filename = p.folder ? `${p.folder}/${p.file}.${kind}` : `${p.file}_${stamp}.${kind}`;
-  nextFilenames.set(url, filename);
+  await announceDownload(url, filename);
   await chrome.downloads.download({ url, filename, conflictAction: 'uniquify' });
 }
 
@@ -587,6 +588,7 @@ async function downloadScreenshot(url, L) {
   const stamp = [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()]
     .map((n) => String(n).padStart(2, '0')).join('');
   const name = L.deviceName.replace(/[^A-Za-z0-9-]+/g, '') || 'Device';
+  await announceDownload(url, `${name}_${stamp}.png`);
   await chrome.downloads.download({ url, filename: `${name}_${stamp}.png` });
 }
 

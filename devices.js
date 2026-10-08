@@ -82,7 +82,7 @@ const DEVICES = {
   },
 };
 
-const DEFAULT_DEVICE = 'pixel8';
+const DEFAULT_DEVICE = 'motoG4';
 const MARGIN = 16; // gray space around the phone
 const BAR = 40;    // control bar height
 const STATUS_BAR = 24; // Android status bar height inside the screen
