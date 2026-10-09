@@ -9,6 +9,13 @@
 
 importScripts('devices.js', 'frame.js', 'i18n.js');
 
+// Embedded: Device Frame built into Demo Scenario Recorder (one extension with API
+// Recorder, see demo_scenario_recorder/build.py), which sets self.EMBEDDED before loading
+// this file. Then the toolbar icon is the recorder's, API Recorder's requests are direct
+// calls (companionRequest) instead of messages between extensions, and a recording's
+// device frames the tab where it is. Standalone, nothing changes.
+const EMBEDDED = self.EMBEDDED === true;
+
 // ---- state ---------------------------------------------------------------
 // session: framed[tabId] = { windowId, device, orientation, win, recording, inPlace }
 //          (inPlace: framed in its own tab and window, see "This tab" below)
@@ -65,7 +72,7 @@ async function saveLast(patch) {
 
 // ---- open ----------------------------------------------------------------
 
-chrome.action.onClicked.addListener(async (tab) => {
+if (!EMBEDDED) chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.url || !/^https?:/i.test(tab.url)) return; // chrome:// etc. can't be framed
   if ((await getFramed())[tab.id]?.inPlace) return unframeInPlace(tab.id);
   await openFrame(tab);
@@ -114,7 +121,15 @@ async function frameForCompanion(tabId, device) {
   const framed = (await getFramed())[tabId];
   if (framed?.recording) return { ok: false, error: 'already recording' };
   let target = tabId;
-  if (framed) {
+  if (EMBEDDED && !framed) {
+    // Built into the recorder: frame the tab where it is (no new window, no reload), so the
+    // click that started the recording also lets us record its video. A maximized window is
+    // made normal first, so it can be sized to the device.
+    const win = await chrome.windows.get(tab.windowId);
+    if (win.state === 'maximized' || win.state === 'fullscreen') await chrome.windows.update(tab.windowId, { state: 'normal' });
+    await saveLast({ device, orientation: 'portrait', toolbarHidden: true });
+    await frameInPlace(await chrome.tabs.get(tabId), await getLast());
+  } else if (framed) {
     let next = framed;
     if (framed.device !== device || framed.orientation !== 'portrait') next = await updateFramed(tabId, { device, orientation: 'portrait' });
     if (next.win && !next.win.toolbarHidden) next = await updateFramed(tabId, { win: { ...next.win, toolbarHidden: true } });
@@ -289,6 +304,8 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
 // ---- control bar ---------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // Embedded: the recorder's own messages (its panel, its key guard) aren't ours.
+  if (/^(panel-|keyguard-get$)/.test(String(msg?.type ?? ''))) return;
   // The key guard (any page) asks for the open-the-frame shortcut (Alt+Shift+F).
   if (msg?.type === 'keyguard-open') {
     chrome.commands.getAll().then((cmds) => sendResponse({ shortcut: cmds.find((c) => c.name === '_execute_action')?.shortcut || '' }), () => sendResponse({}));
@@ -513,6 +530,7 @@ const safeFile = (name) => String(name || '').replace(/[\\/:*?"<>|]+/g, '_').tri
 // when API Recorder is installed, we tell it the name of each download we
 // start, and its listener names it. Without API Recorder nothing changes.
 async function announceDownload(url, filename) {
+  if (EMBEDDED && typeof noteDownloadName === 'function') return noteDownloadName(url, filename);
   await chrome.runtime.sendMessage(COMPANIONS[0], { type: 'name-download', url, filename }).catch(() => {});
 }
 
@@ -530,45 +548,56 @@ async function saveScenarioVideo(url, ext) {
   await chrome.downloads.download({ url, filename, conflictAction: 'uniquify' });
 }
 
+// API Recorder's requests (video start / stop / status, frame in a device): from the other
+// extension by message, or - embedded - called directly.
+async function companionRequest(msg) {
+  if (!EMBEDDED && (await getLast()).companionLink === false) return { ok: false, error: 'link-off' };
+  const tabId = Number(msg.tabId);
+  if (msg.action === 'frame') return frameForCompanion(tabId, String(msg.device || ''));
+  const state = (await getFramed())[tabId];
+  if (msg.action === 'framed') return { ok: true, framed: Boolean(state), device: state?.device ?? null, inPlace: Boolean(state?.inPlace) };
+  if (!state) return { ok: false, error: 'not-framed' };
+  if (msg.action === 'unframe') {
+    if (state.recording) return { ok: false, error: 'recording' };
+    if (state.inPlace) await unframeInPlace(tabId);
+    else await chrome.windows.remove(state.windowId).catch(() => {});
+    return { ok: true };
+  }
+  if (msg.action === 'status') return { ok: true, recording: Boolean(state.recording) };
+  if (msg.action === 'stop') {
+    if (state.companionWait) {
+      await updateFramed(tabId, { companionWait: null });
+      await chrome.tabs.sendMessage(tabId, { type: 'df-toast-hide' }).catch(() => {});
+    }
+    if (state.recording) await chrome.tabs.sendMessage(tabId, { type: 'df-record-stop' }).catch(() => {});
+    return { ok: true };
+  }
+  if (msg.action === 'start') {
+    if (state.recording) return { ok: true, already: true };
+    const file = safeFile(msg.name) || 'Scenario';
+    const folder = typeof msg.folder === 'string' ? msg.folder.replace(/[\\:*?"<>|]+/g, '_').replace(/^\/+|\/+$/g, '') : '';
+    const idleMs = Math.max(0, Math.min(60000, Number(msg.idleMs) || 0));
+    await setPendingVideo({ file, folder });
+    try {
+      const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId, consumerTabId: tabId });
+      await chrome.tabs.sendMessage(tabId, { type: 'df-record-start', streamId, companion: { file, idleMs } });
+      return { ok: true };
+    } catch (e) {
+      // Chrome records a tab only after you used Device Frame in it yourself (a click or a
+      // shortcut) - not in a window it just opened for API Recorder. So: ask for the record
+      // shortcut, big, in the device window; pressing it starts this scenario's video.
+      await updateFramed(tabId, { companionWait: { file, idleMs } });
+      const key = (await shortcuts()).record || 'the record shortcut';
+      await chrome.tabs.sendMessage(tabId, { type: 'df-toast', text: `Press ${key} to start the video`, ms: 600000, big: true }).catch(() => {});
+      return { ok: false, error: `press ${key}`, detail: String(e?.message ?? e) };
+    }
+  }
+  return { ok: false, error: 'unknown action' };
+}
+
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   if (!COMPANIONS.includes(sender.id) || msg?.type !== 'video') return;
-  (async () => {
-    if ((await getLast()).companionLink === false) return { ok: false, error: 'link-off' };
-    const tabId = Number(msg.tabId);
-    if (msg.action === 'frame') return frameForCompanion(tabId, String(msg.device || ''));
-    const state = (await getFramed())[tabId];
-    if (!state) return { ok: false, error: 'not-framed' };
-    if (msg.action === 'status') return { ok: true, recording: Boolean(state.recording) };
-    if (msg.action === 'stop') {
-      if (state.companionWait) {
-        await updateFramed(tabId, { companionWait: null });
-        await chrome.tabs.sendMessage(tabId, { type: 'df-toast-hide' }).catch(() => {});
-      }
-      if (state.recording) await chrome.tabs.sendMessage(tabId, { type: 'df-record-stop' }).catch(() => {});
-      return { ok: true };
-    }
-    if (msg.action === 'start') {
-      if (state.recording) return { ok: true, already: true };
-      const file = safeFile(msg.name) || 'Scenario';
-      const folder = typeof msg.folder === 'string' ? msg.folder.replace(/[\\:*?"<>|]+/g, '_').replace(/^\/+|\/+$/g, '') : '';
-      const idleMs = Math.max(0, Math.min(60000, Number(msg.idleMs) || 0));
-      await setPendingVideo({ file, folder });
-      try {
-        const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId, consumerTabId: tabId });
-        await chrome.tabs.sendMessage(tabId, { type: 'df-record-start', streamId, companion: { file, idleMs } });
-        return { ok: true };
-      } catch (e) {
-        // Chrome records a tab only after you used Device Frame in it yourself (a click or a
-        // shortcut) - not in a window it just opened for API Recorder. So: ask for the record
-        // shortcut, big, in the device window; pressing it starts this scenario's video.
-        await updateFramed(tabId, { companionWait: { file, idleMs } });
-        const key = (await shortcuts()).record || 'the record shortcut';
-        await chrome.tabs.sendMessage(tabId, { type: 'df-toast', text: `Press ${key} to start the video`, ms: 600000, big: true }).catch(() => {});
-        return { ok: false, error: `press ${key}`, detail: String(e?.message ?? e) };
-      }
-    }
-    return { ok: false, error: 'unknown action' };
-  })().then(sendResponse, (e) => sendResponse({ ok: false, error: String(e?.message ?? e) }));
+  companionRequest(msg).then(sendResponse, (e) => sendResponse({ ok: false, error: String(e?.message ?? e) }));
   return true;
 });
 
@@ -602,7 +631,8 @@ async function toggleRecording(tab, state) {
     // API Recorder's scenario video, waiting for this key press: same name, folder and size.
     await chrome.tabs.sendMessage(tab.id, { type: 'df-record-start', streamId, companion: state.companionWait });
     await updateFramed(tab.id, { companionWait: null });
-    await chrome.runtime.sendMessage(COMPANIONS[0], { type: 'video-started', tabId: tab.id }).catch(() => {});
+    if (EMBEDDED && typeof noteVideoStarted === 'function') noteVideoStarted(tab.id);
+    else await chrome.runtime.sendMessage(COMPANIONS[0], { type: 'video-started', tabId: tab.id }).catch(() => {});
     return;
   }
   await chrome.tabs.sendMessage(tab.id, { type: 'df-record-start', streamId });
