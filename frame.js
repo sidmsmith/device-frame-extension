@@ -172,6 +172,9 @@ function drawFrame(L) {
   root.innerHTML = `
     <style>
       :host { all: initial; }
+      /* While a video records, the show-the-toolbar arrow stays hidden (it would be in the
+         video and in API Recorder's screenshots; the toolbar can't change then anyway). */
+      :host([data-recording]) .handle { display: none !important; }
       svg.frame { position: absolute; left: 0; top: 0; }
       .bar {
         position: absolute; left: 0; top: 0; right: 0; height: ${L.bar}px;
@@ -851,6 +854,7 @@ function drawFrame(L) {
     rec.mic?.getTracks().forEach((track) => track.stop());
     root.getElementById('count').hidden = true;
     delete host.dataset.countdown;
+    delete host.dataset.recording;
     window.__devframeRec = null;
     if (blob && blob.size) {
       const ext = rec.mime.startsWith('video/mp4') ? 'mp4' : 'webm';
@@ -886,6 +890,7 @@ function drawFrame(L) {
   // companion: { file, idleMs } when API Recorder started the video (see background.js).
   const startRecording = async (streamId, companion = null) => {
     window.__devframeHideToast?.(); // e.g. "press ... to start the video"
+    host.dataset.recording = '1';
     let stream;
     try {
       stream = streamId
@@ -913,6 +918,7 @@ function drawFrame(L) {
     } catch (e) {
       toast(e.name === 'NotAllowedError' && !streamId ? T('msgRecCanceled') : T('msgCantRecord', e.message || e.name));
       console.warn('Device Frame: recording failed to start', e);
+      delete host.dataset.recording;
       return;
     }
     // Microphone (optional). Asked for before the countdown, so Chrome's
