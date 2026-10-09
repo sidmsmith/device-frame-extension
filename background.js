@@ -197,6 +197,8 @@ const IN_PLACE_SPARE = 0;
 async function fitWindow(tabId, L, m, shiftY = 0) {
   const tab = await chrome.tabs.get(tabId);
   const zoom = await chrome.tabs.getZoom(tabId);
+  // A native device (Desktop) is as big as the screen's usable area at the normal zoom.
+  const defaultZoom = L.native ? ((await chrome.tabs.getZoomSettings(tabId).catch(() => null))?.defaultZoomFactor || 1) : 1;
 
   // outer* are screen pixels; inner* are CSS pixels at the current zoom. Some
   // windows report outerWidth/Height as 0 to the page (e.g. ones Claude in
@@ -207,8 +209,22 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
   const chromeW = outerW - m.innerWidth * zoom;
   const chromeH = outerH - m.innerHeight * zoom;
   const spare = L.inPlace ? IN_PLACE_SPARE : 0;
+  if (L.native) {
+    // Measure the screen in CSS px at the normal zoom; lay out again if the size changed.
+    const nativeSize = {
+      w: Math.floor((m.availWidth - chromeW) / defaultZoom),
+      h: Math.floor((m.availHeight - chromeH) / defaultZoom) - spare - L.bar,
+    };
+    const prev = (await getLast()).nativeSize;
+    if (nativeSize.w > 200 && nativeSize.h > 200 && (!prev || Math.abs(prev.w - nativeSize.w) > 2 || Math.abs(prev.h - nativeSize.h) > 2)) {
+      await saveLast({ nativeSize });
+      const state = (await getFramed())[tabId];
+      if (state) return reframe(tabId, state, shiftY);
+    }
+  }
   const fit = Math.min(1, (m.availHeight - chromeH) / (L.H + spare), (m.availWidth - chromeW) / L.W);
-  const target = Math.max(0.25, Math.floor(fit * 100) / 100);
+  // Native: the normal zoom, never zoomed out to fit (the layout already fits the screen).
+  const target = L.native ? defaultZoom : Math.max(0.25, Math.floor(fit * 100) / 100);
 
   const win0 = await chrome.windows.get(tab.windowId);
   if (win0.state === 'maximized' || win0.state === 'fullscreen') {

@@ -69,8 +69,11 @@ const DEVICES = {
     colors: ['#26272b', '#111214'], style: 'stand', group: 'full',
     fixedOrientation: true, noStatusBar: true, camera: false,
   },
+  // Desktop: no frame, and the size of your screen at your normal zoom (native), so a web
+  // app looks exactly as in a normal window - nothing is zoomed out to fit a fixed size.
+  // 1920 x 1080 only until the screen has been measured (background.js, fitWindow).
   desktop: {
-    name: 'Desktop (no frame)', width: 1920, height: 1080,
+    name: 'Desktop (no frame)', width: 1920, height: 1080, native: true,
     bezel: { side: 0, top: 0, bottom: 0 }, radius: 0, screenRadius: 0,
     colors: ['#000000', '#000000'], style: 'bare', fixedColor: true, group: 'full',
     fixedOrientation: true, noStatusBar: true, margin: 0, cropPad: 0,
@@ -170,7 +173,10 @@ function genericDevice(name, size) {
 // screen the page gets (the screen minus the status bar, when shown).
 function computeLayout(deviceKey, orientation, prefs = {}) {
   const key = isDeviceKey(deviceKey, prefs) ? (DEVICE_ALIASES[deviceKey] ?? deviceKey) : DEFAULT_DEVICE;
-  const d = resolveDevice(key, prefs);
+  let d = resolveDevice(key, prefs);
+  if (d.native && prefs.nativeSize?.w > 0 && prefs.nativeSize?.h > 0) {
+    d = { ...d, width: prefs.nativeSize.w, height: prefs.nativeSize.h };
+  }
   const custom = normalizeCustom(prefs.custom);
   const landscape = orientation === 'landscape' && !d.fixedOrientation;
   // Devices with their own artwork (drawn in portrait device coordinates).
@@ -316,6 +322,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     bounds: { x: phone.x - over, y: phone.y, w: phone.w + over * 2, h: phone.h + baseH + standH },
     cropPad: d.cropPad ?? 8,
     frameless: d.style === 'bare',
+    native: Boolean(d.native),
     canRotate: !d.fixedOrientation,
     hasStatusBar: !d.noStatusBar,
     colors: (!d.fixedColor && FRAME_COLORS[prefs.frameColor]) || d.colors,
