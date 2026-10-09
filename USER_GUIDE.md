@@ -49,15 +49,6 @@ the normal page: same login, same data.
 The window remembers its position, device, and settings. Close the window
 when you're done.
 
-**Frame in this tab instead (advanced):** with **Open the frame in: This
-tab** (right-click the Device Frame icon → **Options**), the icon frames the
-page right where it is, in its own tab and window, instead of opening a new
-window. The window is resized to the device
-just like a frame window (a normal window can't be quite as narrow, so a
-narrow phone is centered with a little room on each side). Click the icon
-again to remove the frame (the page reloads). This is for when another tool drives the tab – for example Claude
-in Chrome, which can only work in its own tab group, not in a new window.
-
 ## 3. The control bar
 
 | Icon | Name | What it does |
@@ -371,6 +362,7 @@ included in the version they lead up to).
 
 | Version | Date | Highlights |
 |---|---|---|
+| **0.26** | Oct 9, 2026 | Lighter: the advanced **Options** page (**Open the frame in: This tab** and the API Recorder link) is gone - the icon always opens a frame window, and recording works as before. App popups such as dropdown lists now open **centered on the device screen** instead of low and cut off. |
 | **0.25** | Oct 8, 2026 | New shortcut **Alt+Shift+F** frames the page, like clicking the icon. **Skip loading screens** becomes **Pause during delays**: device recordings also pause after 2 seconds with nothing happening and continue with your next action, cutting the thinking time from videos; while you're speaking (microphone on) they never pause, so narration is kept. |
 | **0.24** | Oct 8, 2026 | Behind the scenes, for other tools: an advanced **Options** page (right-click the icon) with **Open the frame in: This tab** and a link that lets the separate API Recorder extension start and stop device videos; device recordings can be paused and resumed from the page. Nothing changes in everyday use. |
 | **0.22** | Oct 7, 2026 | **Skip loading screens** in device recordings (cuts WM Mobile's "Loading...." waits, with a warning when the microphone is also on), three new Full Screen devices (**Tablet Stand**, **Kiosk** and a bezel-only **Monitor**), and Full Screen devices that **fill a maximized or F11 window** edge to edge on any screen. |

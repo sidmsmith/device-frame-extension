@@ -73,15 +73,7 @@ const DEVICES = {
   // app looks exactly as in a normal window - nothing is zoomed out to fit a fixed size.
   // 1920 x 1080 only until the screen has been measured (background.js, fitWindow).
   desktop: {
-    name: 'Desktop (no frame)', width: 1920, height: 1080, native: true, bannerRoom: true,
-    bezel: { side: 0, top: 0, bottom: 0 }, radius: 0, screenRadius: 0,
-    colors: ['#000000', '#000000'], style: 'bare', fixedColor: true, group: 'full',
-    fixedOrientation: true, noStatusBar: true, margin: 0, cropPad: 0,
-  },
-  // A fixed desktop size that fits a laptop screen at the normal zoom (with room for the
-  // debugging banner): the same picture size on every computer, other windows visible.
-  desktop720: {
-    name: 'Desktop 1280×720 (no frame)', width: 1280, height: 720, bannerRoom: true,
+    name: 'Desktop (no frame)', width: 1920, height: 1080, native: true,
     bezel: { side: 0, top: 0, bottom: 0 }, radius: 0, screenRadius: 0,
     colors: ['#000000', '#000000'], style: 'bare', fixedColor: true, group: 'full',
     fixedOrientation: true, noStatusBar: true, margin: 0, cropPad: 0,
@@ -94,9 +86,9 @@ const DEVICES = {
 };
 
 const DEFAULT_DEVICE = 'motoG4';
-// Room kept below a desktop device for Chrome's "... started debugging this browser" banner
-// (API Recorder): it pushes the page down by this much (CSS px) when a recording starts,
-// so without the room the bottom of the app - its buttons - would be cut off.
+// Room kept below the device for Chrome's "... started debugging this browser" banner
+// (Demo Scenario Recorder, see layoutFor): it pushes the page down by this much (CSS px)
+// when a recording starts, so without the room the bottom of the app would be cut off.
 const BANNER_ROOM = 56;
 const MARGIN = 16; // gray space around the phone
 const BAR = 40;    // control bar height
@@ -335,7 +327,6 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     cropPad: d.cropPad ?? 8,
     frameless: d.style === 'bare',
     native: Boolean(d.native),
-    bannerRoom: d.bannerRoom ? BANNER_ROOM : 0,
     canRotate: !d.fixedOrientation,
     hasStatusBar: !d.noStatusBar,
     colors: (!d.fixedColor && FRAME_COLORS[prefs.frameColor]) || d.colors,
@@ -349,7 +340,6 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     iconAlways: Boolean(prefs.iconAlways),
     fitWidth: prefs.fitWidth !== false,
     openHidden: prefs.openHidden !== false,
-    openIn: prefs.openIn === 'tab' ? 'tab' : 'window',
     titleRules: escapeHtml(typeof prefs.titleRules === 'string' ? prefs.titleRules : 'MUP = WM Mobile'),
     decor: art ? {
       svg: art.svg,

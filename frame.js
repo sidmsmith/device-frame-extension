@@ -123,7 +123,7 @@ function drawFrame(L) {
   document.documentElement.appendChild(host);
   const root = host.attachShadow({ mode: 'open' });
   // Where the device and its screen are (CSS px, from the window's top left),
-  // for tools that take their own screenshots (API Recorder crops to these).
+  // for tools that take their own screenshots (Demo Scenario Recorder crops to these).
   // mask: the device outline as an SVG path (photo devices: their rounded body).
   const box = (b) => `M${b.x},${b.y}h${b.w}v${b.h}h-${b.w}z`;
   host.dataset.capture = JSON.stringify({
@@ -181,7 +181,7 @@ function drawFrame(L) {
     <style>
       :host { all: initial; }
       /* While a video records, the show-the-toolbar arrow stays hidden (it would be in the
-         video and in API Recorder's screenshots; the toolbar can't change then anyway). */
+         video and in Demo Scenario Recorder's screenshots; the toolbar can't change then anyway). */
       :host([data-recording]) .handle { display: none !important; }
       svg.frame { position: absolute; left: 0; top: 0; }
       .bar {
@@ -785,13 +785,13 @@ function drawFrame(L) {
     window.__devframeResizeTimer = setTimeout(() => {
       // Never while a video is recording: re-fitting would make it jump.
       if (window.__devframeRec?.recorder) return;
-      // Framed in this tab: the window was sized once (with spare height for
+      // Framed in its own tab (Demo Scenario Recorder): the window was sized once (with spare height for
       // Chrome's info bars, which come and go); only a width change (e.g.
       // maximize / restore) re-fits it, not those height changes.
       if (L.inPlace && Math.abs(window.innerWidth - L.W) <= 2) return;
       if (Math.abs(window.innerWidth - L.W) <= 2 && Math.abs(window.innerHeight - L.H) <= 2) return;
       // Room kept for the debugging banner: any height between "banner shown" and "banner
-      // hidden" is expected (the banner comes and goes with API Recorder's recordings).
+      // hidden" is expected (the banner comes and goes with Demo Scenario Recorder's recordings).
       if (L.bannerRoom && Math.abs(window.innerWidth - L.W) <= 2 && window.innerHeight >= L.H - 2 && window.innerHeight <= L.H + L.bannerRoom + 2) return;
       send({
         type: 'refit',
@@ -867,13 +867,13 @@ function drawFrame(L) {
     if (blob && blob.size) {
       const ext = rec.mime.startsWith('video/mp4') ? 'mp4' : 'webm';
       // e.g. ZebraTC72_20261003141530.mp4 (device name without spaces, local time),
-      // or the scenario's name when API Recorder started the video (the
+      // or the scenario's name when Demo Scenario Recorder started the video (the
       // background then moves it into the scenario's folder).
       const stamp = (d = new Date()) => [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join('');
       const name = rec.companion?.file || L.deviceName.replace(/[^A-Za-z0-9-]+/g, '') || 'Device';
       const url = URL.createObjectURL(blob);
       if (rec.companion) {
-        // API Recorder's scenario video: the background saves it (into the scenario's folder).
+        // Demo Scenario Recorder's scenario video: the background saves it (embedded.js).
         send({ type: 'save-video', url, ext });
       } else {
         const a = document.createElement('a');
@@ -895,7 +895,7 @@ function drawFrame(L) {
 
   // streamId comes from chrome.tabCapture (the keyboard shortcut), which needs
   // no prompt; without it we ask Chrome via its "Share this tab" prompt.
-  // companion: { file, idleMs } when API Recorder started the video (see background.js).
+  // companion: { file, idleMs } when Demo Scenario Recorder started the video (embedded.js).
   const startRecording = async (streamId, companion = null) => {
     window.__devframeHideToast?.(); // e.g. "press ... to start the video"
     host.dataset.recording = '1';
@@ -946,7 +946,7 @@ function drawFrame(L) {
       ? ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=vp9,opus', 'video/webm']
       : ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'])
       .find((type) => MediaRecorder.isTypeSupported(type));
-    // Idle time is skipped by "Pause during delays" (2 s), or as API Recorder asks.
+    // Idle time is skipped by "Pause during delays" (2 s), or as Demo Scenario Recorder asks.
     const idleMs = companion ? Number(companion.idleMs) || 0 : L.skipLoading ? 2000 : 0;
     const rec = { stream, mime, mic, companion, idleMs };
     window.__devframeRec = rec;
@@ -974,7 +974,7 @@ function drawFrame(L) {
       let n = 3;
       count.textContent = n;
       count.hidden = false;
-      host.dataset.countdown = '1'; // API Recorder's screenshots wait for it
+      host.dataset.countdown = '1'; // Demo Scenario Recorder's screenshots wait for it
       await new Promise((resolve) => {
         rec.countdown = setInterval(() => {
           n -= 1;
@@ -993,7 +993,7 @@ function drawFrame(L) {
     // mapped to video pixels (video width / viewport width covers zoom + DPR).
     const pad = L.cropPad;
     const crop = { x: L.bounds.x - pad, y: L.bounds.y - pad, w: L.bounds.w + pad * 2, h: L.bounds.h + pad * 2 };
-    // API Recorder's scenario videos have a fixed size (1.75 px per CSS px), so
+    // Demo Scenario Recorder's scenario videos have a fixed size (1.75 px per CSS px), so
     // they all match whatever the window's zoom; other videos use the screen's own.
     const scale0 = rec.companion ? 1.75 : video.videoWidth / window.innerWidth;
     const canvas = document.createElement('canvas');
@@ -1048,7 +1048,7 @@ function drawFrame(L) {
   //   - a loading screen: Ionic's ion-loading, WM Mobile's "Loading....",
   //     until 0.3 s after it goes (the new screen draws);
   //   - idle time: nothing happening on the screen (no click, key, typing,
-  //     scrolling or screen change) for 2 s (API Recorder's videos: its value);
+  //     scrolling or screen change) for 2 s (Demo Scenario Recorder's videos: its value);
   //   ...but never while you're speaking (microphone on), so narration isn't cut;
   // - a pause signal from the page (hold, e.g. Claude asking a question).
   const updatePause = (rec) => {

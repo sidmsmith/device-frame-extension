@@ -9,16 +9,15 @@
 
 importScripts('devices.js', 'frame.js', 'i18n.js');
 
-// Embedded: Device Frame built into Demo Scenario Recorder (one extension with API
-// Recorder, see demo_scenario_recorder/build.py), which sets self.EMBEDDED before loading
-// this file. Then the toolbar icon is the recorder's, API Recorder's requests are direct
-// calls (companionRequest) instead of messages between extensions, and a recording's
-// device frames the tab where it is. Standalone, nothing changes.
+// Embedded: Device Frame built into Demo Scenario Recorder (see
+// demo_scenario_recorder/build.py), which sets self.EMBEDDED and also loads embedded.js
+// (framing a recording's tab where it is, the scenario video). Then the toolbar icon is
+// the recorder's. Standalone: the icon opens a frame window, that's all.
 const EMBEDDED = self.EMBEDDED === true;
 
 // ---- state ---------------------------------------------------------------
 // session: framed[tabId] = { windowId, device, orientation, win, recording, inPlace }
-//          (inPlace: framed in its own tab and window, see "This tab" below)
+//          (inPlace: framed in its own tab, by Demo Scenario Recorder - embedded.js)
 //          (win: this window's look, see WINDOW_PREFS)
 //          screenRec = { tabId, started, mic } while an "Entire screen" recording runs
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
@@ -78,18 +77,15 @@ async function saveLast(patch) {
 
 if (!EMBEDDED) chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.url || !/^https?:/i.test(tab.url)) return; // chrome:// etc. can't be framed
-  if ((await getFramed())[tab.id]?.inPlace) return unframeInPlace(tab.id);
   await openFrame(tab);
 });
 
-// Frame a tab: in a frame window of its own (the page reopened there), or where it is
-// ("Open the frame in: This tab"). Returns the framed tab's id.
+// Frame a tab in a frame window of its own (the page reopened there). Returns the framed tab's id.
 async function openFrame(tab) {
   // "Open with toolbar hidden" (default on): start every frame window with the
   // toolbar hidden, whatever it was last time.
   if ((await getLast()).openHidden !== false) await saveLast({ toolbarHidden: true });
   const last = await getLast();
-  if (last.openIn === 'tab') { await frameInPlace(tab, last); return tab.id; }
   const device = isDeviceKey(last.device, last) ? last.device : DEFAULT_DEVICE;
   const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
   const L = computeLayout(device, orientation, last);
@@ -113,73 +109,6 @@ async function openFrame(tab) {
   // Keep zoom changes to this tab only, so normal tabs on the same site are untouched.
   await chrome.tabs.setZoomSettings(tabId, { mode: 'automatic', scope: 'per-tab' }).catch(() => {});
   return tabId;
-}
-
-// API Recorder asks for its recording's device ("frame"): the tab is framed in that device
-// - in its own frame window, sized and placed, toolbar hidden - or switched to it if it's
-// framed already; the answer comes once the frame is drawn and the window has settled.
-async function frameForCompanion(tabId, device) {
-  const tab = await chrome.tabs.get(tabId);
-  if (!/^https?:/i.test(tab.url || '')) return { ok: false, error: 'this page cannot be framed' };
-  if (!isDeviceKey(device, await getLast())) return { ok: false, error: `unknown device ${device}` };
-  const framed = (await getFramed())[tabId];
-  if (framed?.recording) return { ok: false, error: 'already recording' };
-  let target = tabId;
-  if (EMBEDDED && !framed) {
-    // Built into the recorder: frame the tab where it is (no new window, no reload), so the
-    // click that started the recording also lets us record its video. A maximized window is
-    // made normal first, so it can be sized to the device.
-    const win = await chrome.windows.get(tab.windowId);
-    if (win.state === 'maximized' || win.state === 'fullscreen') await chrome.windows.update(tab.windowId, { state: 'normal' });
-    await saveLast({ device, orientation: 'portrait', toolbarHidden: true });
-    await frameInPlace(await chrome.tabs.get(tabId), await getLast());
-  } else if (framed) {
-    let next = framed;
-    if (framed.device !== device || framed.orientation !== 'portrait') next = await updateFramed(tabId, { device, orientation: 'portrait' });
-    if (next.win && !next.win.toolbarHidden) next = await updateFramed(tabId, { win: { ...next.win, toolbarHidden: true } });
-    await saveLast({ device, orientation: 'portrait' });
-    if (next !== framed) await reframe(tabId, next);
-  } else {
-    await saveLast({ device, orientation: 'portrait', toolbarHidden: true });
-    target = await openFrame(tab);
-  }
-  // Ready: the frame drawn in the page, then a moment for the window to settle.
-  for (let i = 0; i < 60; i += 1) {
-    const drawn = await chrome.scripting.executeScript({ target: { tabId: target }, func: () => Boolean(document.getElementById('__devframe')) })
-      .then(([r]) => r?.result, () => false);
-    if (drawn) break;
-    await new Promise((r) => setTimeout(r, 250));
-  }
-  await new Promise((r) => setTimeout(r, 1200));
-  return { ok: true, tabId: target };
-}
-
-// "Open the frame in: This tab": frame the tab where it is, in its own window,
-// instead of reopening it in a popup. Used when another tool drives the tab
-// (e.g. Claude in Chrome, which can only reach tabs in its own tab group).
-// The window is sized to the device as a frame window is (same size, zoomed
-// out only when the screen is too small); a normal window can't be as narrow
-// as a popup, so a narrow phone is centered in the extra width. Clicking the
-// icon again removes the frame.
-async function frameInPlace(tab, last) {
-  const device = isDeviceKey(last.device, last) ? last.device : DEFAULT_DEVICE;
-  const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
-  await chrome.tabs.setZoomSettings(tab.id, { mode: 'automatic', scope: 'per-tab' }).catch(() => {});
-  // Maximized: the device stays at its real size, centered in the window ('refit' keeps this up to date).
-  const win = await chrome.windows.get(tab.windowId);
-  const big = (win.state === 'maximized' || win.state === 'fullscreen') && tab.width > 0 && tab.height > 0;
-  const fill = big ? tab.width / tab.height : null;
-  const fillMin = big ? { w: tab.width, h: tab.height } : null; // tab size at 100% zoom
-  const state = await updateFramed(tab.id, { windowId: tab.windowId, device, orientation, win: windowPrefs(last), inPlace: true, fill, fillMin });
-  await reframe(tab.id, state);
-}
-
-async function unframeInPlace(tabId) {
-  const state = (await getFramed())[tabId];
-  if (state?.recording) return; // stop the recording first
-  await updateFramed(tabId, null);
-  await chrome.tabs.setZoom(tabId, 0).catch(() => {}); // back to the default zoom
-  await chrome.tabs.reload(tabId); // the simplest way to undo everything drawn in the page
 }
 
 // ---- draw on every page load ---------------------------------------------
@@ -240,14 +169,8 @@ function isExpectedRaceError(e) {
     .test(String(e?.message ?? e));
 }
 
-// Framed in its own tab: spare height below the device (CSS px). 0 = none, so
-// the device stays at 100% on a screen-height window; a Chrome info bar that
-// appears later may briefly cover the bottom of the bezel, but the window isn't
-// re-fitted for it (see the frame's resize handler), so nothing jumps.
-const IN_PLACE_SPARE = 0;
-
-// Size the window so the viewport is exactly L.W × L.H CSS px (plus the spare
-// height in this-tab mode), zooming out when that is bigger than the screen.
+// Size the window so the viewport is exactly L.W × L.H CSS px (plus the room for the
+// debugging banner, embedded), zooming out when that is bigger than the screen.
 // shiftY (CSS px) moves the window down/up, e.g. to keep the device in place
 // when the toolbar is hidden or shown.
 async function fitWindow(tabId, L, m, shiftY = 0) {
@@ -264,8 +187,8 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
   const outerH = winSize ? winSize.height : m.outerHeight;
   const chromeW = outerW - m.innerWidth * zoom;
   const chromeH = outerH - m.innerHeight * zoom;
-  // Spare height below the device: this-tab mode's, and room for the debugging banner.
-  const spare = (L.inPlace ? IN_PLACE_SPARE : 0) + (L.bannerRoom || 0);
+  // Spare height below the device: room for the debugging banner (embedded).
+  const spare = L.bannerRoom || 0;
   if (L.native && !(await getFramed())[tabId]?.recording) {
     // Measure the screen in CSS px at the normal zoom; lay out again if the size changed.
     const nativeSize = {
@@ -435,7 +358,6 @@ async function handleControl(tabId, tab, msg) {
       if (typeof msg.prefs.openHidden === 'boolean') prefs.openHidden = msg.prefs.openHidden;
       if (msg.prefs.lang === 'auto' || LANGS.includes(msg.prefs.lang)) prefs.lang = msg.prefs.lang;
       if (msg.prefs.recordMode === 'device' || msg.prefs.recordMode === 'screen') prefs.recordMode = msg.prefs.recordMode;
-      if (msg.prefs.openIn === 'window' || msg.prefs.openIn === 'tab') prefs.openIn = msg.prefs.openIn;
       // Everything is remembered for new windows; this window's own look
       // changes only here, shared settings redraw every frame.
       await saveLast(prefs);
@@ -469,7 +391,7 @@ async function handleControl(tabId, tab, msg) {
         // In place: the window can't get as narrow as the device (a normal
         // window's minimum width), so lay out to the window's shape, centered.
         const room = layoutFor(state, await getLast()).bannerRoom || 0;
-        const fill = msg.metrics.innerWidth / Math.max(1, msg.metrics.innerHeight - IN_PLACE_SPARE - room); // the spare height isn't part of the layout
+        const fill = msg.metrics.innerWidth / Math.max(1, msg.metrics.innerHeight - room); // the banner room isn't part of the layout
         if (!(Math.abs((state.fill ?? 0) - fill) < 0.003) && !state.recording) return reframe(tabId, await updateFramed(tabId, { fill, fillMin: null }));
       }
       const fill = big ? msg.metrics.innerWidth / msg.metrics.innerHeight : null;
@@ -485,8 +407,8 @@ async function handleControl(tabId, tab, msg) {
       else await fitWindow(tabId, layoutFor(state, await getLast()), msg.metrics);
       break;
     }
-    case 'save-video':
-      if (typeof msg.url === 'string' && msg.url.startsWith('blob:')) await saveScenarioVideo(msg.url, msg.ext);
+    case 'save-video':      // a scenario video (embedded.js)
+      if (EMBEDDED && typeof msg.url === 'string' && msg.url.startsWith('blob:')) await saveScenarioVideo(msg.url, msg.ext);
       break;
     case 'screenshot': {
       const L = layoutFor(state, await getLast());
@@ -505,107 +427,6 @@ async function toggleToolbar(tabId, state) {
   await reframe(tabId, next, toolbarHidden ? BAR : -BAR);
 }
 
-// ---- API Recorder link ----------------------------------------------------------
-// API Recorder (a separate, private extension) can start and stop the device
-// video of a framed tab, so one shortcut records both; it passes the scenario's
-// name and folder (the video is saved there) and an idle time to skip. Chrome
-// lets us record a tab without a prompt only after the user invoked Device
-// Frame on that tab (e.g. clicked the icon to frame it); if that's gone, we say
-// so and the user presses the record shortcut instead. Off with the hidden
-// option (options.html); nobody else can send these messages.
-const COMPANIONS = ['ccmkbiglnhkemogcajbmadphdfffgolm']; // API Recorder (its manifest key fixes this id)
-
-// The scenario video waiting to be saved: { file, folder } (see saveScenarioVideo below).
-let pendingVideo; // undefined until read from session storage
-chrome.storage.session.get('pendingVideo').then((r) => { if (pendingVideo === undefined) pendingVideo = r.pendingVideo ?? null; });
-async function setPendingVideo(value) {
-  pendingVideo = value;
-  if (value) await chrome.storage.session.set({ pendingVideo: value });
-  else await chrome.storage.session.remove('pendingVideo');
-}
-
-// File-name safe, no spaces (the video's file name).
-const safeFile = (name) => String(name || '').replace(/[\\/:*?"<>|]+/g, '_').trim()
-  .replace(/\s*[-–—]\s*/g, '-').replace(/\s+/g, '_').slice(0, 80); // "SKU Level ASN – Different UOMs" -> "SKU_Level_ASN-Different_UOMs"
-
-// Download names. Chrome lets only the most recently installed extension with
-// a downloads.onDeterminingFilename listener name downloads, and one that
-// doesn't name a download loses its name (e.g. "download (1)"). So Device Frame
-// has no such listener (it would take names away from API Recorder's files);
-// when API Recorder is installed, we tell it the name of each download we
-// start, and its listener names it. Without API Recorder nothing changes.
-async function announceDownload(url, filename) {
-  if (EMBEDDED && typeof noteDownloadName === 'function') return noteDownloadName(url, filename);
-  await chrome.runtime.sendMessage(COMPANIONS[0], { type: 'name-download', url, filename }).catch(() => {});
-}
-
-// API Recorder's scenario video (the page hands over its blob URL): into the
-// scenario's folder as "<scenario name>.mp4", else Downloads as "<name>_<time>.mp4".
-async function saveScenarioVideo(url, ext) {
-  if (pendingVideo === undefined) pendingVideo = (await chrome.storage.session.get('pendingVideo')).pendingVideo ?? null;
-  const p = pendingVideo ?? { file: 'Scenario', folder: '' };
-  await setPendingVideo(null);
-  const d = new Date();
-  const stamp = [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join('');
-  const kind = ext === 'webm' ? 'webm' : 'mp4';
-  const filename = p.folder ? `${p.folder}/${p.file}.${kind}` : `${p.file}_${stamp}.${kind}`;
-  await announceDownload(url, filename);
-  await chrome.downloads.download({ url, filename, conflictAction: 'uniquify' });
-}
-
-// API Recorder's requests (video start / stop / status, frame in a device): from the other
-// extension by message, or - embedded - called directly.
-async function companionRequest(msg) {
-  if (!EMBEDDED && (await getLast()).companionLink === false) return { ok: false, error: 'link-off' };
-  const tabId = Number(msg.tabId);
-  if (msg.action === 'frame') return frameForCompanion(tabId, String(msg.device || ''));
-  const state = (await getFramed())[tabId];
-  if (msg.action === 'framed') return { ok: true, framed: Boolean(state), device: state?.device ?? null, inPlace: Boolean(state?.inPlace) };
-  if (!state) return { ok: false, error: 'not-framed' };
-  if (msg.action === 'unframe') {
-    if (state.recording) return { ok: false, error: 'recording' };
-    if (state.inPlace) await unframeInPlace(tabId);
-    else await chrome.windows.remove(state.windowId).catch(() => {});
-    return { ok: true };
-  }
-  if (msg.action === 'status') return { ok: true, recording: Boolean(state.recording) };
-  if (msg.action === 'stop') {
-    if (state.companionWait) {
-      await updateFramed(tabId, { companionWait: null });
-      await chrome.tabs.sendMessage(tabId, { type: 'df-toast-hide' }).catch(() => {});
-    }
-    if (state.recording) await chrome.tabs.sendMessage(tabId, { type: 'df-record-stop' }).catch(() => {});
-    return { ok: true };
-  }
-  if (msg.action === 'start') {
-    if (state.recording) return { ok: true, already: true };
-    const file = safeFile(msg.name) || 'Scenario';
-    const folder = typeof msg.folder === 'string' ? msg.folder.replace(/[\\:*?"<>|]+/g, '_').replace(/^\/+|\/+$/g, '') : '';
-    const idleMs = Math.max(0, Math.min(60000, Number(msg.idleMs) || 0));
-    await setPendingVideo({ file, folder });
-    try {
-      const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId, consumerTabId: tabId });
-      await chrome.tabs.sendMessage(tabId, { type: 'df-record-start', streamId, companion: { file, idleMs } });
-      return { ok: true };
-    } catch (e) {
-      // Chrome records a tab only after you used Device Frame in it yourself (a click or a
-      // shortcut) - not in a window it just opened for API Recorder. So: ask for the record
-      // shortcut, big, in the device window; pressing it starts this scenario's video.
-      await updateFramed(tabId, { companionWait: { file, idleMs } });
-      const key = (await shortcuts()).record || 'the record shortcut';
-      await chrome.tabs.sendMessage(tabId, { type: 'df-toast', text: `Press ${key} to start the video`, ms: 600000, big: true }).catch(() => {});
-      return { ok: false, error: `press ${key}`, detail: String(e?.message ?? e) };
-    }
-  }
-  return { ok: false, error: 'unknown action' };
-}
-
-chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
-  if (!COMPANIONS.includes(sender.id) || msg?.type !== 'video') return;
-  companionRequest(msg).then(sendResponse, (e) => sendResponse({ ok: false, error: String(e?.message ?? e) }));
-  return true;
-});
-
 // Keyboard shortcuts (chrome.commands works even when the app swallows keys).
 chrome.commands.onCommand.addListener(async (command, tab) => {
   if (!tab) return;
@@ -613,17 +434,8 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   try {
     // A screen recording can be stopped from any window.
     if (command === 'record' && (await getScreenRec())) return await stopScreenRecording();
-    // Frame / unframe this tab (built into the recorder, whose icon opens its panel): the
-    // last device, framed where the tab is; again to take the frame off.
-    if (command === 'toggle-frame') {
-      if (!state) {
-        if (/^https?:/i.test(tab.url || '')) await frameForCompanion(tab.id, (await getLast()).device || DEFAULT_DEVICE);
-      } else if (!state.recording) {
-        if (state.inPlace) await unframeInPlace(tab.id);
-        else await chrome.windows.remove(state.windowId).catch(() => {});
-      }
-      return;
-    }
+    // Frame / unframe this tab (embedded: the recorder's icon opens its panel).
+    if (command === 'toggle-frame') return EMBEDDED ? await toggleFrameHere(tab, state) : undefined;
     if (!state) return;
     if (command === 'toggle-toolbar' && !state.recording) await toggleToolbar(tab.id, state);
     if (command === 'copy-screenshot') await copyScreenshot(tab, state);
@@ -643,14 +455,7 @@ async function toggleRecording(tab, state) {
     return;
   }
   const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id, consumerTabId: tab.id });
-  if (state.companionWait) {
-    // API Recorder's scenario video, waiting for this key press: same name, folder and size.
-    await chrome.tabs.sendMessage(tab.id, { type: 'df-record-start', streamId, companion: state.companionWait });
-    await updateFramed(tab.id, { companionWait: null });
-    if (EMBEDDED && typeof noteVideoStarted === 'function') noteVideoStarted(tab.id);
-    else await chrome.runtime.sendMessage(COMPANIONS[0], { type: 'video-started', tabId: tab.id }).catch(() => {});
-    return;
-  }
+  if (EMBEDDED && state.companionWait) return startWaitingVideo(tab, state, streamId); // a scenario video (embedded.js)
   await chrome.tabs.sendMessage(tab.id, { type: 'df-record-start', streamId });
 }
 
@@ -724,7 +529,7 @@ async function downloadScreenshot(url, L) {
   const stamp = [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()]
     .map((n) => String(n).padStart(2, '0')).join('');
   const name = L.deviceName.replace(/[^A-Za-z0-9-]+/g, '') || 'Device';
-  await announceDownload(url, `${name}_${stamp}.png`);
+  if (EMBEDDED && typeof noteDownloadName === 'function') noteDownloadName(url, `${name}_${stamp}.png`); // the recorder names downloads
   await chrome.downloads.download({ url, filename: `${name}_${stamp}.png` });
 }
 
