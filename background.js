@@ -821,6 +821,7 @@ function isNewer(a, b) {
 // The newer version to offer, or null. Starts a background check when the
 // last one is old (the frames are redrawn if it finds something new).
 async function availableUpdate() {
+  if (EMBEDDED) return null; // built into Demo Scenario Recorder: its releases aren't Device Frame's
   const { updateCheck } = await chrome.storage.local.get('updateCheck');
   if (!updateCheck || Date.now() - updateCheck.at > UPDATE_CHECK_EVERY) checkForUpdate(updateCheck);
   const latest = updateCheck?.latest;
