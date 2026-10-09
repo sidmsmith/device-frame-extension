@@ -213,6 +213,9 @@ function drawFrame(L) {
         opacity: 0; transition: opacity .2s; pointer-events: none;
       }
       .toast.show { opacity: .92; }
+      /* A message you mustn't miss (e.g. press the record shortcut), centered and big. */
+      .toast.big { right: auto; left: 50%; top: 38%; transform: translateX(-50%); padding: 14px 22px;
+        font: 600 18px system-ui, sans-serif; background: #d93025; border-radius: 8px; text-align: center; }
       .handle {
         position: absolute; left: 50%; top: 0; transform: translateX(-50%);
         width: 52px; height: 13px; padding: 0; box-sizing: border-box;
@@ -422,16 +425,22 @@ function drawFrame(L) {
     window.__devframeLastClick = { key, t: Date.now() };
   }, true);
   const toastEl = root.getElementById('toast');
-  const toast = (text, ms = 2500) => {
-    window.__devframePendingToast = { text, until: Date.now() + ms };
+  const toast = (text, ms = 2500, big = false) => {
+    window.__devframePendingToast = { text, until: Date.now() + ms, big };
     toastEl.textContent = text;
+    toastEl.classList.toggle('big', Boolean(big));
     toastEl.classList.add('show');
     clearTimeout(window.__devframeToast);
     window.__devframeToast = setTimeout(() => toastEl.classList.remove('show'), ms);
   };
   // Re-show a message cut short by the redraw (e.g. after a recording ends).
   const pending = window.__devframePendingToast;
-  if (pending && pending.until > Date.now() + 300) toast(pending.text, pending.until - Date.now());
+  if (pending && pending.until > Date.now() + 300) toast(pending.text, pending.until - Date.now(), pending.big);
+  window.__devframeHideToast = () => {
+    window.__devframePendingToast = null;
+    clearTimeout(window.__devframeToast);
+    toastEl.classList.remove('show', 'big');
+  };
 
   // Keep typing in our controls away from the app's own key handlers (e.g. scanner input).
   const bar = root.querySelector('.bar');
@@ -876,6 +885,7 @@ function drawFrame(L) {
   // no prompt; without it we ask Chrome via its "Share this tab" prompt.
   // companion: { file, idleMs } when API Recorder started the video (see background.js).
   const startRecording = async (streamId, companion = null) => {
+    window.__devframeHideToast?.(); // e.g. "press ... to start the video"
     let stream;
     try {
       stream = streamId
@@ -1165,7 +1175,8 @@ function drawFrame(L) {
   window.__devframeOnMessage = (msg, respond) => {
     if (msg?.type === 'df-record-start' && !window.__devframeRec) startRecording(msg.streamId, msg.companion ?? null);
     if (msg?.type === 'df-record-stop') stopRecording(T('whyShortcut'));
-    if (msg?.type === 'df-toast') toast(msg.text, msg.ms);
+    if (msg?.type === 'df-toast') toast(msg.text, msg.ms, msg.big);
+    if (msg?.type === 'df-toast-hide') window.__devframeHideToast?.();
     if (msg?.type === 'df-countdown') {
       screenCountdown().then(() => respond({}));
       return true; // answer after the countdown

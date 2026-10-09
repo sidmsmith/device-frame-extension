@@ -540,21 +540,31 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
     if (!state) return { ok: false, error: 'not-framed' };
     if (msg.action === 'status') return { ok: true, recording: Boolean(state.recording) };
     if (msg.action === 'stop') {
+      if (state.companionWait) {
+        await updateFramed(tabId, { companionWait: null });
+        await chrome.tabs.sendMessage(tabId, { type: 'df-toast-hide' }).catch(() => {});
+      }
       if (state.recording) await chrome.tabs.sendMessage(tabId, { type: 'df-record-stop' }).catch(() => {});
       return { ok: true };
     }
     if (msg.action === 'start') {
       if (state.recording) return { ok: true, already: true };
+      const file = safeFile(msg.name) || 'Scenario';
+      const folder = typeof msg.folder === 'string' ? msg.folder.replace(/[\\:*?"<>|]+/g, '_').replace(/^\/+|\/+$/g, '') : '';
+      const idleMs = Math.max(0, Math.min(60000, Number(msg.idleMs) || 0));
+      await setPendingVideo({ file, folder });
       try {
         const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId, consumerTabId: tabId });
-        const file = safeFile(msg.name) || 'Scenario';
-        const folder = typeof msg.folder === 'string' ? msg.folder.replace(/[\\:*?"<>|]+/g, '_').replace(/^\/+|\/+$/g, '') : '';
-        await setPendingVideo({ file, folder });
-        const idleMs = Math.max(0, Math.min(60000, Number(msg.idleMs) || 0));
         await chrome.tabs.sendMessage(tabId, { type: 'df-record-start', streamId, companion: { file, idleMs } });
         return { ok: true };
       } catch (e) {
-        return { ok: false, error: String(e?.message ?? e) };
+        // Chrome records a tab only after you used Device Frame in it yourself (a click or a
+        // shortcut) - not in a window it just opened for API Recorder. So: ask for the record
+        // shortcut, big, in the device window; pressing it starts this scenario's video.
+        await updateFramed(tabId, { companionWait: { file, idleMs } });
+        const key = (await shortcuts()).record || 'the record shortcut';
+        await chrome.tabs.sendMessage(tabId, { type: 'df-toast', text: `Press ${key} to start the video`, ms: 600000, big: true }).catch(() => {});
+        return { ok: false, error: `press ${key}`, detail: String(e?.message ?? e) };
       }
     }
     return { ok: false, error: 'unknown action' };
@@ -588,6 +598,13 @@ async function toggleRecording(tab, state) {
     return;
   }
   const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id, consumerTabId: tab.id });
+  if (state.companionWait) {
+    // API Recorder's scenario video, waiting for this key press: same name, folder and size.
+    await chrome.tabs.sendMessage(tab.id, { type: 'df-record-start', streamId, companion: state.companionWait });
+    await updateFramed(tab.id, { companionWait: null });
+    await chrome.runtime.sendMessage(COMPANIONS[0], { type: 'video-started', tabId: tab.id }).catch(() => {});
+    return;
+  }
   await chrome.tabs.sendMessage(tab.id, { type: 'df-record-start', streamId });
 }
 
