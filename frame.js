@@ -770,6 +770,9 @@ function drawFrame(L) {
       // maximize / restore) re-fits it, not those height changes.
       if (L.inPlace && Math.abs(window.innerWidth - L.W) <= 2) return;
       if (Math.abs(window.innerWidth - L.W) <= 2 && Math.abs(window.innerHeight - L.H) <= 2) return;
+      // Room kept for the debugging banner: any height between "banner shown" and "banner
+      // hidden" is expected (the banner comes and goes with API Recorder's recordings).
+      if (L.bannerRoom && Math.abs(window.innerWidth - L.W) <= 2 && window.innerHeight >= L.H - 2 && window.innerHeight <= L.H + L.bannerRoom + 2) return;
       send({
         type: 'refit',
         metrics: {

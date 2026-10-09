@@ -208,8 +208,9 @@ async function fitWindow(tabId, L, m, shiftY = 0) {
   const outerH = winSize ? winSize.height : m.outerHeight;
   const chromeW = outerW - m.innerWidth * zoom;
   const chromeH = outerH - m.innerHeight * zoom;
-  const spare = L.inPlace ? IN_PLACE_SPARE : 0;
-  if (L.native) {
+  // Spare height below the device: this-tab mode's, and room for the debugging banner.
+  const spare = (L.inPlace ? IN_PLACE_SPARE : 0) + (L.bannerRoom || 0);
+  if (L.native && !(await getFramed())[tabId]?.recording) {
     // Measure the screen in CSS px at the normal zoom; lay out again if the size changed.
     const nativeSize = {
       w: Math.floor((m.availWidth - chromeW) / defaultZoom),
