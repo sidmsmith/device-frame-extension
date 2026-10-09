@@ -56,9 +56,13 @@ function windowPrefs(last) {
 
 // Layout for one frame window: shared settings plus this window's own.
 function layoutFor(state, last) {
+  const L = computeLayout(state.device, state.orientation, { ...last, ...(state.win ?? windowPrefs(last)), fill: state.fill ?? null, fillMin: state.fillMin ?? null });
   return {
-    ...computeLayout(state.device, state.orientation, { ...last, ...(state.win ?? windowPrefs(last)), fill: state.fill ?? null, fillMin: state.fillMin ?? null }),
+    ...L,
     inPlace: Boolean(state.inPlace),
+    // Built into the recorder, every recording brings Chrome's debugging banner: room for
+    // it below every device (phones too), not only the desktop ones.
+    ...(EMBEDDED ? { bannerRoom: BANNER_ROOM } : {}),
   };
 }
 
@@ -464,7 +468,8 @@ async function handleControl(tabId, tab, msg) {
       if (state.inPlace && !big && msg.metrics.innerWidth > layoutFor(state, await getLast()).W + 2) {
         // In place: the window can't get as narrow as the device (a normal
         // window's minimum width), so lay out to the window's shape, centered.
-        const fill = msg.metrics.innerWidth / Math.max(1, msg.metrics.innerHeight - IN_PLACE_SPARE); // the spare height isn't part of the layout
+        const room = layoutFor(state, await getLast()).bannerRoom || 0;
+        const fill = msg.metrics.innerWidth / Math.max(1, msg.metrics.innerHeight - IN_PLACE_SPARE - room); // the spare height isn't part of the layout
         if (!(Math.abs((state.fill ?? 0) - fill) < 0.003) && !state.recording) return reframe(tabId, await updateFramed(tabId, { fill, fillMin: null }));
       }
       const fill = big ? msg.metrics.innerWidth / msg.metrics.innerHeight : null;
@@ -608,6 +613,17 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   try {
     // A screen recording can be stopped from any window.
     if (command === 'record' && (await getScreenRec())) return await stopScreenRecording();
+    // Frame / unframe this tab (built into the recorder, whose icon opens its panel): the
+    // last device, framed where the tab is; again to take the frame off.
+    if (command === 'toggle-frame') {
+      if (!state) {
+        if (/^https?:/i.test(tab.url || '')) await frameForCompanion(tab.id, (await getLast()).device || DEFAULT_DEVICE);
+      } else if (!state.recording) {
+        if (state.inPlace) await unframeInPlace(tab.id);
+        else await chrome.windows.remove(state.windowId).catch(() => {});
+      }
+      return;
+    }
     if (!state) return;
     if (command === 'toggle-toolbar' && !state.recording) await toggleToolbar(tab.id, state);
     if (command === 'copy-screenshot') await copyScreenshot(tab, state);
