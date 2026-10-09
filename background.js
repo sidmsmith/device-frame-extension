@@ -67,13 +67,18 @@ async function saveLast(patch) {
 
 chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.url || !/^https?:/i.test(tab.url)) return; // chrome:// etc. can't be framed
+  if ((await getFramed())[tab.id]?.inPlace) return unframeInPlace(tab.id);
+  await openFrame(tab);
+});
 
+// Frame a tab: in a frame window of its own (the page reopened there), or where it is
+// ("Open the frame in: This tab"). Returns the framed tab's id.
+async function openFrame(tab) {
   // "Open with toolbar hidden" (default on): start every frame window with the
   // toolbar hidden, whatever it was last time.
-  if ((await getFramed())[tab.id]?.inPlace) return unframeInPlace(tab.id);
   if ((await getLast()).openHidden !== false) await saveLast({ toolbarHidden: true });
   const last = await getLast();
-  if (last.openIn === 'tab') return frameInPlace(tab, last);
+  if (last.openIn === 'tab') { await frameInPlace(tab, last); return tab.id; }
   const device = isDeviceKey(last.device, last) ? last.device : DEFAULT_DEVICE;
   const orientation = last.orientation === 'landscape' ? 'landscape' : 'portrait';
   const L = computeLayout(device, orientation, last);
@@ -96,7 +101,39 @@ chrome.action.onClicked.addListener(async (tab) => {
   await updateFramed(tabId, { windowId: win.id, device, orientation, win: windowPrefs(last) });
   // Keep zoom changes to this tab only, so normal tabs on the same site are untouched.
   await chrome.tabs.setZoomSettings(tabId, { mode: 'automatic', scope: 'per-tab' }).catch(() => {});
-});
+  return tabId;
+}
+
+// API Recorder asks for its recording's device ("frame"): the tab is framed in that device
+// - in its own frame window, sized and placed, toolbar hidden - or switched to it if it's
+// framed already; the answer comes once the frame is drawn and the window has settled.
+async function frameForCompanion(tabId, device) {
+  const tab = await chrome.tabs.get(tabId);
+  if (!/^https?:/i.test(tab.url || '')) return { ok: false, error: 'this page cannot be framed' };
+  if (!isDeviceKey(device, await getLast())) return { ok: false, error: `unknown device ${device}` };
+  const framed = (await getFramed())[tabId];
+  if (framed?.recording) return { ok: false, error: 'already recording' };
+  let target = tabId;
+  if (framed) {
+    let next = framed;
+    if (framed.device !== device || framed.orientation !== 'portrait') next = await updateFramed(tabId, { device, orientation: 'portrait' });
+    if (next.win && !next.win.toolbarHidden) next = await updateFramed(tabId, { win: { ...next.win, toolbarHidden: true } });
+    await saveLast({ device, orientation: 'portrait' });
+    if (next !== framed) await reframe(tabId, next);
+  } else {
+    await saveLast({ device, orientation: 'portrait', toolbarHidden: true });
+    target = await openFrame(tab);
+  }
+  // Ready: the frame drawn in the page, then a moment for the window to settle.
+  for (let i = 0; i < 60; i += 1) {
+    const drawn = await chrome.scripting.executeScript({ target: { tabId: target }, func: () => Boolean(document.getElementById('__devframe')) })
+      .then(([r]) => r?.result, () => false);
+    if (drawn) break;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  await new Promise((r) => setTimeout(r, 1200));
+  return { ok: true, tabId: target };
+}
 
 // "Open the frame in: This tab": frame the tab where it is, in its own window,
 // instead of reopening it in a popup. Used when another tool drives the tab
@@ -498,6 +535,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   (async () => {
     if ((await getLast()).companionLink === false) return { ok: false, error: 'link-off' };
     const tabId = Number(msg.tabId);
+    if (msg.action === 'frame') return frameForCompanion(tabId, String(msg.device || ''));
     const state = (await getFramed())[tabId];
     if (!state) return { ok: false, error: 'not-framed' };
     if (msg.action === 'status') return { ok: true, recording: Boolean(state.recording) };

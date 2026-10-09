@@ -978,9 +978,15 @@ function drawFrame(L) {
     const ctx = canvas.getContext('2d');
     // A timer rather than requestAnimationFrame, which pauses whenever the
     // window isn't painting (e.g. covered by another window).
+    // The tab's stream keeps the size it started with; when the page area changes size
+    // (e.g. Chrome's "... started debugging this browser" banner appears and the page gets
+    // 56 px shorter), Chrome fits the page into that frame, centered with bars around it.
+    // So map the crop through that fit, not just the width, or the picture slides down.
     const draw = () => {
-      const scale = video.videoWidth / window.innerWidth;
-      ctx.drawImage(video, crop.x * scale, crop.y * scale, crop.w * scale, crop.h * scale, 0, 0, canvas.width, canvas.height);
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const scale = Math.min(vw / window.innerWidth, vh / window.innerHeight);
+      const ox = (vw - window.innerWidth * scale) / 2, oy = (vh - window.innerHeight * scale) / 2;
+      ctx.drawImage(video, ox + crop.x * scale, oy + crop.y * scale, crop.w * scale, crop.h * scale, 0, 0, canvas.width, canvas.height);
     };
     draw();
     rec.drawTimer = setInterval(draw, 1000 / 30);
