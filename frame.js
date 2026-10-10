@@ -106,12 +106,14 @@ function drawFrame(L) {
     body > [id^="claude-"] { display: none !important; }
     /* App popups (Ionic popovers, e.g. WM Mobile's Task Group list) are placed from
        window coordinates, which <body>'s offset into the screen pushes down and right
-       (cut off at the bottom): center them on the device screen instead. */
-    ion-popover .popover-content, ion-popover::part(content) {
+       (cut off at the bottom): center them on the device screen instead. Only in a device
+       with a frame - a frameless desktop isn't offset, so its popups (e.g. the web UI's
+       filter list) stay right below their dropdown. */
+    ${L.frameless ? '' : `ion-popover .popover-content, ion-popover::part(content) {
       top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important;
       max-height: 85% !important;
     }
-    ion-popover .popover-arrow, ion-popover::part(arrow) { display: none !important; }
+    ion-popover .popover-arrow, ion-popover::part(arrow) { display: none !important; }`}
     ${L.touch ? `body, body * { cursor: url("data:image/svg+xml,${fingertip}") 14 14, pointer !important; }` : ''}`;
 
   document.getElementById('__devframe')?.remove();
