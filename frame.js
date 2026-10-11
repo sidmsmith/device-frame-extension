@@ -730,6 +730,60 @@ function drawFrame(L) {
   // too big for the device screen. Rewrite them in the page's stylesheets and
   // inline styles to the --df-vw/--df-vh variables above (the screen size).
   // Set up once per page; it keeps watching for styles the app adds later.
+  // Popups kept on the screen: apps place menus, dialogs and popups from window
+  // measurements, but the window is bigger than the device screen (and <body>, the
+  // screen, is offset into it), so a popup can open partly off the screen (e.g. WM
+  // Mobile's quick-actions menu, or a reason-code list). Once the page is still (no
+  // animation running), any fixed popup that is partly on and partly off the screen is
+  // moved just enough to be on it (a CSS translate, so the app's own transforms stay).
+  // Wholly off-screen elements (a closed side menu) are left alone.
+  window.__devframeLayout = L;
+  if (!window.__devframeKeepOn) {
+    const moved = new WeakMap(); // element -> [dx, dy] we added
+    const busy = () => document.getAnimations().some((a) => a.playState === 'running'
+      && a.effect?.getTiming?.().iterations !== Infinity);
+    const keepOn = () => {
+      const lay = window.__devframeLayout;
+      const body = document.body;
+      if (!body || !lay || lay.frameless || lay.native) return;
+      const fit = parseFloat(document.documentElement.style.getPropertyValue('--df-fit')) || 1;
+      const scr = body.getBoundingClientRect();
+      const skip = [];
+      for (const el of body.querySelectorAll('*')) {
+        if (el.id?.startsWith('__devframe') || skip.some((x) => x.contains(el))) continue;
+        const cs = getComputedStyle(el);
+        const fixed = cs.position === 'fixed' || (cs.position === 'absolute' && (el.offsetParent === body || el.offsetParent === null));
+        if (!fixed || cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < 40 || r.height < 20) continue;
+        skip.push(el); // its children move with it
+        const onScreen = r.right > scr.left + 1 && r.left < scr.right - 1 && r.bottom > scr.top + 1 && r.top < scr.bottom - 1;
+        if (!onScreen) continue;
+        const dx = r.left < scr.left - 1 ? scr.left - r.left : r.right > scr.right + 1 ? Math.max(scr.right - r.right, scr.left - r.left) : 0;
+        const dy = r.top < scr.top - 1 ? scr.top - r.top : r.bottom > scr.bottom + 1 ? Math.max(scr.bottom - r.bottom, scr.top - r.top) : 0;
+        if (!dx && !dy) continue;
+        const [px, py] = moved.get(el) ?? [0, 0];
+        const next = [px + dx / fit, py + dy / fit];
+        moved.set(el, next);
+        el.style.setProperty('translate', `${next[0]}px ${next[1]}px`, 'important');
+      }
+    };
+    let timer = 0;
+    let tries = 0;
+    const soon = () => {
+      clearTimeout(timer);
+      tries = 0;
+      const run = () => {
+        if (busy() && tries++ < 20) { timer = setTimeout(run, 100); return; }
+        keepOn();
+      };
+      timer = setTimeout(run, 150);
+    };
+    window.__devframeKeepOn = new MutationObserver(soon);
+    window.__devframeKeepOn.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
+    document.addEventListener('click', soon, true);
+  }
+
   // Media queries: the page's @media width/height rules normally test the whole window,
   // which is wider than the device - always so when framed in place (a normal window
   // can't get as narrow as a phone), more so when maximized. An app then picks a
