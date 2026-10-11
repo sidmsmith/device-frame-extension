@@ -17,6 +17,11 @@ DEVICES.desktop720 = {
   fixedOrientation: true, noStatusBar: true, margin: 0, cropPad: 0,
 };
 
+// A bigger fixed desktop for screens that need more room (e.g. the Pack Station UI): the page
+// lays out at 1600 x 900 and is zoomed out to fit a smaller screen - the same picture
+// everywhere, nothing cut off.
+DEVICES.desktop900 = { ...DEVICES.desktop720, name: 'Desktop 1600×900 (no frame)', width: 1600, height: 900 };
+
 // The recording's device ("frame"): the tab is framed where it is in that device, toolbar
 // hidden - or switched to it if it's framed already; the answer comes once the frame is
 // drawn and the window has settled.
