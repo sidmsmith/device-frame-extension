@@ -730,6 +730,76 @@ function drawFrame(L) {
   // too big for the device screen. Rewrite them in the page's stylesheets and
   // inline styles to the --df-vw/--df-vh variables above (the screen size).
   // Set up once per page; it keeps watching for styles the app adds later.
+  // Media queries: the page's @media width/height rules normally test the whole window,
+  // which is wider than the device - always so when framed in place (a normal window
+  // can't get as narrow as a phone), more so when maximized. An app then picks a
+  // tablet layout (e.g. fields side by side). Each @media rule is decided against the
+  // device screen instead: its width/height tests are worked out here, and the rule
+  // becomes "all" / "not all" (other tests, like hover or print, stay as they were).
+  window.__devframeScreen = { w: c.w, h: c.h };
+  if (!window.__devframeMedia) {
+    const original = new WeakMap(); // rule -> its media text as the page wrote it
+    const px = (v, u) => (u === 'em' || u === 'rem' ? v * 16 : u === 'px' || !u ? v : NaN);
+    const SIZE = /^(min-|max-)?(device-)?(width|height|aspect-ratio)$/;
+    // One "(feature)" in parens: true / false when it's about the size, else null.
+    const test = (inner) => {
+      const { w, h } = window.__devframeScreen;
+      const val = (f) => (f.endsWith('width') ? w : f.endsWith('height') ? h : w / h);
+      let m = inner.match(/^\s*([\w-]+)\s*:\s*([\d.]+)\s*(px|em|rem)?\s*(?:\/\s*([\d.]+))?\s*$/);
+      if (m && SIZE.test(m[1])) {
+        const want = m[1].endsWith('aspect-ratio') ? Number(m[2]) / Number(m[4] || 1) : px(Number(m[2]), m[3]);
+        if (Number.isNaN(want)) return null;
+        const have = val(m[1]);
+        return m[1].startsWith('min-') ? have >= want : m[1].startsWith('max-') ? have <= want : Math.abs(have - want) < 0.5;
+      }
+      m = inner.match(/^\s*orientation\s*:\s*(portrait|landscape)\s*$/);
+      if (m) return (m[1] === 'portrait') === (h >= w);
+      // Level 4 ranges: (width >= 576px), (400px < width <= 800px)
+      const num = String.raw`([\d.]+)\s*(px|em|rem)?`;
+      const op = '(<=|>=|<|>|=)';
+      const cmp = (a, o, b) => (o === '<' ? a < b : o === '<=' ? a <= b : o === '>' ? a > b : o === '>=' ? a >= b : Math.abs(a - b) < 0.5);
+      m = inner.match(new RegExp(String.raw`^\s*(width|height)\s*${op}\s*${num}\s*$`));
+      if (m) return cmp(val(m[1]), m[2], px(Number(m[3]), m[4]));
+      m = inner.match(new RegExp(String.raw`^\s*${num}\s*${op}\s*(width|height)\s*$`));
+      if (m) return cmp(px(Number(m[1]), m[2]), m[3], val(m[4]));
+      m = inner.match(new RegExp(String.raw`^\s*${num}\s*${op}\s*(width|height)\s*${op}\s*${num}\s*$`));
+      if (m) return cmp(px(Number(m[1]), m[2]), m[3], val(m[4])) && cmp(val(m[4]), m[5], px(Number(m[6]), m[7]));
+      return null;
+    };
+    // One query of a comma list ("screen and (min-width: 576px)"): its new text.
+    const decide = (q) => {
+      const parts = q.trim().split(/\s+and\s+/i);
+      const rest = [];
+      let sized = false;
+      for (const part of parts) {
+        const inner = part.match(/^\((.*)\)$/s);
+        const r = inner ? test(inner[1]) : null;
+        if (r === null) { rest.push(part); continue; }
+        sized = true;
+        if (!r) return 'not all';
+      }
+      if (!sized) return q.trim();
+      return rest.length ? rest.join(' and ') : 'all';
+    };
+    const apply = (rule) => {
+      if (!original.has(rule)) original.set(rule, rule.media.mediaText);
+      const text = original.get(rule);
+      // "not ..." and nested logic (or / not inside parens) are left to the browser.
+      if (/(^|,)\s*not\b|\(\s*not\b|\bor\b|\(\s*\(/i.test(text)) return;
+      const next = text.split(',').map(decide).join(', ');
+      if (next !== rule.media.mediaText) {
+        try { rule.media.mediaText = next; } catch { /* read-only sheet */ }
+      }
+    };
+    const rules = new Set();
+    window.__devframeMedia = {
+      add(rule) { if (!rules.has(rule)) { rules.add(rule); apply(rule); } },
+      refresh() { for (const rule of rules) { if (rule.parentStyleSheet) apply(rule); else rules.delete(rule); } },
+    };
+  } else {
+    window.__devframeMedia.refresh(); // a new device / rotation: decide again
+  }
+
   if (!window.__devframeViewport) {
     const units = { vw: '--df-vw', dvw: '--df-vw', svw: '--df-vw', lvw: '--df-vw', vh: '--df-vh', dvh: '--df-vh', svh: '--df-vh', lvh: '--df-vh', vmin: '--df-vmin', vmax: '--df-vmax' };
     const find = /(-?(?:\d+\.?\d*|\.\d+))(dvw|svw|lvw|vw|dvh|svh|lvh|vh|vmin|vmax)\b/g;
@@ -745,6 +815,7 @@ function drawFrame(L) {
     const fixRules = (rules) => {
       for (const rule of rules) {
         if (rule.style && !done.has(rule)) { fixStyle(rule.style); done.add(rule); }
+        if (rule instanceof CSSMediaRule) window.__devframeMedia.add(rule);
         if (rule.cssRules) fixRules(rule.cssRules);
       }
     };
