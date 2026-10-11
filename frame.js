@@ -748,25 +748,46 @@ function drawFrame(L) {
       if (!body || !lay || lay.frameless || lay.native) return;
       const fit = parseFloat(document.documentElement.style.getPropertyValue('--df-fit')) || 1;
       const scr = body.getBoundingClientRect();
-      const skip = [];
-      for (const el of body.querySelectorAll('*')) {
-        if (el.id?.startsWith('__devframe') || skip.some((x) => x.contains(el))) continue;
+      const near = (r) => r.left <= scr.left + 2 && r.right >= scr.right - 2 && r.top <= scr.top + 2 && r.bottom >= scr.bottom - 2;
+      // An absolute box clipped by a smaller scrolling / clipping box of the app's own
+      // (a carousel, a list) is the app's business, not ours.
+      const clippedByApp = (el) => {
+        for (let x = el.parentElement ?? el.getRootNode().host; x && x !== body; x = x.parentElement ?? x.getRootNode().host) {
+          const cs = getComputedStyle(x);
+          if (cs.position === 'fixed') return false;
+          if ((cs.overflowX !== 'visible' || cs.overflowY !== 'visible') && !near(x.getBoundingClientRect())) return true;
+        }
+        return false;
+      };
+      const fix = (el) => {
         const cs = getComputedStyle(el);
-        const fixed = cs.position === 'fixed' || (cs.position === 'absolute' && (el.offsetParent === body || el.offsetParent === null));
-        if (!fixed || cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
+        if (cs.display === 'none') return true; // nothing inside shows either
+        if (cs.position !== 'fixed' && cs.position !== 'absolute') return false;
+        if (cs.visibility === 'hidden' || Number(cs.opacity) === 0) return false;
         const r = el.getBoundingClientRect();
-        if (r.width < 40 || r.height < 20) continue;
-        skip.push(el); // its children move with it
+        if (r.width < 40 || r.height < 20) return false;
         const onScreen = r.right > scr.left + 1 && r.left < scr.right - 1 && r.bottom > scr.top + 1 && r.top < scr.bottom - 1;
-        if (!onScreen) continue;
+        const inside = r.left >= scr.left - 1 && r.right <= scr.right + 1 && r.top >= scr.top - 1 && r.bottom <= scr.bottom + 1;
+        if (!onScreen || inside) return false; // wholly off (a closed side menu) or fine: look inside
+        if (cs.position === 'absolute' && clippedByApp(el)) return false;
         const dx = r.left < scr.left - 1 ? scr.left - r.left : r.right > scr.right + 1 ? Math.max(scr.right - r.right, scr.left - r.left) : 0;
         const dy = r.top < scr.top - 1 ? scr.top - r.top : r.bottom > scr.bottom + 1 ? Math.max(scr.bottom - r.bottom, scr.top - r.top) : 0;
-        if (!dx && !dy) continue;
         const [px, py] = moved.get(el) ?? [0, 0];
         const next = [px + dx / fit, py + dy / fit];
         moved.set(el, next);
         el.style.setProperty('translate', `${next[0]}px ${next[1]}px`, 'important');
-      }
+        return true; // its children moved with it
+      };
+      // Every element, including inside components' (open) shadow roots, outermost first.
+      const walk = (root) => {
+        for (const el of root.children) {
+          if (el.id?.startsWith('__devframe')) continue;
+          if (fix(el)) continue;
+          if (el.shadowRoot) walk(el.shadowRoot);
+          walk(el);
+        }
+      };
+      walk(body);
     };
     let timer = 0;
     let tries = 0;
