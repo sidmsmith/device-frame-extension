@@ -123,7 +123,8 @@ function drawFrame(L) {
     ${L.touch && !invertTip ? `body, body * { cursor: url("data:image/svg+xml,${fingertip}") 14 14, pointer !important; }` : ''}
     ${invertTip ? `body, body * { cursor: none !important; }
     #__devframe-tip { position: fixed; left: 0; top: 0; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
-      background: #fff; mix-blend-mode: difference; pointer-events: none; z-index: 2147483647; opacity: .85; will-change: transform; }
+      box-sizing: border-box; background: rgba(255, 255, 255, .22); border: 2px solid rgba(255, 255, 255, .85);
+      mix-blend-mode: difference; pointer-events: none; z-index: 2147483647; will-change: transform; }
     #__devframe-tip[hidden] { display: none; }` : ''}`;
 
   document.getElementById('__devframe')?.remove();
