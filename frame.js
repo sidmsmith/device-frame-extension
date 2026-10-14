@@ -122,8 +122,8 @@ function drawFrame(L) {
     ion-popover .popover-arrow, ion-popover::part(arrow) { display: none !important; }`}
     ${L.touch && !invertTip ? `body, body * { cursor: url("data:image/svg+xml,${fingertip}") 14 14, pointer !important; }` : ''}
     ${invertTip ? `body, body * { cursor: none !important; }
-    #__devframe-tip { position: fixed; left: 0; top: 0; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
-      box-sizing: border-box; background: rgba(255, 255, 255, .22); border: 2px solid rgba(255, 255, 255, .85);
+    #__devframe-tip { position: fixed; left: 0; top: 0; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%;
+      background: rgba(255, 255, 255, .14);       /* on white: exactly Ring's disc (black at 14%), on black: its inverse */
       mix-blend-mode: difference; pointer-events: none; z-index: 2147483647; will-change: transform; }
     #__devframe-tip[hidden] { display: none; }` : ''}`;
 
