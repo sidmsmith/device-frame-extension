@@ -136,6 +136,12 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
 - **Show taps** – shows a soft circle wherever you click, plus a round
   fingertip cursor. Great for screen-shared demos and recordings, so viewers
   can see what you tapped.
+- **Fingertip** (with Show taps on) – how the fingertip cursor looks:
+  - **Ring**: a soft circle with a white ring and a dark edge, so you can see
+    it on dark screens as well as light ones.
+  - **Invert**: a circle that inverts whatever is under it – white over dark
+    areas, dark over light ones. Unlike the normal cursor, it also shows in
+    your recorded videos.
 - **Fit page to screen width** – shrink too-wide pages and long words to fit
   the device screen (see section 4). Untick to see the page at its true size.
 - **Always open with toolbar hidden** – on by default. Every new frame window
@@ -362,6 +368,7 @@ included in the version they lead up to).
 
 | Version | Date | Highlights |
 |---|---|---|
+| **0.27** | Oct 13, 2026 | **Fingertip** setting: the round cursor is now visible on dark screens (**Ring**, with a white edge), or choose **Invert** – a circle that inverts what's under it. The tap circles get a white edge too. |
 | **0.26** | Oct 9, 2026 | Lighter: the advanced **Options** page (**Open the frame in: This tab** and the API Recorder link) is gone - the icon always opens a frame window, and recording works as before. App popups such as dropdown lists now open **centered on the device screen** instead of low and cut off. |
 | **0.25** | Oct 8, 2026 | New shortcut **Alt+Shift+F** frames the page, like clicking the icon. **Skip loading screens** becomes **Pause during delays**: device recordings also pause after 2 seconds with nothing happening and continue with your next action, cutting the thinking time from videos; while you're speaking (microphone on) they never pause, so narration is kept. |
 | **0.24** | Oct 8, 2026 | Behind the scenes, for other tools: an advanced **Options** page (right-click the icon) with **Open the frame in: This tab** and a link that lets the separate API Recorder extension start and stop device videos; device recordings can be paused and resumed from the page. Nothing changes in everyday use. |

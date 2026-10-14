@@ -21,7 +21,7 @@ const EMBEDDED = self.EMBEDDED === true;
 //          (win: this window's look, see WINDOW_PREFS)
 //          screenRec = { tabId, started, mic } while an "Entire screen" recording runs
 // local:   last = { device, orientation, left, top, background, statusBar, custom,
-//                   toolbarHidden, frameColor, touch, mic, countdown, titleRules, iconAlways, fitWidth, openHidden, lang, recordMode, presets: [{ id, name, width, height }] }
+//                   toolbarHidden, frameColor, touch, touchStyle (ring | invert), mic, countdown, titleRules, iconAlways, fitWidth, openHidden, lang, recordMode, presets: [{ id, name, width, height }] }
 
 async function getFramed() {
   return (await chrome.storage.session.get('framed')).framed ?? {};
@@ -39,7 +39,8 @@ async function updateFramed(tabId, patch) {
 // setting (recording, title renames, tab icon, language, open hidden) is
 // shared by all frames. 'last' keeps the latest choice of each, which is
 // how new windows start.
-const WINDOW_PREFS = ['background', 'frameColor', 'statusBar', 'touch', 'fitWidth', 'toolbarHidden'];
+const WINDOW_PREFS = ['background', 'frameColor', 'statusBar', 'touch', 'touchStyle', 'fitWidth', 'toolbarHidden'];
+const TOUCH_STYLES = ['ring', 'invert'];   // the fingertip cursor: a two-tone ring, or a circle that inverts what's under it
 
 // A new window's look, from the latest choices (defaults as in computeLayout).
 function windowPrefs(last) {
@@ -48,6 +49,7 @@ function windowPrefs(last) {
     frameColor: last.frameColor in FRAME_COLORS ? last.frameColor : 'black',
     statusBar: Boolean(last.statusBar),
     touch: Boolean(last.touch),
+    touchStyle: TOUCH_STYLES.includes(last.touchStyle) ? last.touchStyle : 'ring',
     fitWidth: last.fitWidth !== false,
     toolbarHidden: Boolean(last.toolbarHidden),
   };
@@ -348,6 +350,7 @@ async function handleControl(tabId, tab, msg) {
       if (typeof msg.prefs.statusBar === 'boolean') prefs.statusBar = msg.prefs.statusBar;
       if (msg.prefs.frameColor in FRAME_COLORS) prefs.frameColor = msg.prefs.frameColor;
       if (typeof msg.prefs.touch === 'boolean') prefs.touch = msg.prefs.touch;
+      if (TOUCH_STYLES.includes(msg.prefs.touchStyle)) prefs.touchStyle = msg.prefs.touchStyle;
       if (typeof msg.prefs.mic === 'boolean') prefs.mic = msg.prefs.mic;
       if (typeof msg.prefs.systemAudio === 'boolean') prefs.systemAudio = msg.prefs.systemAudio;
       if (typeof msg.prefs.skipLoading === 'boolean') prefs.skipLoading = msg.prefs.skipLoading;

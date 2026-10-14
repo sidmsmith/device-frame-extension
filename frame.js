@@ -51,9 +51,15 @@ function drawFrame(L) {
   };
   const c = L.content;
 
-  // Fingertip cursor over the app while tap indicators are on.
+  // Fingertip cursor over the app while tap indicators are on. Ring: a soft disc with a white
+  // ring and a dark outline, so it shows on dark screens and light ones alike. Invert: the
+  // cursor is hidden over the app and a circle that inverts what's under it follows the mouse
+  // (mix-blend-mode: difference - white over black, dark over white; drawn by the GPU).
   const fingertip = encodeURIComponent(
-    "<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><circle cx='14' cy='14' r='10' fill='rgba(0,0,0,0.14)'/></svg>");
+    "<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><circle cx='14' cy='14' r='10' fill='rgba(0,0,0,0.14)'/>"
+    + "<circle cx='14' cy='14' r='10' fill='none' stroke='rgba(255,255,255,0.95)' stroke-width='2'/>"
+    + "<circle cx='14' cy='14' r='11.5' fill='none' stroke='rgba(0,0,0,0.5)' stroke-width='1'/></svg>");
+  const invertTip = L.touch && L.touchStyle === 'invert';
 
   // Page-level style: pin <body> into the screen area. The transform makes
   // <body> the containing block for position:fixed app shells.
@@ -114,7 +120,11 @@ function drawFrame(L) {
       max-height: 85% !important;
     }
     ion-popover .popover-arrow, ion-popover::part(arrow) { display: none !important; }`}
-    ${L.touch ? `body, body * { cursor: url("data:image/svg+xml,${fingertip}") 14 14, pointer !important; }` : ''}`;
+    ${L.touch && !invertTip ? `body, body * { cursor: url("data:image/svg+xml,${fingertip}") 14 14, pointer !important; }` : ''}
+    ${invertTip ? `body, body * { cursor: none !important; }
+    #__devframe-tip { position: fixed; left: 0; top: 0; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+      background: #fff; mix-blend-mode: difference; pointer-events: none; z-index: 2147483647; opacity: .85; will-change: transform; }
+    #__devframe-tip[hidden] { display: none; }` : ''}`;
 
   document.getElementById('__devframe')?.remove();
   clearInterval(window.__devframeClock);
@@ -285,6 +295,7 @@ function drawFrame(L) {
       .ripple {
         position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
         background: rgba(0, 0, 0, .11); box-sizing: border-box; pointer-events: none;
+        border: 2px solid rgba(255, 255, 255, .7); box-shadow: 0 0 0 1px rgba(0, 0, 0, .3);
         animation: df-tap .5s ease-out forwards;
       }
       button.rec-on { background: #d93025; border-color: #d93025; color: #fff; gap: 6px; font-variant-numeric: tabular-nums; }
@@ -374,6 +385,10 @@ function drawFrame(L) {
         ${Object.keys(FRAME_LABEL).map((k) => `<button data-fc="${k}" class="chip${k === L.frameColor && !L.frameColorFixed ? ' sel' : ''}" style="${chip(FRAME_SWATCH[k])}"${L.frameColorFixed ? ' disabled' : ''}>${FRAME_LABEL[k]}</button>`).join('')}
       </div>
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> ${E('optShowTaps')}</label>
+      <div class="lbl" style="margin-top: 8px">${E('lblFingertip')}</div>
+      <div class="seg">
+        ${['ring', 'invert'].map((k) => `<button data-ts="${k}" class="chip${(L.touchStyle || 'ring') === k ? ' sel' : ''}" title="${E(k === 'ring' ? 'tipTsRing' : 'tipTsInvert')}"${L.touch ? '' : ' disabled'}>${E(k === 'ring' ? 'tsRing' : 'tsInvert')}</button>`).join('')}
+      </div>
       <label class="chk" style="margin-top: 6px" title="${E('tipFitWidth')}"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> ${E('optFitWidth')}</label>
       <label class="chk" style="margin-top: 6px" title="${L.shortcut ? E('tipOpenHiddenShortcut', L.shortcut) : E('tipOpenHidden')}"><input type="checkbox" id="openHidden"${L.openHidden ? ' checked' : ''}> ${E('optOpenHidden')}</label>
       <div class="lbl">${E('lblRecording')}</div>
@@ -530,6 +545,7 @@ function drawFrame(L) {
   pop.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { recordMode: b.dataset.rm } })));
   pop.querySelectorAll('[data-fc]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { frameColor: b.dataset.fc } })));
   root.getElementById('touch').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { touch: e.target.checked } }));
+  pop.querySelectorAll('[data-ts]').forEach((b) => b.addEventListener('click', () => send({ type: 'set-pref', prefs: { touchStyle: b.dataset.ts } })));
   root.getElementById('fitWidth').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { fitWidth: e.target.checked } }));
   root.getElementById('openHidden').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { openHidden: e.target.checked } }));
   root.getElementById('mic').addEventListener('change', (e) => send({ type: 'set-pref', prefs: { mic: e.target.checked } }));
@@ -598,8 +614,25 @@ function drawFrame(L) {
 
   // Page-level listeners are replaced on every redraw.
   const ripples = root.getElementById('ripples');
+  document.getElementById('__devframe-tip')?.remove();
+  let tip = null;
+  if (invertTip) {
+    tip = document.createElement('div');
+    tip.id = '__devframe-tip';
+    tip.hidden = true;
+    document.documentElement.appendChild(tip);      // outside <body> (it's transformed), on top of everything
+  }
+  let tipFrame = 0, tipX = 0, tipY = 0;
+  const moveTip = (e) => {
+    if (!tip) return;
+    const over = document.body.contains(e.target);  // the app screen, not the bezel or our toolbar
+    tip.hidden = !over;
+    tipX = e.clientX; tipY = e.clientY;
+    if (over && !tipFrame) tipFrame = requestAnimationFrame(() => { tipFrame = 0; tip.style.transform = `translate(${tipX}px, ${tipY}px)`; });
+  };
   const listeners = {
-    mousemove: (e) => handle?.classList.toggle('near', e.clientY < 28),
+    mousemove: (e) => { handle?.classList.toggle('near', e.clientY < 28); moveTip(e); },
+    mouseleave: () => { if (tip) tip.hidden = true; },
     // Only the frame itself: the app lives inside <body>, while the bezel,
     // margin and status bar areas hit <html>.
     dblclick: (e) => { if (e.target === document.documentElement && !window.__devframeRec) toggleToolbar(); },
