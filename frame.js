@@ -388,7 +388,7 @@ function drawFrame(L) {
       <label class="chk"><input type="checkbox" id="touch"${L.touch ? ' checked' : ''}> ${E('optShowTaps')}</label>
       <div class="lbl" style="margin-top: 8px">${E('lblFingertip')}</div>
       <div class="seg">
-        ${['ring', 'invert'].map((k) => `<button data-ts="${k}" class="chip${(L.touchStyle || 'ring') === k ? ' sel' : ''}" title="${E(k === 'ring' ? 'tipTsRing' : 'tipTsInvert')}"${L.touch ? '' : ' disabled'}>${E(k === 'ring' ? 'tsRing' : 'tsInvert')}</button>`).join('')}
+        ${['invert', 'ring'].map((k) => `<button data-ts="${k}" class="chip${(L.touchStyle || 'invert') === k ? ' sel' : ''}" title="${E(k === 'ring' ? 'tipTsRing' : 'tipTsInvert')}"${L.touch ? '' : ' disabled'}>${E(k === 'ring' ? 'tsRing' : 'tsInvert')}</button>`).join('')}
       </div>
       <label class="chk" style="margin-top: 6px" title="${E('tipFitWidth')}"><input type="checkbox" id="fitWidth"${L.fitWidth ? ' checked' : ''}> ${E('optFitWidth')}</label>
       <label class="chk" style="margin-top: 6px" title="${L.shortcut ? E('tipOpenHiddenShortcut', L.shortcut) : E('tipOpenHidden')}"><input type="checkbox" id="openHidden"${L.openHidden ? ' checked' : ''}> ${E('optOpenHidden')}</label>

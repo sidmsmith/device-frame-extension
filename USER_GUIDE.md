@@ -137,11 +137,11 @@ Click <img src="docs/icons/sliders.svg" width="16"> to open it; click anywhere e
   fingertip cursor. Great for screen-shared demos and recordings, so viewers
   can see what you tapped.
 - **Fingertip** (with Show taps on) – how the fingertip cursor looks:
+  - **Invert** (the default): a soft circle that inverts whatever is under it –
+    light gray over light screens, dark gray over dark ones. Unlike the normal
+    cursor, it also shows in your recorded videos.
   - **Ring**: a soft circle with a white ring and a dark edge, so you can see
     it on dark screens as well as light ones.
-  - **Invert**: a circle that inverts whatever is under it – white over dark
-    areas, dark over light ones. Unlike the normal cursor, it also shows in
-    your recorded videos.
 - **Fit page to screen width** – shrink too-wide pages and long words to fit
   the device screen (see section 4). Untick to see the page at its true size.
 - **Always open with toolbar hidden** – on by default. Every new frame window

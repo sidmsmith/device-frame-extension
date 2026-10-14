@@ -40,7 +40,14 @@ async function updateFramed(tabId, patch) {
 // shared by all frames. 'last' keeps the latest choice of each, which is
 // how new windows start.
 const WINDOW_PREFS = ['background', 'frameColor', 'statusBar', 'touch', 'touchStyle', 'fitWidth', 'toolbarHidden'];
-const TOUCH_STYLES = ['ring', 'invert'];   // the fingertip cursor: a two-tone ring, or a circle that inverts what's under it
+const TOUCH_STYLES = ['invert', 'ring'];   // the fingertip cursor: a circle that inverts what's under it (default), or a two-tone ring
+// 0.27.3 made Invert the default: once, switch an earlier saved choice to it (later choices are kept).
+chrome.runtime.onInstalled.addListener(async () => {
+  const { touchStyleDefaultSet } = await chrome.storage.local.get('touchStyleDefaultSet');
+  if (touchStyleDefaultSet) return;
+  const { last = {} } = await chrome.storage.local.get('last');
+  await chrome.storage.local.set({ last: { ...last, touchStyle: 'invert' }, touchStyleDefaultSet: true });
+});
 
 // A new window's look, from the latest choices (defaults as in computeLayout).
 function windowPrefs(last) {
@@ -49,7 +56,7 @@ function windowPrefs(last) {
     frameColor: last.frameColor in FRAME_COLORS ? last.frameColor : 'black',
     statusBar: Boolean(last.statusBar),
     touch: Boolean(last.touch),
-    touchStyle: TOUCH_STYLES.includes(last.touchStyle) ? last.touchStyle : 'ring',
+    touchStyle: TOUCH_STYLES.includes(last.touchStyle) ? last.touchStyle : 'invert',
     fitWidth: last.fitWidth !== false,
     toolbarHidden: Boolean(last.toolbarHidden),
   };

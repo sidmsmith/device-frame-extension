@@ -333,7 +333,7 @@ function computeLayout(deviceKey, orientation, prefs = {}) {
     frameColor: FRAME_COLORS[prefs.frameColor] !== undefined ? prefs.frameColor : 'black',
     frameColorFixed: Boolean(d.fixedColor),
     touch: Boolean(prefs.touch),
-    touchStyle: prefs.touchStyle === 'invert' ? 'invert' : 'ring',
+    touchStyle: prefs.touchStyle === 'ring' ? 'ring' : 'invert',
     mic: Boolean(prefs.mic),
     systemAudio: Boolean(prefs.systemAudio),
     skipLoading: prefs.skipLoading !== false,
