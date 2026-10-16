@@ -8,6 +8,9 @@
   "actionTitle": {
     "message": "Abrir esta página en un marco de dispositivo"
   },
+  "cmdToggleFrame": {
+    "message": "Enmarcar esta pestaña en un dispositivo (como hacer clic en el icono de la extensión)"
+  },
   "cmdToggleToolbar": {
     "message": "Mostrar/ocultar la barra de controles en la ventana del marco"
   },

@@ -244,7 +244,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (/^(panel-|keyguard-get$)/.test(String(msg?.type ?? ''))) return;
   // The key guard (any page) asks for the open-the-frame shortcut (Alt+Shift+F).
   if (msg?.type === 'keyguard-open') {
-    chrome.commands.getAll().then((cmds) => sendResponse({ shortcut: cmds.find((c) => c.name === '_execute_action')?.shortcut || '' }), () => sendResponse({}));
+    chrome.commands.getAll().then((cmds) => sendResponse({ shortcut: (cmds.find((c) => c.name === 'toggle-frame') || cmds.find((c) => c.name === '_execute_action'))?.shortcut || '' }), () => sendResponse({}));
     return true;
   }
   // The screen recording window (recorder.html) reporting progress.
@@ -444,8 +444,13 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   try {
     // A screen recording can be stopped from any window.
     if (command === 'record' && (await getScreenRec())) return await stopScreenRecording();
-    // Frame / unframe this tab (embedded: the recorder's icon opens its panel).
-    if (command === 'toggle-frame') return EMBEDDED ? await toggleFrameHere(tab, state) : undefined;
+    // Frame / unframe this tab (embedded: the recorder's icon opens its panel). Standalone: what clicking the icon
+    // does - a command, so it also works in windows without a toolbar (e.g. Chrome --app windows).
+    if (command === 'toggle-frame') {
+      if (EMBEDDED) return await toggleFrameHere(tab, state);
+      if (!state && tab.url && /^https?:/i.test(tab.url)) await openFrame(tab);
+      return;
+    }
     if (!state) return;
     if (command === 'toggle-toolbar' && !state.recording) await toggleToolbar(tab.id, state);
     if (command === 'copy-screenshot') await copyScreenshot(tab, state);

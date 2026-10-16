@@ -8,6 +8,9 @@
   "actionTitle": {
     "message": "Ouvrir cette page dans un cadre d'appareil"
   },
+  "cmdToggleFrame": {
+    "message": "Encadrer cet onglet dans un appareil (comme un clic sur l'icône de l'extension)"
+  },
   "cmdToggleToolbar": {
     "message": "Afficher/masquer la barre de contrôle dans la fenêtre du cadre"
   },

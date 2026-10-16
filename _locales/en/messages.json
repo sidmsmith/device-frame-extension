@@ -8,6 +8,9 @@
   "actionTitle": {
     "message": "Open this page in a device frame"
   },
+  "cmdToggleFrame": {
+    "message": "Frame this tab in a device (as clicking the extension icon)"
+  },
   "cmdToggleToolbar": {
     "message": "Show/hide the control bar in the device frame window"
   },
